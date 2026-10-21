@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/dopatraman/hearth/server/internal/api"
-	"github.com/dopatraman/hearth/server/migrations"
 
 	_ "modernc.org/sqlite"
 )
@@ -30,15 +29,6 @@ func main() {
 		os.Exit(1)
 	}
 	defer db.Close()
-
-	logger.Info("applying migrations", "path", sqlitePath)
-	migrateCtx, cancelMigrate := context.WithTimeout(context.Background(), 30*time.Second)
-	if err := migrations.Up(migrateCtx, db); err != nil {
-		cancelMigrate()
-		logger.Error("migrate", "err", err)
-		os.Exit(1)
-	}
-	cancelMigrate()
 
 	srv := &http.Server{
 		Addr:              addr,
