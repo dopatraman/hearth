@@ -24,6 +24,11 @@ DerivedData/
 .build/
 Package.resolved
 
+# SQLite dev / test databases
+*.db
+*.db-shm
+*.db-wal
+
 # Secrets / env
 .env
 .env.*

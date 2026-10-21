@@ -1,64 +1,79 @@
 // Package dbtest is the per-test-transaction harness used across the server's
-// test suite. Any test that touches Postgres gets a transaction that rolls back
+// test suite. Any test that touches the DB gets a transaction that rolls back
 // on cleanup — no mocks, no fixtures to tear down.
+//
+// The underlying database is SQLite via modernc.org/sqlite (pure Go, no CGo).
+// SQLite serializes writers; tests that mutate state should not run in
+// parallel.
 package dbtest
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"os"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	_ "modernc.org/sqlite"
 )
 
 var (
-	pool     *pgxpool.Pool
-	poolOnce sync.Once
-	poolErr  error
+	db     *sql.DB
+	dbOnce sync.Once
+	dbErr  error
 )
 
-func initPool() {
+func initDB() {
 	url := os.Getenv("DATABASE_URL")
 	if url == "" {
-		poolErr = errors.New("DATABASE_URL is not set (use `just db-up && just migrate` for local dev)")
+		dbErr = errors.New("DATABASE_URL is not set (use `just db-up && just migrate` for local dev)")
 		return
+	}
+	d, err := sql.Open("sqlite", url)
+	if err != nil {
+		dbErr = err
+		return
+	}
+	// Enforce foreign keys and use WAL for better concurrency.
+	for _, pragma := range []string{
+		"PRAGMA foreign_keys = ON",
+		"PRAGMA journal_mode = WAL",
+		"PRAGMA busy_timeout = 5000",
+	} {
+		if _, err := d.Exec(pragma); err != nil {
+			dbErr = err
+			return
+		}
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	p, err := pgxpool.New(ctx, url)
-	if err != nil {
-		poolErr = err
+	if err := d.PingContext(ctx); err != nil {
+		dbErr = err
 		return
 	}
-	if err := p.Ping(ctx); err != nil {
-		poolErr = err
-		return
-	}
-	pool = p
+	db = d
 }
 
 // WithTx opens a transaction, hands it to fn, and rolls back on completion.
 // Any state fn writes inside the transaction is gone when the test ends.
 //
 // Tests MUST route all database interaction through tx. Opening a second
-// connection (via the pool directly) would bypass the rollback and leak state.
-func WithTx(t testing.TB, fn func(ctx context.Context, tx pgx.Tx)) {
+// connection would bypass the rollback and leak state.
+func WithTx(t testing.TB, fn func(ctx context.Context, tx *sql.Tx)) {
 	t.Helper()
-	poolOnce.Do(initPool)
-	if poolErr != nil {
-		t.Fatalf("dbtest: pool init failed: %v", poolErr)
+	dbOnce.Do(initDB)
+	if dbErr != nil {
+		t.Fatalf("dbtest: init failed: %v", dbErr)
 	}
 
 	ctx := context.Background()
-	tx, err := pool.Begin(ctx)
+	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		t.Fatalf("dbtest: begin: %v", err)
 	}
-	t.Cleanup(func() { _ = tx.Rollback(context.Background()) })
+	t.Cleanup(func() { _ = tx.Rollback() })
 
 	fn(ctx, tx)
 }

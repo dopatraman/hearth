@@ -1,47 +1,38 @@
-export DATABASE_URL := env_var_or_default("DATABASE_URL", "postgres://hearth@localhost:5432/hearth?sslmode=disable")
-export PATH := env_var("HOME") / "go/bin" + ":" + "/opt/homebrew/opt/postgresql@17/bin" + ":" + env_var("PATH")
+export DATABASE_URL := env_var_or_default("DATABASE_URL", "./hearth.dev.db")
+export PATH := env_var("HOME") / "go/bin" + ":" + env_var("PATH")
 
 default:
     @just --list
 
-# Start Postgres, apply migrations, run the server.
-dev: db-up migrate run
+# Apply migrations, then run the server.
+dev: migrate run
 
-# Run the server (expects Postgres already up and migrated).
+# Run the server.
 run:
     go -C server run ./cmd/hearth
 
 # Run all Go tests.
 test:
+    @if ls server/migrations/*.sql >/dev/null 2>&1; then just migrate; fi
     go -C server test ./...
 
 # Apply pending migrations.
 migrate:
-    goose -dir server/migrations postgres "$DATABASE_URL" up
+    @if ls server/migrations/*.sql >/dev/null 2>&1; then \
+        goose -dir server/migrations sqlite3 "$DATABASE_URL" up; \
+    else \
+        echo "no migrations yet"; \
+    fi
 
 # Roll back all migrations.
 migrate-reset:
-    goose -dir server/migrations postgres "$DATABASE_URL" reset
+    goose -dir server/migrations sqlite3 "$DATABASE_URL" reset
 
 # Regenerate sqlc Go from queries/*.sql and migrations/*.sql.
 sqlc:
     cd server && sqlc generate
 
-# Start Postgres (via Homebrew services), create role and db if missing.
-db-up:
-    brew services start postgresql@17
-    @echo "waiting for postgres..."
-    @until pg_isready -h localhost >/dev/null 2>&1; do sleep 0.5; done
-    @createuser -h localhost -s hearth 2>/dev/null || true
-    @createdb -h localhost -O hearth hearth 2>/dev/null || true
-    @echo "postgres ready"
-
-# Stop Postgres.
-db-down:
-    brew services stop postgresql@17
-
-# Drop and recreate the hearth database, then re-apply migrations.
+# Delete the dev database file.
 db-reset:
-    dropdb -h localhost --if-exists hearth
-    createdb -h localhost -O hearth hearth
+    rm -f server/hearth.dev.db server/hearth.dev.db-shm server/hearth.dev.db-wal hearth.dev.db hearth.dev.db-shm hearth.dev.db-wal
     just migrate
