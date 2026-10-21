@@ -1,0 +1,40 @@
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+/server/hearth
+/server/dist/
+/server/bin/
+vendor/
+
+# Swift / Xcode
+*.xcuserstate
+xcuserdata/
+*.hmap
+*.ipa
+*.dSYM
+*.dSYM.zip
+build/
+DerivedData/
+.swiftpm/
+.build/
+Package.resolved
+
+# Secrets / env
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor cruft
+*.swp
+*.swo
+.vscode/
+.idea/
