@@ -1,10 +1,10 @@
-export DATABASE_URL := env_var_or_default("DATABASE_URL", "postgres://hearth:hearth_dev@localhost:5433/hearth?sslmode=disable")
-export PATH := env_var("HOME") / "go/bin" + ":" + env_var("PATH")
+export DATABASE_URL := env_var_or_default("DATABASE_URL", "postgres://hearth@localhost:5432/hearth?sslmode=disable")
+export PATH := env_var("HOME") / "go/bin" + ":" + "/opt/homebrew/opt/postgresql@17/bin" + ":" + env_var("PATH")
 
 default:
     @just --list
 
-# Bring up Postgres, apply migrations, run the server.
+# Start Postgres, apply migrations, run the server.
 dev: db-up migrate run
 
 # Run the server (expects Postgres already up and migrated).
@@ -27,19 +27,21 @@ migrate-reset:
 sqlc:
     cd server && sqlc generate
 
-# Bring up Postgres in the background and wait for it to be ready.
+# Start Postgres (via Homebrew services), create role and db if missing.
 db-up:
-    docker compose -f deploy/docker-compose.yml up -d
+    brew services start postgresql@17
     @echo "waiting for postgres..."
-    @until docker exec hearth-postgres pg_isready -U hearth >/dev/null 2>&1; do sleep 0.5; done
+    @until pg_isready -h localhost >/dev/null 2>&1; do sleep 0.5; done
+    @createuser -h localhost -s hearth 2>/dev/null || true
+    @createdb -h localhost -O hearth hearth 2>/dev/null || true
     @echo "postgres ready"
 
-# Stop Postgres (data persists in the named volume).
+# Stop Postgres.
 db-down:
-    docker compose -f deploy/docker-compose.yml down
+    brew services stop postgresql@17
 
-# Nuke Postgres data and re-create.
+# Drop and recreate the hearth database, then re-apply migrations.
 db-reset:
-    docker compose -f deploy/docker-compose.yml down -v
-    just db-up
+    dropdb -h localhost --if-exists hearth
+    createdb -h localhost -O hearth hearth
     just migrate
