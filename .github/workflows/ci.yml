@@ -47,6 +47,41 @@ jobs:
         working-directory: server
         run: go test ./...
 
-  # ios-test is added once the Xcode workspace exists (Task #8).
-  # It will run on macos-14 or newer with xcodebuild test against
-  # the iOS 26 simulator.
+  ios-build:
+    name: iOS + watchOS build
+    runs-on: macos-15
+    continue-on-error: true  # Xcode 27 may not be on the runner yet; flip to false once stable.
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select latest Xcode
+        run: sudo xcode-select -s "$(ls -d /Applications/Xcode*.app | sort -V | tail -1)/Contents/Developer"
+
+      - name: Print Xcode version
+        run: xcodebuild -version
+
+      - name: Install xcodegen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: apps
+        run: xcodegen
+
+      - name: Build HearthApp (iOS Simulator)
+        working-directory: apps
+        run: >
+          xcodebuild build
+          -scheme HearthApp
+          -sdk iphonesimulator
+          -destination 'generic/platform=iOS Simulator'
+          CODE_SIGNING_ALLOWED=NO
+
+      - name: Build HearthWatch (watchOS Simulator)
+        working-directory: apps
+        run: >
+          xcodebuild build
+          -scheme HearthWatch
+          -sdk watchsimulator
+          -destination 'generic/platform=watchOS Simulator'
+          CODE_SIGNING_ALLOWED=NO
