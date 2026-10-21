@@ -1,0 +1,118 @@
+name: TestFlight
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/**'
+      - '.github/workflows/testflight.yml'
+      - 'deploy/ExportOptions.plist'
+  workflow_dispatch:
+
+concurrency:
+  group: testflight-production
+  cancel-in-progress: false
+
+jobs:
+  upload:
+    name: Archive + upload to TestFlight
+    runs-on: macos-15
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # need the full history for the build-number count
+
+      - name: Guard — required secrets must be set
+        env:
+          APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+          APPSTORE_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+          APPSTORE_PRIVATE_KEY: ${{ secrets.APPSTORE_PRIVATE_KEY }}
+          APPSTORE_TEAM_ID: ${{ secrets.APPSTORE_TEAM_ID }}
+        run: |
+          missing=()
+          [[ -z "$APPSTORE_ISSUER_ID" ]] && missing+=(APPSTORE_ISSUER_ID)
+          [[ -z "$APPSTORE_KEY_ID" ]] && missing+=(APPSTORE_KEY_ID)
+          [[ -z "$APPSTORE_PRIVATE_KEY" ]] && missing+=(APPSTORE_PRIVATE_KEY)
+          [[ -z "$APPSTORE_TEAM_ID" ]] && missing+=(APPSTORE_TEAM_ID)
+          if (( ${#missing[@]} )); then
+            echo "::error::Missing required repo secrets: ${missing[*]}"
+            exit 78
+          fi
+          echo "secrets present"
+
+      - name: Select latest Xcode
+        run: sudo xcode-select -s "$(ls -d /Applications/Xcode*.app | sort -V | tail -1)/Contents/Developer"
+
+      - name: Print Xcode version
+        run: xcodebuild -version
+
+      - name: Install xcodegen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: apps
+        run: xcodegen
+
+      - name: Install App Store Connect API key
+        env:
+          APPSTORE_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+          APPSTORE_PRIVATE_KEY: ${{ secrets.APPSTORE_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          umask 077
+          printf '%s\n' "$APPSTORE_PRIVATE_KEY" > ~/.appstoreconnect/private_keys/AuthKey_${APPSTORE_KEY_ID}.p8
+          chmod 600 ~/.appstoreconnect/private_keys/AuthKey_${APPSTORE_KEY_ID}.p8
+
+      - name: Compute build number
+        id: build_number
+        run: |
+          BUILD_NUMBER=$(git rev-list --count HEAD)
+          echo "value=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "Build number: $BUILD_NUMBER"
+
+      - name: Archive HearthApp
+        working-directory: apps
+        env:
+          APPSTORE_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+          APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+          BUILD_NUMBER: ${{ steps.build_number.outputs.value }}
+        run: >
+          xcodebuild archive
+          -scheme HearthApp
+          -configuration Release
+          -archivePath build/HearthApp.xcarchive
+          -destination 'generic/platform=iOS'
+          -authenticationKeyPath "$HOME/.appstoreconnect/private_keys/AuthKey_${APPSTORE_KEY_ID}.p8"
+          -authenticationKeyID "$APPSTORE_KEY_ID"
+          -authenticationKeyIssuerID "$APPSTORE_ISSUER_ID"
+          -allowProvisioningUpdates
+          CURRENT_PROJECT_VERSION="$BUILD_NUMBER"
+
+      - name: Export IPA
+        working-directory: apps
+        env:
+          APPSTORE_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+          APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+        run: >
+          xcodebuild -exportArchive
+          -archivePath build/HearthApp.xcarchive
+          -exportPath build/export
+          -exportOptionsPlist ../deploy/ExportOptions.plist
+          -authenticationKeyPath "$HOME/.appstoreconnect/private_keys/AuthKey_${APPSTORE_KEY_ID}.p8"
+          -authenticationKeyID "$APPSTORE_KEY_ID"
+          -authenticationKeyIssuerID "$APPSTORE_ISSUER_ID"
+          -allowProvisioningUpdates
+
+      - name: Upload to TestFlight
+        working-directory: apps
+        env:
+          APPSTORE_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+          APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+        run: >
+          xcrun altool --upload-app
+          --type ios
+          --file build/export/HearthApp.ipa
+          --apiKey "$APPSTORE_KEY_ID"
+          --apiIssuer "$APPSTORE_ISSUER_ID"
