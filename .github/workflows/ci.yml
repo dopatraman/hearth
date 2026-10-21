@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  server-test:
+    name: Server tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: hearth
+          POSTGRES_USER: hearth
+          POSTGRES_PASSWORD: hearth_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U hearth"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgres://hearth:hearth_test@localhost:5432/hearth?sslmode=disable
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache-dependency-path: server/go.sum
+
+      - name: Install goose
+        run: go install github.com/pressly/goose/v3/cmd/goose@latest
+
+      - name: Apply migrations
+        if: hashFiles('server/migrations/*.sql') != ''
+        run: goose -dir server/migrations postgres "$DATABASE_URL" up
+
+      - name: Run tests
+        working-directory: server
+        run: go test ./...
+
+  # ios-test is added once the Xcode workspace exists (Task #8).
+  # It will run on macos-14 or newer with xcodebuild test against
+  # the iOS 26 simulator.
