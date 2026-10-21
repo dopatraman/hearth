@@ -10,5 +10,8 @@ func NewRouter() *chi.Mux {
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Recoverer)
+
+	r.Get("/healthz", healthz)
+
 	return r
 }
