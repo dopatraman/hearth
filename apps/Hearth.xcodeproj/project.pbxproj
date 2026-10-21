@@ -1,0 +1,503 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		36E4C325F94EA0728F4450FD /* HearthWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F48EECA08814B123CED6020A /* HearthWatchApp.swift */; };
+		5A03F2745120E80BD86131AA /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D61F9280CA2185FD1200A3D /* ContentView.swift */; };
+		65A3ACB6340FB76FBDA27FF5 /* HearthAppTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1945B64FC16BDFE702F27691 /* HearthAppTests.swift */; };
+		78FF81C2795EE43A43A060A9 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = F62BD183CF0CFCF909DBCF97 /* Models.swift */; };
+		D895165661854A0484F9B76F /* HearthAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEB5F2AAC13B09F521E40FFE /* HearthAPI.swift */; };
+		DB58F037C069A53628D9419F /* HearthApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2395D1A08ACF4931A7823EDA /* HearthApp.swift */; };
+		F57C81DB3282DC8FFE5FA42F /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600AB893185DEB8491B86D64 /* ContentView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		65216D25A50CCCBE763DAA95 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 74F50A572083448637AD5668 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F00BF5021521A591DCCC4780;
+			remoteInfo = HearthApp;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		0D61F9280CA2185FD1200A3D /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		1945B64FC16BDFE702F27691 /* HearthAppTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HearthAppTests.swift; sourceTree = "<group>"; };
+		2395D1A08ACF4931A7823EDA /* HearthApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HearthApp.swift; sourceTree = "<group>"; };
+		315F86EFBFBD085E5F1717D9 /* HearthApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = HearthApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		34B04515D002D89F105AD779 /* HearthAppTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = HearthAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		600AB893185DEB8491B86D64 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		B349A8BC691ED2A295408123 /* HearthWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HearthWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		DEB5F2AAC13B09F521E40FFE /* HearthAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HearthAPI.swift; sourceTree = "<group>"; };
+		F48EECA08814B123CED6020A /* HearthWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HearthWatchApp.swift; sourceTree = "<group>"; };
+		F62BD183CF0CFCF909DBCF97 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		2C706C1AE1689716C72D5A82 = {
+			isa = PBXGroup;
+			children = (
+				5D4FB7AE9354ABFBABDD8796 /* HearthApp */,
+				E84E301309EDCD93CD55DCC9 /* HearthAppTests */,
+				3EFA4CD75CEFA4D1388F9EAD /* HearthWatch */,
+				98F50AE03A1AFB85C69BC3DE /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		3EFA4CD75CEFA4D1388F9EAD /* HearthWatch */ = {
+			isa = PBXGroup;
+			children = (
+				0D61F9280CA2185FD1200A3D /* ContentView.swift */,
+				F48EECA08814B123CED6020A /* HearthWatchApp.swift */,
+			);
+			path = HearthWatch;
+			sourceTree = "<group>";
+		};
+		5D4FB7AE9354ABFBABDD8796 /* HearthApp */ = {
+			isa = PBXGroup;
+			children = (
+				600AB893185DEB8491B86D64 /* ContentView.swift */,
+				DEB5F2AAC13B09F521E40FFE /* HearthAPI.swift */,
+				2395D1A08ACF4931A7823EDA /* HearthApp.swift */,
+				F62BD183CF0CFCF909DBCF97 /* Models.swift */,
+			);
+			path = HearthApp;
+			sourceTree = "<group>";
+		};
+		98F50AE03A1AFB85C69BC3DE /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				315F86EFBFBD085E5F1717D9 /* HearthApp.app */,
+				34B04515D002D89F105AD779 /* HearthAppTests.xctest */,
+				B349A8BC691ED2A295408123 /* HearthWatch.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		E84E301309EDCD93CD55DCC9 /* HearthAppTests */ = {
+			isa = PBXGroup;
+			children = (
+				1945B64FC16BDFE702F27691 /* HearthAppTests.swift */,
+			);
+			path = HearthAppTests;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		8A0F8733E2E7D1AC77DAD1FE /* HearthWatch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 6B3A09703545EAA59AB58FC8 /* Build configuration list for PBXNativeTarget "HearthWatch" */;
+			buildPhases = (
+				EDBF720C77E91745257F01F2 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = HearthWatch;
+			packageProductDependencies = (
+			);
+			productName = HearthWatch;
+			productReference = B349A8BC691ED2A295408123 /* HearthWatch.app */;
+			productType = "com.apple.product-type.application";
+		};
+		CB12A5C5951BFB28C6A3EFF4 /* HearthAppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CE3CA5941EA44C0CF8434DA5 /* Build configuration list for PBXNativeTarget "HearthAppTests" */;
+			buildPhases = (
+				B2D0FD21C64B50D4F6E89034 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				F96433F0BA548B0C6AF6B22D /* PBXTargetDependency */,
+			);
+			name = HearthAppTests;
+			packageProductDependencies = (
+			);
+			productName = HearthAppTests;
+			productReference = 34B04515D002D89F105AD779 /* HearthAppTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		F00BF5021521A591DCCC4780 /* HearthApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 28C2231265B8C373FDEA1508 /* Build configuration list for PBXNativeTarget "HearthApp" */;
+			buildPhases = (
+				9739BADFA9435E1799B93DDE /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = HearthApp;
+			packageProductDependencies = (
+			);
+			productName = HearthApp;
+			productReference = 315F86EFBFBD085E5F1717D9 /* HearthApp.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		74F50A572083448637AD5668 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					8A0F8733E2E7D1AC77DAD1FE = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+					CB12A5C5951BFB28C6A3EFF4 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+					F00BF5021521A591DCCC4780 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 5F470BEF57B62126D22B9601 /* Build configuration list for PBXProject "Hearth" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 2C706C1AE1689716C72D5A82;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 98F50AE03A1AFB85C69BC3DE /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				F00BF5021521A591DCCC4780 /* HearthApp */,
+				8A0F8733E2E7D1AC77DAD1FE /* HearthWatch */,
+				CB12A5C5951BFB28C6A3EFF4 /* HearthAppTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		9739BADFA9435E1799B93DDE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F57C81DB3282DC8FFE5FA42F /* ContentView.swift in Sources */,
+				D895165661854A0484F9B76F /* HearthAPI.swift in Sources */,
+				DB58F037C069A53628D9419F /* HearthApp.swift in Sources */,
+				78FF81C2795EE43A43A060A9 /* Models.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B2D0FD21C64B50D4F6E89034 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				65A3ACB6340FB76FBDA27FF5 /* HearthAppTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EDBF720C77E91745257F01F2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5A03F2745120E80BD86131AA /* ContentView.swift in Sources */,
+				36E4C325F94EA0728F4450FD /* HearthWatchApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		F96433F0BA548B0C6AF6B22D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F00BF5021521A591DCCC4780 /* HearthApp */;
+			targetProxy = 65216D25A50CCCBE763DAA95 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		136D6C759BAB211ACD13DC2B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				INFOPLIST_KEY_CLKComplicationPrincipalClass = ComplicationController;
+				INFOPLIST_KEY_WKApplication = YES;
+				INFOPLIST_KEY_WKWatchOnly = NO;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dopatraman.hearth.watchkitapp;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = 4;
+			};
+			name = Debug;
+		};
+		42D845369AC24B3107E83DE0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				INFOPLIST_KEY_CLKComplicationPrincipalClass = ComplicationController;
+				INFOPLIST_KEY_WKApplication = YES;
+				INFOPLIST_KEY_WKWatchOnly = NO;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dopatraman.hearth.watchkitapp;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = 4;
+			};
+			name = Release;
+		};
+		679453576A5ED1D4896046C7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Release;
+		};
+		6DE3217459DB9A44452CDFD3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.dopatraman.hearth;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		AA1E81D8C4BD6510B7310135 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.dopatraman.hearth.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/HearthApp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/HearthApp";
+			};
+			name = Release;
+		};
+		BECEBDD67C2EAD28FC38CC6D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.dopatraman.hearth;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		CB0D357C3A4A40A601B7A22F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Debug;
+		};
+		DF00D147B12E6ABDFE426297 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.dopatraman.hearth.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/HearthApp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/HearthApp";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		28C2231265B8C373FDEA1508 /* Build configuration list for PBXNativeTarget "HearthApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6DE3217459DB9A44452CDFD3 /* Debug */,
+				BECEBDD67C2EAD28FC38CC6D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		5F470BEF57B62126D22B9601 /* Build configuration list for PBXProject "Hearth" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CB0D357C3A4A40A601B7A22F /* Debug */,
+				679453576A5ED1D4896046C7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		6B3A09703545EAA59AB58FC8 /* Build configuration list for PBXNativeTarget "HearthWatch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				136D6C759BAB211ACD13DC2B /* Debug */,
+				42D845369AC24B3107E83DE0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		CE3CA5941EA44C0CF8434DA5 /* Build configuration list for PBXNativeTarget "HearthAppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DF00D147B12E6ABDFE426297 /* Debug */,
+				AA1E81D8C4BD6510B7310135 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 74F50A572083448637AD5668 /* Project object */;
+}

@@ -1,0 +1,59 @@
+name: Hearth
+options:
+  bundleIdPrefix: com.dopatraman
+  deploymentTarget:
+    iOS: "26.0"
+    watchOS: "26.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+    GENERATE_INFOPLIST_FILE: YES
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+
+targets:
+
+  HearthApp:
+    type: application
+    platform: iOS
+    sources:
+      - HearthApp
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.dopatraman.hearth
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        TARGETED_DEVICE_FAMILY: "1,2"
+
+  HearthWatch:
+    type: application
+    platform: watchOS
+    sources:
+      - HearthWatch
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.dopatraman.hearth.watchkitapp
+        INFOPLIST_KEY_WKApplication: YES
+        INFOPLIST_KEY_WKWatchOnly: NO
+        INFOPLIST_KEY_CLKComplicationPrincipalClass: ComplicationController
+
+  HearthAppTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - HearthAppTests
+    dependencies:
+      - target: HearthApp
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.dopatraman.hearth.tests
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/HearthApp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/HearthApp"
+        BUNDLE_LOADER: "$(TEST_HOST)"
