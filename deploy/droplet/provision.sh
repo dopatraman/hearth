@@ -55,6 +55,20 @@ install -d -m 755 -o deploy -g deploy /opt/hearth/bin
 install -d -m 755 -o deploy -g deploy /opt/hearth/data
 install -d -m 755 -o deploy -g deploy /opt/hearth/staging
 
+echo "==> ensure /opt/hearth/.env with SESSION_SECRET"
+if [[ ! -f /opt/hearth/.env ]]; then
+    # 48 random bytes → base64 → 64 chars, well over the 32-byte minimum.
+    SESSION_SECRET=$(head -c 48 /dev/urandom | base64)
+    {
+        echo "SESSION_SECRET=${SESSION_SECRET}"
+    } > /opt/hearth/.env
+    chmod 600 /opt/hearth/.env
+    chown deploy:deploy /opt/hearth/.env
+    echo "    generated"
+else
+    echo "    already present (keeping existing SESSION_SECRET)"
+fi
+
 echo "==> install systemd unit"
 install -m 644 "$REPO_ROOT/deploy/hearth.service" /etc/systemd/system/hearth.service
 systemctl daemon-reload

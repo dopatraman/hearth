@@ -12,6 +12,10 @@ import (
 	"time"
 
 	"github.com/dopatraman/hearth/server/internal/api"
+	"github.com/dopatraman/hearth/server/internal/auth"
+	"github.com/dopatraman/hearth/server/internal/db"
+	"github.com/dopatraman/hearth/server/internal/users"
+	"github.com/dopatraman/hearth/server/migrations"
 
 	_ "modernc.org/sqlite"
 )
@@ -22,17 +26,52 @@ func main() {
 
 	sqlitePath := envDefault("SQLITE_PATH", "./hearth.db")
 	addr := envDefault("HEARTH_ADDR", ":8080")
+	appleAud := envDefault("APPLE_AUDIENCE", "com.dopatraman.hearth")
+	sessionSecret := []byte(os.Getenv("SESSION_SECRET"))
 
-	db, err := openDB(sqlitePath)
+	if len(sessionSecret) < 32 {
+		logger.Error("SESSION_SECRET must be at least 32 bytes", "got", len(sessionSecret))
+		os.Exit(1)
+	}
+
+	database, err := openDB(sqlitePath)
 	if err != nil {
 		logger.Error("open db", "path", sqlitePath, "err", err)
 		os.Exit(1)
 	}
-	defer db.Close()
+	defer database.Close()
+
+	logger.Info("applying migrations", "path", sqlitePath)
+	migrateCtx, cancelMigrate := context.WithTimeout(context.Background(), 30*time.Second)
+	if err := migrations.Up(migrateCtx, database); err != nil {
+		cancelMigrate()
+		logger.Error("migrate", "err", err)
+		os.Exit(1)
+	}
+	cancelMigrate()
+
+	logger.Info("initializing apple verifier", "audience", appleAud)
+	appleCtx, cancelApple := context.WithTimeout(context.Background(), 10*time.Second)
+	appleVerifier, err := auth.NewAppleVerifier(appleCtx, appleAud)
+	cancelApple()
+	if err != nil {
+		logger.Error("apple verifier", "err", err)
+		os.Exit(1)
+	}
+
+	sessionTokens, err := auth.NewSessionTokens(sessionSecret, 30*24*time.Hour)
+	if err != nil {
+		logger.Error("session tokens", "err", err)
+		os.Exit(1)
+	}
 
 	srv := &http.Server{
-		Addr:              addr,
-		Handler:           api.NewRouter(),
+		Addr: addr,
+		Handler: (&api.Server{
+			Users:         users.NewService(db.New(database)),
+			AppleVerifier: appleVerifier,
+			Session:       sessionTokens,
+		}).Router(),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
@@ -57,7 +96,7 @@ func main() {
 }
 
 func openDB(path string) (*sql.DB, error) {
-	db, err := sql.Open("sqlite", path)
+	database, err := sql.Open("sqlite", path)
 	if err != nil {
 		return nil, err
 	}
@@ -66,18 +105,18 @@ func openDB(path string) (*sql.DB, error) {
 		"PRAGMA journal_mode = WAL",
 		"PRAGMA busy_timeout = 5000",
 	} {
-		if _, err := db.Exec(pragma); err != nil {
-			_ = db.Close()
+		if _, err := database.Exec(pragma); err != nil {
+			_ = database.Close()
 			return nil, err
 		}
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	if err := db.PingContext(ctx); err != nil {
-		_ = db.Close()
+	if err := database.PingContext(ctx); err != nil {
+		_ = database.Close()
 		return nil, err
 	}
-	return db, nil
+	return database, nil
 }
 
 func envDefault(key, fallback string) string {

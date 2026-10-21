@@ -10,9 +10,6 @@ jobs:
     name: Server tests
     runs-on: ubuntu-latest
 
-    env:
-      DATABASE_URL: ./ci.db
-
     steps:
       - uses: actions/checkout@v4
 
@@ -21,17 +18,8 @@ jobs:
           go-version: '1.25'
           cache-dependency-path: server/go.sum
 
-      - name: Install goose
-        run: go install github.com/pressly/goose/v3/cmd/goose@latest
-
-      - name: Apply migrations
-        if: hashFiles('server/migrations/*.sql') != ''
-        run: goose -dir server/migrations sqlite3 "$DATABASE_URL" up
-
       - name: Run tests
         working-directory: server
-        env:
-          DATABASE_URL: ../ci.db
         run: go test ./...
 
   ios-build:

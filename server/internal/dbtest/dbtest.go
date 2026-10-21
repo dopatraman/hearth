@@ -10,11 +10,12 @@ package dbtest
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"os"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/dopatraman/hearth/server/migrations"
 
 	_ "modernc.org/sqlite"
 )
@@ -26,10 +27,13 @@ var (
 )
 
 func initDB() {
+	// Default to an in-memory DB that is shared across connections within
+	// this test binary but completely isolated from other test binaries
+	// (different packages). Prevents SQLITE_BUSY contention when `go test`
+	// runs packages in parallel.
 	url := os.Getenv("DATABASE_URL")
 	if url == "" {
-		dbErr = errors.New("DATABASE_URL is not set (use `just db-up && just migrate` for local dev)")
-		return
+		url = "file::memory:?cache=shared"
 	}
 	d, err := sql.Open("sqlite", url)
 	if err != nil {
@@ -53,6 +57,17 @@ func initDB() {
 		dbErr = err
 		return
 	}
+
+	// Apply all migrations once at pool init. Each test then runs in a
+	// transaction that rolls back, so the migrated schema persists but
+	// test-written rows do not.
+	migCtx, cancelMig := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancelMig()
+	if err := migrations.Up(migCtx, d); err != nil {
+		dbErr = err
+		return
+	}
+
 	db = d
 }
 

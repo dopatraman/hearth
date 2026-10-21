@@ -3,3 +3,12 @@
 //   sqlc v1.31.1
 
 package db
+
+type User struct {
+	ID                   string
+	AppleSub             string
+	DisplayName          *string
+	NotificationsEnabled int64
+	CreatedAt            string
+	UpdatedAt            string
+}
