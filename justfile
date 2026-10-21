@@ -1,4 +1,7 @@
 export DATABASE_URL := env_var_or_default("DATABASE_URL", "./hearth.dev.db")
+export SQLITE_PATH := env_var_or_default("SQLITE_PATH", "./hearth.dev.db")
+export SESSION_SECRET := env_var_or_default("SESSION_SECRET", "development-session-secret-NOT-FOR-PRODUCTION-ever!!")
+export APPLE_AUDIENCE := env_var_or_default("APPLE_AUDIENCE", "com.dopatraman.hearth")
 export PATH := env_var("HOME") / "go/bin" + ":" + env_var("PATH")
 
 default:

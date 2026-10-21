@@ -15,6 +15,9 @@ RestartSec=5s
 
 Environment=SQLITE_PATH=/opt/hearth/data/hearth.db
 Environment=HEARTH_ADDR=127.0.0.1:8080
+Environment=APPLE_AUDIENCE=com.dopatraman.hearth
+# SESSION_SECRET and anything else sensitive comes from .env (not in git).
+EnvironmentFile=/opt/hearth/.env
 
 # Security hardening
 NoNewPrivileges=true

@@ -16,6 +16,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dopatraman/hearth/server/migrations"
+
 	_ "modernc.org/sqlite"
 )
 
@@ -53,6 +55,17 @@ func initDB() {
 		dbErr = err
 		return
 	}
+
+	// Apply all migrations once at pool init. Each test then runs in a
+	// transaction that rolls back, so the migrated schema persists but
+	// test-written rows do not.
+	migCtx, cancelMig := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancelMig()
+	if err := migrations.Up(migCtx, d); err != nil {
+		dbErr = err
+		return
+	}
+
 	db = d
 }
 
