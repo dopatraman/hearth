@@ -1,0 +1,3 @@
+# Allow the deploy user to control the hearth service without a password.
+# Explicit absolute paths and specific unit name only — no wildcards.
+deploy ALL=(root) NOPASSWD: /bin/systemctl restart hearth, /bin/systemctl start hearth, /bin/systemctl stop hearth, /bin/systemctl status hearth, /bin/systemctl is-active hearth

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -11,16 +12,23 @@ import (
 	"time"
 
 	"github.com/dopatraman/hearth/server/internal/api"
+
+	_ "modernc.org/sqlite"
 )
 
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 
-	addr := os.Getenv("HEARTH_ADDR")
-	if addr == "" {
-		addr = ":8080"
+	sqlitePath := envDefault("SQLITE_PATH", "./hearth.db")
+	addr := envDefault("HEARTH_ADDR", ":8080")
+
+	db, err := openDB(sqlitePath)
+	if err != nil {
+		logger.Error("open db", "path", sqlitePath, "err", err)
+		os.Exit(1)
 	}
+	defer db.Close()
 
 	srv := &http.Server{
 		Addr:              addr,
@@ -46,4 +54,35 @@ func main() {
 	if err := srv.Shutdown(ctx); err != nil {
 		logger.Error("shutdown error", "err", err)
 	}
+}
+
+func openDB(path string) (*sql.DB, error) {
+	db, err := sql.Open("sqlite", path)
+	if err != nil {
+		return nil, err
+	}
+	for _, pragma := range []string{
+		"PRAGMA foreign_keys = ON",
+		"PRAGMA journal_mode = WAL",
+		"PRAGMA busy_timeout = 5000",
+	} {
+		if _, err := db.Exec(pragma); err != nil {
+			_ = db.Close()
+			return nil, err
+		}
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := db.PingContext(ctx); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	return db, nil
+}
+
+func envDefault(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
 }

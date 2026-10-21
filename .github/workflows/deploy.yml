@@ -1,0 +1,102 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build + deploy
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Guard — required secrets must be set
+        env:
+          DROPLET_HOST: ${{ secrets.DROPLET_HOST }}
+          DROPLET_SSH_KEY: ${{ secrets.DROPLET_SSH_KEY }}
+          HEARTH_DOMAIN: ${{ secrets.HEARTH_DOMAIN }}
+        run: |
+          missing=()
+          [[ -z "$DROPLET_HOST" ]] && missing+=(DROPLET_HOST)
+          [[ -z "$DROPLET_SSH_KEY" ]] && missing+=(DROPLET_SSH_KEY)
+          [[ -z "$HEARTH_DOMAIN" ]] && missing+=(HEARTH_DOMAIN)
+          if (( ${#missing[@]} )); then
+            echo "::error::Missing required repo secrets: ${missing[*]}"
+            echo "::error::See deploy/droplet/README.md step 3."
+            exit 78
+          fi
+          echo "secrets present"
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache-dependency-path: server/go.sum
+
+      - name: Build linux/amd64 binary
+        working-directory: server
+        env:
+          GOOS: linux
+          GOARCH: amd64
+          CGO_ENABLED: 0
+        run: |
+          mkdir -p dist
+          go build -trimpath -ldflags="-s -w" -o dist/hearth ./cmd/hearth
+          ls -la dist/
+          file dist/hearth
+
+      - name: Install SSH key + known_hosts
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.DROPLET_SSH_KEY }}
+          DROPLET_HOST: ${{ secrets.DROPLET_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          umask 077
+          printf '%s' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "$DROPLET_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Upload binary to staging
+        env:
+          DROPLET_HOST: ${{ secrets.DROPLET_HOST }}
+        run: |
+          scp -i ~/.ssh/id_ed25519 \
+            server/dist/hearth \
+            "deploy@${DROPLET_HOST}:/opt/hearth/staging/hearth.new"
+
+      - name: Atomic swap and restart
+        env:
+          DROPLET_HOST: ${{ secrets.DROPLET_HOST }}
+        run: |
+          ssh -i ~/.ssh/id_ed25519 "deploy@${DROPLET_HOST}" bash -s <<'REMOTE'
+          set -eu
+          chmod +x /opt/hearth/staging/hearth.new
+          mv /opt/hearth/staging/hearth.new /opt/hearth/bin/hearth
+          sudo /bin/systemctl restart hearth
+          sudo /bin/systemctl is-active hearth
+          REMOTE
+
+      - name: Smoke test
+        env:
+          HEARTH_DOMAIN: ${{ secrets.HEARTH_DOMAIN }}
+        run: |
+          for i in $(seq 1 30); do
+            body=$(curl -fsSL "https://${HEARTH_DOMAIN}/healthz" 2>/dev/null || true)
+            if [[ "$body" == *'"status":"ok"'* ]]; then
+              echo "healthz: $body"
+              echo "deploy verified"
+              exit 0
+            fi
+            echo "attempt $i: not yet (body=$body)"
+            sleep 2
+          done
+          echo "smoke test failed"
+          curl -v "https://${HEARTH_DOMAIN}/healthz" || true
+          exit 1
