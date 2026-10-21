@@ -1,0 +1,31 @@
+[Unit]
+Description=Hearth API server
+Documentation=https://github.com/dopatraman/hearth
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=deploy
+Group=deploy
+WorkingDirectory=/opt/hearth
+ExecStart=/opt/hearth/bin/hearth
+Restart=on-failure
+RestartSec=5s
+
+Environment=SQLITE_PATH=/opt/hearth/data/hearth.db
+Environment=HEARTH_ADDR=127.0.0.1:8080
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/opt/hearth/data
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+
+[Install]
+WantedBy=multi-user.target
