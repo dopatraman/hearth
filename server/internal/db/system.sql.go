@@ -7,17 +7,15 @@ package db
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const serverNow = `-- name: ServerNow :one
-SELECT now()::timestamptz AS server_time
+SELECT strftime('%Y-%m-%dT%H:%M:%fZ', 'now') AS server_time
 `
 
-func (q *Queries) ServerNow(ctx context.Context) (pgtype.Timestamptz, error) {
-	row := q.db.QueryRow(ctx, serverNow)
-	var server_time pgtype.Timestamptz
+func (q *Queries) ServerNow(ctx context.Context) (interface{}, error) {
+	row := q.db.QueryRowContext(ctx, serverNow)
+	var server_time interface{}
 	err := row.Scan(&server_time)
 	return server_time, err
 }

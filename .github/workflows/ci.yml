@@ -10,30 +10,15 @@ jobs:
     name: Server tests
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:17-alpine
-        env:
-          POSTGRES_DB: hearth
-          POSTGRES_USER: hearth
-          POSTGRES_PASSWORD: hearth_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U hearth"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-
     env:
-      DATABASE_URL: postgres://hearth:hearth_test@localhost:5432/hearth?sslmode=disable
+      DATABASE_URL: ./ci.db
 
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: '1.25'
           cache-dependency-path: server/go.sum
 
       - name: Install goose
@@ -41,10 +26,12 @@ jobs:
 
       - name: Apply migrations
         if: hashFiles('server/migrations/*.sql') != ''
-        run: goose -dir server/migrations postgres "$DATABASE_URL" up
+        run: goose -dir server/migrations sqlite3 "$DATABASE_URL" up
 
       - name: Run tests
         working-directory: server
+        env:
+          DATABASE_URL: ../ci.db
         run: go test ./...
 
   ios-build:

@@ -5,9 +5,11 @@
 
 ## Context
 
-Build an iOS 26+ app (iPhone 13 mini and above) with an Apple Watch companion for shared household chore tracking. Multiple members share one list, create/claim/assign/complete items, snooze them personally (8h fixed), and get push notifications on activity. Backend is Go + Postgres on a single Digital Ocean droplet. The outcome is a polished v1 deployed to a real household.
+Build an iOS 26+ app (iPhone 13 mini and above) with an Apple Watch companion for shared household chore tracking. Multiple members share one list, create/claim/assign/complete items, snooze them personally (8h fixed), and get push notifications on activity. Backend is Go + SQLite on a single Digital Ocean droplet, deployed natively (binary + systemd) and reverse-proxied by the droplet's existing Caddy. The outcome is a polished v1 deployed to a real household.
 
-The work is structured as **small, complete, user-facing slices**. Each slice is a branch → PR → merge → auto-deploy → verify-on-device cycle. TDD throughout: write the first failing test, make it pass, repeat. Database tests run against real Postgres via docker-compose with per-test transactions (no mocks). External services (APNs, Apple's JWKs endpoint) are mocked at the Go interface boundary.
+The work is structured as **small, complete, user-facing slices**. Each slice is a branch → PR → merge → auto-deploy → verify-on-device cycle. TDD throughout: write the first failing test, make it pass, repeat. Database tests run against a real SQLite file with per-test transactions (no mocks). External services (APNs, Apple's JWKs endpoint) are mocked at the Go interface boundary.
+
+**Database choice**: SQLite via `modernc.org/sqlite` (pure Go, no CGo), chosen over Postgres for simplicity and $0 infra cost at household scale (~1 household, 2–6 users). See [DATA_MODEL.md](../DATA_MODEL.md) for details. The migration path to Postgres is kept open if "multi-household" ever becomes a goal.
 
 ## Repo structure (to be created)
 
@@ -22,7 +24,7 @@ hearth/
 │   ├── migrations/*.sql
 │   ├── sqlc.yaml, go.mod, Dockerfile
 ├── apps/Hearth.xcworkspace/{HearthApp, HearthWatch, HearthAppTests}
-├── deploy/{docker-compose.yml, Caddyfile, droplet/}
+├── deploy/{Caddyfile.hearth, hearth.service, droplet/}
 ├── .github/workflows/
 ├── .gitignore
 └── justfile
@@ -74,24 +76,24 @@ Colors are semantic, never decorative. A lavender highlight **always** means "th
 - **Notification dispatch**: synchronous within request handler, in a `go func()` with `recover()`, fire-and-forget. Not blocking HTTP response. Revisit if event volume grows.
 - **Silent cache-invalidation push payload**: `{list_id, last_event_id}` — client fetches events since the given ID.
 - **APNs test boundary**: `Pusher` interface in `internal/notifications`. Unit tests use a fake that records calls. Sandbox integration tests behind a build tag (`-tags=apns_live`), run manually before release, not in CI.
-- **Timestamp handling**: UTC in Postgres (`TIMESTAMPTZ`), display local on client.
+- **Timestamp handling**: UTC in SQLite as ISO-8601 `TEXT`, display local on client.
 - **Delete semantics**: creator-delete is hard delete; complete is soft (graveyard).
 - **Memberships for MVP**: all members equal, no owner / no kick. Add later.
 
 ## Pre-work (before Slice 0)
 
 1. **Create the repo**: `mkdir hearth && cd hearth && git init`, add `.gitignore` (Go + Swift + Xcode user data + `.env` + OS cruft) and a short `README.md`. Create the GitHub repo (private initially), push the initial commit on `main`.
-2. **Write `docs/DATA_MODEL.md`**: entities, relationships, indexes, and invariants — Users, Lists, ListMemberships (future-proofed many-to-many), Items (no `due_date`, only `will_complete_by`), Snoozes (`PK (user_id, item_id)`, upsert), Events (append-only), DeviceTokens (per-user per-platform). Call out the pg_trgm index on `item.title` for dedup search, the partial index on `item (list_id) WHERE state = 'open'`, and the `snooze (user_id, snoozed_until)` index. This document is the shared reference for all slice work. Commit on `main`.
+2. **Write `docs/DATA_MODEL.md`**: entities, relationships, indexes, and invariants — Users, Lists, ListMemberships (future-proofed many-to-many), Items (no `due_date`, only `will_complete_by`), Snoozes (`PK (user_id, item_id)`, upsert), Events (append-only), DeviceTokens (per-user per-platform). Call out the FTS5 virtual table on `items.title` for dedup search, the partial index on `item (list_id) WHERE state = 'open'`, and the `snooze (user_id, snoozed_until)` index. This document is the shared reference for all slice work. Commit on `main`.
 
 ## Slice 0 — Foundation (prerequisite, NOT user-facing)
 
 Keep ruthlessly small. Only what Slice 1 needs.
 
 - **Git**: initialize the repo at `hearth/`, create `.gitignore` (Go, Swift, Xcode user data, `.env`, `node_modules` just in case, OS cruft), add a short `README.md`, create a GitHub repo and push the initial commit. Default branch `main`. Branch per slice (`slice-0-foundation`, `slice-1-deploy`, ...).
-- Backend: `go.mod` (`github.com/<org>/hearth/server`), chi skeleton, pgx pool, stdlib `slog`, `sqlc.yaml` wired, migrations runner (`goose`), `/healthz` endpoint.
+- Backend: `go.mod` (`github.com/<org>/hearth/server`), chi skeleton, SQLite via `modernc.org/sqlite` (pure Go, no CGo), stdlib `slog`, `sqlc.yaml` wired for SQLite, migrations runner (`goose`), `/healthz` endpoint.
 - iOS: `Hearth.xcworkspace` with `HearthApp` (iOS 26+) and `HearthWatch` (watchOS) targets, SwiftUI App skeleton, base Codable types, URLSession client stub with bearer-token placeholder, Swift Testing target (`HearthAppTests`).
-- Infra: `docker-compose.yml` with Postgres on a known port, `justfile` with `just test`, `just migrate`, `just run`, `just dev`.
-- CI: GitHub Actions runs `go test ./...` against ephemeral Postgres, and `xcodebuild test` for the iOS target.
+- Infra: `justfile` with `just test`, `just migrate`, `just run`, `just dev`, `just db-reset`. Local DB is just a file at `./hearth.dev.db` — no daemon.
+- CI: GitHub Actions runs `go test ./...` against a fresh SQLite file (no service container needed), and `xcodebuild build` for iOS and watchOS targets.
 
 **First failing test**: a Go test that opens a transaction via the shared test harness, inserts a row into a temp table, rolls back on completion. This is the harness every slice after depends on.
 
@@ -101,7 +103,7 @@ Keep ruthlessly small. Only what Slice 1 needs.
 
 **User-facing value**: anyone can hit `https://<domain>/healthz` from a phone browser and see it works.
 
-- Infra: provision droplet, install Docker, Caddy with auto-TLS, Postgres container (data volume mounted), deploy workflow (GitHub Actions over SSH), DNS record. Secrets live in GitHub Actions and are injected as env vars.
+- Infra: provision the existing droplet (install Go-built binary dir at `/opt/hearth`, `deploy` user with narrow sudoers, systemd unit, Caddy site file at `/etc/caddy/sites/hearth.conf` reverse-proxying `api.hearth.prakashvenkat.com` to `localhost:8080`). SQLite file at `/opt/hearth/data/hearth.db`. Deploy workflow (GitHub Actions SSH + scp) runs on every merge to main. Secrets live in GitHub Actions.
 - Backend: nothing new beyond `/healthz`.
 - iOS: nothing yet.
 
@@ -154,7 +156,7 @@ Keep ruthlessly small. Only what Slice 1 needs.
 
 **User-facing value**: Bob sees Alice's item, taps "I'll do it," taps complete when done. It lands in the graveyard. Alice finds it when searching.
 
-- Backend: `PATCH /items/:id/claim` (conditional update `WHERE claimed_by IS NULL` to prevent races), `POST /items/:id/complete`, `GET /items/graveyard?q=` with `pg_trgm` substring search. Events for claim and complete.
+- Backend: `PATCH /items/:id/claim` (conditional update `WHERE claimed_by IS NULL` to prevent races), `POST /items/:id/complete`, `GET /items/graveyard?q=` using the FTS5 virtual table for substring search. Events for claim and complete.
 - iOS: **swipe right → claim** (lavender hand) on the backlog. Complete is a tap on a row-level affordance (mint check), not a swipe. Graveyard tab with search bar. Visual states: unclaimed is plain, claimed-by-me gets a lavender accent, claimed-by-someone gets a sky-tinted avatar chip. Items animate between lists via `.matchedGeometryEffect` — claiming slides the row into the personal view, completing fades + collapses then surfaces in graveyard. Light haptic on claim, success haptic on complete.
 
 **First failing tests**:
@@ -234,7 +236,7 @@ Design polish is **not** introduced here — it's been baked in since Slice 3. T
 - Accessibility audit: VoiceOver pass on every screen, Dynamic Type at XXL, reduced-motion respected (animations degrade to crossfades, not disabled entirely).
 - Structured logs with request IDs end-to-end, basic metrics endpoint.
 - Rate limiting on `/auth/apple` and `/invites/*/accept`.
-- Nightly `pg_dump` to Spaces (or droplet-local with offsite sync).
+- Nightly SQLite backup (`sqlite3 hearth.db ".backup hearth.bak.db"` is safe under concurrent writes). Rsync the backup off-droplet to free storage (Backblaze B2 free tier, or the developer's local machine via a reverse-pull cron).
 - iOS error reporting (OSLog + lightweight server-side error ingestion).
 - TestFlight distribution set up.
 
@@ -249,7 +251,7 @@ Representative paths — complete list grows per slice:
 - `/Users/pvenkat/Projects/hearth/server/sqlc.yaml` — Slice 0.
 - `/Users/pvenkat/Projects/hearth/server/internal/db/testdb.go` — the per-test-transaction harness; everything else depends on it. Slice 0.
 - `/Users/pvenkat/Projects/hearth/server/migrations/0001_init.sql` — Slice 0 (empty-ish) and extended slice-by-slice.
-- `/Users/pvenkat/Projects/hearth/deploy/docker-compose.yml` — Slice 0.
+- `/Users/pvenkat/Projects/hearth/deploy/hearth.service` — Slice 1 (systemd unit for the native binary).
 - `/Users/pvenkat/Projects/hearth/deploy/Caddyfile` — Slice 1.
 - `/Users/pvenkat/Projects/hearth/.github/workflows/deploy.yml` — Slice 1.
 - `/Users/pvenkat/Projects/hearth/justfile` — Slice 0.
@@ -259,7 +261,7 @@ Representative paths — complete list grows per slice:
 
 Each slice ships green on these three gates before merge:
 
-1. **Unit + integration tests pass**. `just test` is green: `go test ./...` against Postgres via docker-compose, and `xcodebuild test` for iOS. No skipped tests.
+1. **Unit + integration tests pass**. `just test` is green: `go test ./...` against a fresh SQLite file, and `xcodebuild build` for iOS and watchOS. No skipped tests.
 2. **Deployed smoke test passes**. GitHub Actions deploys to the droplet; a post-deploy curl against the relevant endpoint returns the expected status.
 3. **Manual acceptance on real devices**. Each slice has an acceptance clause above; it must be demonstrated on an actual iPhone (and from Slice 9 onward, an actual Apple Watch) before the slice is considered done. Record a short screen capture in the PR description.
 
@@ -268,4 +270,4 @@ At the end of the project (post-Slice 10), additional end-to-end validation:
 - Two-user flow: create → invite → accept → claim → assign → complete → graveyard search finds the item.
 - Snooze + unsnooze across an 8-hour window (verify on real device over a wall-clock day).
 - Notification delivery across all four triggers (created, claimed, assigned-to-you, completed), on both iPhone and Watch.
-- Backup restore: destroy the droplet, provision fresh, restore `pg_dump`, confirm app recovers.
+- Backup restore: destroy the droplet, provision fresh, restore from the latest SQLite backup, confirm app recovers.
