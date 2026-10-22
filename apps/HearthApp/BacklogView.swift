@@ -103,27 +103,6 @@ struct BacklogView: View {
     }
 }
 
-// MARK: - Row
-
-private struct ItemRow: View {
-    let item: HearthItem
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(item.title)
-                .font(.body)
-                .foregroundStyle(Color.hearthTextPrimary)
-            if let notes = item.notes, !notes.isEmpty {
-                Text(notes)
-                    .font(.footnote)
-                    .foregroundStyle(Color.hearthTextSecondary)
-                    .lineLimit(2)
-            }
-        }
-        .padding(.vertical, 6)
-    }
-}
-
 // MARK: - FAB
 
 private struct FABButton: View {
