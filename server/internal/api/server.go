@@ -5,19 +5,17 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 
 	"github.com/dopatraman/hearth/server/internal/auth"
-	"github.com/dopatraman/hearth/server/internal/users"
+	"github.com/dopatraman/hearth/server/internal/db"
 )
 
-// Server bundles the handler-layer dependencies and exposes Router.
-// Zero-value is useful for narrow tests (e.g. /healthz only); production
-// construction fills in every field.
+// Server bundles handler dependencies and mounts routes via Router().
+// Zero value is NOT useful; UoW, AppleVerifier, Session must all be set.
 type Server struct {
-	Users         *users.Service
+	UoW           db.UoW
 	AppleVerifier auth.AppleVerifier
 	Session       *auth.SessionTokens
 }
 
-// Router returns the chi mux with all routes mounted.
 func (s *Server) Router() *chi.Mux {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
@@ -30,7 +28,11 @@ func (s *Server) Router() *chi.Mux {
 
 	r.Group(func(r chi.Router) {
 		r.Use(s.requireAuth)
+
 		r.Get("/me", s.handleMe)
+
+		r.Get("/items", s.handleListItems)
+		r.Post("/items", s.handleCreateItem)
 	})
 
 	return r

@@ -4,6 +4,47 @@
 
 package db
 
+type Event struct {
+	ID           string
+	ListID       string
+	ItemID       string
+	ActorID      string
+	TargetUserID *string
+	Type         string
+	Payload      *string
+	CreatedAt    string
+}
+
+type Item struct {
+	ID             string
+	ListID         string
+	CreatorID      string
+	Title          string
+	Notes          *string
+	State          string
+	ClaimedBy      *string
+	ClaimedAt      *string
+	AssignedBy     *string
+	WillCompleteBy *string
+	CompletedBy    *string
+	CompletedAt    *string
+	CreatedAt      string
+	UpdatedAt      string
+}
+
+type List struct {
+	ID        string
+	Name      string
+	CreatedAt string
+	UpdatedAt string
+}
+
+type ListMembership struct {
+	ListID   string
+	UserID   string
+	JoinedAt string
+}
+
 type User struct {
 	ID                   string
 	AppleSub             string
