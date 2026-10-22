@@ -41,6 +41,18 @@ struct HearthAPI {
         try await get("/me", bearerToken: sessionToken)
     }
 
+    // MARK: - Items
+
+    func backlog(sessionToken: String) async throws -> [HearthItem] {
+        let resp: BacklogResponse = try await get("/items", bearerToken: sessionToken)
+        return resp.items
+    }
+
+    func createItem(sessionToken: String, title: String, notes: String?) async throws -> HearthItem {
+        let body = CreateItemRequest(title: title, notes: notes)
+        return try await post("/items", body: body, bearerToken: sessionToken)
+    }
+
     // MARK: - Internals
 
     private func post<RequestBody: Encodable, ResponseBody: Decodable>(

@@ -7,8 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		246B03DCFE5192417F1D3E2B /* BacklogStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E329EBE61038AFD92A0AB182 /* BacklogStore.swift */; };
 		36E4C325F94EA0728F4450FD /* HearthWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F48EECA08814B123CED6020A /* HearthWatchApp.swift */; };
-		40D85303CD7281E38C4D3317 /* SignedInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D073E652F68F816DBCBB9F6 /* SignedInView.swift */; };
 		5A03F2745120E80BD86131AA /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D61F9280CA2185FD1200A3D /* ContentView.swift */; };
 		65A3ACB6340FB76FBDA27FF5 /* HearthAppTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1945B64FC16BDFE702F27691 /* HearthAppTests.swift */; };
 		78FF81C2795EE43A43A060A9 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = F62BD183CF0CFCF909DBCF97 /* Models.swift */; };
@@ -18,7 +18,9 @@
 		D895165661854A0484F9B76F /* HearthAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEB5F2AAC13B09F521E40FFE /* HearthAPI.swift */; };
 		DB58F037C069A53628D9419F /* HearthApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2395D1A08ACF4931A7823EDA /* HearthApp.swift */; };
 		E56DE053E87C233B6196CBC9 /* Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBE592C777C4D1BBE58F29EE /* Palette.swift */; };
+		F2FF8F7E8225A7AC5417A85C /* CreateItemSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 968FD5E81D86211FD7ED65F1 /* CreateItemSheet.swift */; };
 		F57C81DB3282DC8FFE5FA42F /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600AB893185DEB8491B86D64 /* ContentView.swift */; };
+		FE6701545DE657353A860688 /* BacklogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35D84895D16FD69B1EF09532 /* BacklogView.swift */; };
 		FFF5256A6DA0672956534A51 /* AuthStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 884FF6B5F62978460594E705 /* AuthStore.swift */; };
 /* End PBXBuildFile section */
 
@@ -39,13 +41,15 @@
 		2395D1A08ACF4931A7823EDA /* HearthApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HearthApp.swift; sourceTree = "<group>"; };
 		315F86EFBFBD085E5F1717D9 /* HearthApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = HearthApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		34B04515D002D89F105AD779 /* HearthAppTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = HearthAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		3D073E652F68F816DBCBB9F6 /* SignedInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignedInView.swift; sourceTree = "<group>"; };
+		35D84895D16FD69B1EF09532 /* BacklogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BacklogView.swift; sourceTree = "<group>"; };
 		600AB893185DEB8491B86D64 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		884FF6B5F62978460594E705 /* AuthStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthStore.swift; sourceTree = "<group>"; };
+		968FD5E81D86211FD7ED65F1 /* CreateItemSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateItemSheet.swift; sourceTree = "<group>"; };
 		9E5A6F32C7146A850EDC99AA /* HearthApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = HearthApp.entitlements; sourceTree = "<group>"; };
 		B2B4F2AE4AF93C22AFF4BC99 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B349A8BC691ED2A295408123 /* HearthWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HearthWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DEB5F2AAC13B09F521E40FFE /* HearthAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HearthAPI.swift; sourceTree = "<group>"; };
+		E329EBE61038AFD92A0AB182 /* BacklogStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BacklogStore.swift; sourceTree = "<group>"; };
 		EBE592C777C4D1BBE58F29EE /* Palette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Palette.swift; sourceTree = "<group>"; };
 		F182F34FD96686F757ADDB8E /* Keychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keychain.swift; sourceTree = "<group>"; };
 		F3EB1A8B05EDE6E9F9D12C8B /* SignInScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInScreen.swift; sourceTree = "<group>"; };
@@ -79,14 +83,16 @@
 			children = (
 				B2B4F2AE4AF93C22AFF4BC99 /* Assets.xcassets */,
 				884FF6B5F62978460594E705 /* AuthStore.swift */,
+				E329EBE61038AFD92A0AB182 /* BacklogStore.swift */,
+				35D84895D16FD69B1EF09532 /* BacklogView.swift */,
 				600AB893185DEB8491B86D64 /* ContentView.swift */,
+				968FD5E81D86211FD7ED65F1 /* CreateItemSheet.swift */,
 				DEB5F2AAC13B09F521E40FFE /* HearthAPI.swift */,
 				9E5A6F32C7146A850EDC99AA /* HearthApp.entitlements */,
 				2395D1A08ACF4931A7823EDA /* HearthApp.swift */,
 				F182F34FD96686F757ADDB8E /* Keychain.swift */,
 				F62BD183CF0CFCF909DBCF97 /* Models.swift */,
 				EBE592C777C4D1BBE58F29EE /* Palette.swift */,
-				3D073E652F68F816DBCBB9F6 /* SignedInView.swift */,
 				F3EB1A8B05EDE6E9F9D12C8B /* SignInScreen.swift */,
 			);
 			path = HearthApp;
@@ -227,14 +233,16 @@
 			buildActionMask = 2147483647;
 			files = (
 				FFF5256A6DA0672956534A51 /* AuthStore.swift in Sources */,
+				246B03DCFE5192417F1D3E2B /* BacklogStore.swift in Sources */,
+				FE6701545DE657353A860688 /* BacklogView.swift in Sources */,
 				F57C81DB3282DC8FFE5FA42F /* ContentView.swift in Sources */,
+				F2FF8F7E8225A7AC5417A85C /* CreateItemSheet.swift in Sources */,
 				D895165661854A0484F9B76F /* HearthAPI.swift in Sources */,
 				DB58F037C069A53628D9419F /* HearthApp.swift in Sources */,
 				C2CAE7F05711E53B13A039A2 /* Keychain.swift in Sources */,
 				78FF81C2795EE43A43A060A9 /* Models.swift in Sources */,
 				E56DE053E87C233B6196CBC9 /* Palette.swift in Sources */,
 				889D1C833DC318E868409959 /* SignInScreen.swift in Sources */,
-				40D85303CD7281E38C4D3317 /* SignedInView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
