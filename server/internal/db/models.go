@@ -29,6 +29,14 @@ type Event struct {
 	CreatedAt string
 }
 
+type Invite struct {
+	Code      string
+	ListID    string
+	CreatedBy string
+	CreatedAt string
+	ExpiresAt string
+}
+
 type List struct {
 	ID        string
 	Name      string

@@ -92,9 +92,10 @@ func (s *Server) handleCreateChore(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, toChoreDTO(created))
 }
 
-// GET /chores — returns the backlog (open chores) for the authenticated
-// user's list. Lazily provisions the list if it doesn't exist, in which case
-// the response is an empty array.
+// GET /chores — returns the backlog (open chores) across every list the
+// authenticated user is a member of. Does not auto-provision a list — a brand
+// new user with no memberships gets an empty array, which is the correct
+// pre-invite / pre-first-add state.
 func (s *Server) handleListChores(w http.ResponseWriter, r *http.Request) {
 	u, ok := userFromContext(r.Context())
 	if !ok {
@@ -102,15 +103,7 @@ func (s *Server) handleListChores(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var backlog []db.Chore
-	err := s.UoW.InTx(r.Context(), func(q *db.Queries) error {
-		listID, err := lists.NewService(q).EnsurePersonalMembership(r.Context(), u.ID)
-		if err != nil {
-			return err
-		}
-		backlog, err = chores.NewService(q).Backlog(r.Context(), listID)
-		return err
-	})
+	backlog, err := chores.NewService(s.UoW.Queries()).BacklogForUser(r.Context(), u.ID)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "list chores", "err", err)
 		writeError(w, http.StatusInternalServerError, "internal error")

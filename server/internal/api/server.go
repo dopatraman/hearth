@@ -33,6 +33,9 @@ func (s *Server) Router() *chi.Mux {
 
 		r.Get("/chores", s.handleListChores)
 		r.Post("/chores", s.handleCreateChore)
+
+		r.Post("/invites", s.handleCreateInvite)
+		r.Post("/invites/{code}/accept", s.handleAcceptInvite)
 	})
 
 	return r

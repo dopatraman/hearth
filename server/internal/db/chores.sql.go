@@ -55,6 +55,53 @@ func (q *Queries) BacklogForList(ctx context.Context, listID string) ([]Chore, e
 	return items, nil
 }
 
+const backlogForUser = `-- name: BacklogForUser :many
+SELECT c.id, c.list_id, c.creator_id, c.title, c.notes, c.state,
+       c.claimed_by, c.claimed_at, c.will_complete_by,
+       c.completed_by, c.completed_at, c.created_at, c.updated_at
+FROM chores c
+JOIN list_memberships m ON m.list_id = c.list_id
+WHERE m.user_id = ? AND c.state = 'open'
+ORDER BY c.created_at DESC
+`
+
+func (q *Queries) BacklogForUser(ctx context.Context, userID string) ([]Chore, error) {
+	rows, err := q.db.QueryContext(ctx, backlogForUser, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Chore{}
+	for rows.Next() {
+		var i Chore
+		if err := rows.Scan(
+			&i.ID,
+			&i.ListID,
+			&i.CreatorID,
+			&i.Title,
+			&i.Notes,
+			&i.State,
+			&i.ClaimedBy,
+			&i.ClaimedAt,
+			&i.WillCompleteBy,
+			&i.CompletedBy,
+			&i.CompletedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const createChore = `-- name: CreateChore :one
 INSERT INTO chores (id, list_id, creator_id, title, notes)
 VALUES (?, ?, ?, ?, ?)
