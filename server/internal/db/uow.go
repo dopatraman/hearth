@@ -48,7 +48,7 @@ type TxUoW struct {
 	Tx *sql.Tx
 }
 
-func (t *TxUoW) InTx(ctx context.Context, fn func(*Queries) error) error {
+func (t *TxUoW) InTx(_ context.Context, fn func(*Queries) error) error {
 	return fn(New(t.Tx))
 }
 

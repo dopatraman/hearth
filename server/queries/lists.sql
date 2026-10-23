@@ -9,7 +9,6 @@ VALUES (?, ?)
 ON CONFLICT (list_id, user_id) DO NOTHING;
 
 -- name: ListMembershipsForUser :many
-SELECT list_id, user_id, joined_at
+SELECT list_id, user_id
 FROM list_memberships
-WHERE user_id = ?
-ORDER BY joined_at ASC;
+WHERE user_id = ?;

@@ -41,16 +41,16 @@ struct HearthAPI {
         try await get("/me", bearerToken: sessionToken)
     }
 
-    // MARK: - Items
+    // MARK: - Chores
 
-    func backlog(sessionToken: String) async throws -> [HearthItem] {
-        let resp: BacklogResponse = try await get("/items", bearerToken: sessionToken)
-        return resp.items
+    func backlog(sessionToken: String) async throws -> [HearthChore] {
+        let resp: BacklogResponse = try await get("/chores", bearerToken: sessionToken)
+        return resp.chores
     }
 
-    func createItem(sessionToken: String, title: String, notes: String?) async throws -> HearthItem {
-        let body = CreateItemRequest(title: title, notes: notes)
-        return try await post("/items", body: body, bearerToken: sessionToken)
+    func createChore(sessionToken: String, title: String, notes: String?) async throws -> HearthChore {
+        let body = CreateChoreRequest(title: title, notes: notes)
+        return try await post("/chores", body: body, bearerToken: sessionToken)
     }
 
     // MARK: - Internals

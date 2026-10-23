@@ -18,7 +18,7 @@ func NewService(q *db.Queries) *Service {
 
 // EnsurePersonalMembership returns a list_id the user is a member of. If the
 // user has no memberships yet, it creates a fresh "Home" list and adds them.
-// Idempotent: subsequent calls return the existing list_id.
+// Idempotent: subsequent calls return a membership's list_id.
 func (s *Service) EnsurePersonalMembership(ctx context.Context, userID string) (string, error) {
 	memberships, err := s.q.ListMembershipsForUser(ctx, userID)
 	if err != nil {

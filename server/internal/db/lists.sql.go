@@ -49,10 +49,9 @@ func (q *Queries) CreateList(ctx context.Context, arg CreateListParams) (List, e
 }
 
 const listMembershipsForUser = `-- name: ListMembershipsForUser :many
-SELECT list_id, user_id, joined_at
+SELECT list_id, user_id
 FROM list_memberships
 WHERE user_id = ?
-ORDER BY joined_at ASC
 `
 
 func (q *Queries) ListMembershipsForUser(ctx context.Context, userID string) ([]ListMembership, error) {
@@ -64,7 +63,7 @@ func (q *Queries) ListMembershipsForUser(ctx context.Context, userID string) ([]
 	items := []ListMembership{}
 	for rows.Next() {
 		var i ListMembership
-		if err := rows.Scan(&i.ListID, &i.UserID, &i.JoinedAt); err != nil {
+		if err := rows.Scan(&i.ListID, &i.UserID); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

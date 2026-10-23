@@ -1,9 +1,9 @@
 -- name: InsertEvent :exec
-INSERT INTO events (id, list_id, item_id, actor_id, target_user_id, type, payload)
-VALUES (?, ?, ?, ?, ?, ?, ?);
+INSERT INTO events (id, list_id, chore_id, actor_id, type)
+VALUES (?, ?, ?, ?, ?);
 
--- name: EventsForItem :many
-SELECT id, list_id, item_id, actor_id, target_user_id, type, payload, created_at
+-- name: EventsForChore :many
+SELECT id, list_id, chore_id, actor_id, type, created_at
 FROM events
-WHERE item_id = ?
+WHERE chore_id = ?
 ORDER BY created_at ASC;

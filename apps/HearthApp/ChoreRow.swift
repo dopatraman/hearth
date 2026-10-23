@@ -1,17 +1,17 @@
 import SwiftUI
 
-/// Row representation of a single `HearthItem` in a List. Visual-only; takes
+/// Row representation of a single `HearthChore` in a List. Visual-only; takes
 /// no actions. Expands in Slice 5 with claim/complete swipe affordances and
 /// claimed-by chips, so it earns its own file now rather than waiting.
-struct ItemRow: View {
-    let item: HearthItem
+struct ChoreRow: View {
+    let chore: HearthChore
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(item.title)
+            Text(chore.title)
                 .font(.body)
                 .foregroundStyle(Color.hearthTextPrimary)
-            if let notes = item.notes, !notes.isEmpty {
+            if let notes = chore.notes, !notes.isEmpty {
                 Text(notes)
                     .font(.footnote)
                     .foregroundStyle(Color.hearthTextSecondary)
@@ -24,7 +24,7 @@ struct ItemRow: View {
 
 #Preview {
     List {
-        ItemRow(item: HearthItem(
+        ChoreRow(chore: HearthChore(
             id: "1",
             listId: "l",
             creatorId: "u",
@@ -32,11 +32,11 @@ struct ItemRow: View {
             notes: "Both bins; recycling truck comes Tuesday",
             state: "open",
             claimedBy: nil, claimedAt: nil,
-            assignedBy: nil, willCompleteBy: nil,
+            willCompleteBy: nil,
             completedBy: nil, completedAt: nil,
             createdAt: "", updatedAt: ""
         ))
-        ItemRow(item: HearthItem(
+        ChoreRow(chore: HearthChore(
             id: "2",
             listId: "l",
             creatorId: "u",
@@ -44,7 +44,7 @@ struct ItemRow: View {
             notes: nil,
             state: "open",
             claimedBy: nil, claimedAt: nil,
-            assignedBy: nil, willCompleteBy: nil,
+            willCompleteBy: nil,
             completedBy: nil, completedAt: nil,
             createdAt: "", updatedAt: ""
         ))

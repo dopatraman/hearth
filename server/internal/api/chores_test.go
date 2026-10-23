@@ -13,15 +13,15 @@ import (
 	"github.com/dopatraman/hearth/server/internal/dbtest"
 )
 
-// --- POST /items ---
+// --- POST /chores ---
 
-func TestItems_Create_ReturnsCreatedItem(t *testing.T) {
+func TestChores_Create_ReturnsCreatedChore(t *testing.T) {
 	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
-		srv := buildServer(t, tx, auth.AppleIdentity{Sub: "sub-items-A"})
+		srv := buildServer(t, tx, auth.AppleIdentity{Sub: "sub-chores-A"})
 
 		token, userID := signInHelper(t, srv)
 
-		req := httptest.NewRequest(http.MethodPost, "/items",
+		req := httptest.NewRequest(http.MethodPost, "/chores",
 			strings.NewReader(`{"title":"take out trash","notes":"both bins"}`))
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", "Bearer "+token)
@@ -33,34 +33,34 @@ func TestItems_Create_ReturnsCreatedItem(t *testing.T) {
 			t.Fatalf("status: got %d body=%s", w.Code, w.Body.String())
 		}
 
-		var item map[string]any
-		if err := json.NewDecoder(w.Body).Decode(&item); err != nil {
+		var chore map[string]any
+		if err := json.NewDecoder(w.Body).Decode(&chore); err != nil {
 			t.Fatalf("decode: %v", err)
 		}
-		if item["title"] != "take out trash" {
-			t.Errorf("title: %v", item["title"])
+		if chore["title"] != "take out trash" {
+			t.Errorf("title: %v", chore["title"])
 		}
-		if item["notes"] != "both bins" {
-			t.Errorf("notes: %v", item["notes"])
+		if chore["notes"] != "both bins" {
+			t.Errorf("notes: %v", chore["notes"])
 		}
-		if item["state"] != "open" {
-			t.Errorf("state: %v", item["state"])
+		if chore["state"] != "open" {
+			t.Errorf("state: %v", chore["state"])
 		}
-		if item["creator_id"] != userID {
-			t.Errorf("creator_id: got %v want %q", item["creator_id"], userID)
+		if chore["creator_id"] != userID {
+			t.Errorf("creator_id: got %v want %q", chore["creator_id"], userID)
 		}
-		if item["id"] == "" || item["id"] == nil {
+		if chore["id"] == "" || chore["id"] == nil {
 			t.Error("id empty")
 		}
 	})
 }
 
-func TestItems_Create_RejectsEmptyTitle(t *testing.T) {
+func TestChores_Create_RejectsEmptyTitle(t *testing.T) {
 	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
-		srv := buildServer(t, tx, auth.AppleIdentity{Sub: "sub-items-B"})
+		srv := buildServer(t, tx, auth.AppleIdentity{Sub: "sub-chores-B"})
 		token, _ := signInHelper(t, srv)
 
-		req := httptest.NewRequest(http.MethodPost, "/items",
+		req := httptest.NewRequest(http.MethodPost, "/chores",
 			strings.NewReader(`{"title":""}`))
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", "Bearer "+token)
@@ -73,11 +73,11 @@ func TestItems_Create_RejectsEmptyTitle(t *testing.T) {
 	})
 }
 
-func TestItems_Create_RequiresAuth(t *testing.T) {
+func TestChores_Create_RequiresAuth(t *testing.T) {
 	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
-		srv := buildServer(t, tx, auth.AppleIdentity{Sub: "sub-items-C"})
+		srv := buildServer(t, tx, auth.AppleIdentity{Sub: "sub-chores-C"})
 
-		req := httptest.NewRequest(http.MethodPost, "/items",
+		req := httptest.NewRequest(http.MethodPost, "/chores",
 			strings.NewReader(`{"title":"x"}`))
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
@@ -89,14 +89,14 @@ func TestItems_Create_RequiresAuth(t *testing.T) {
 	})
 }
 
-// --- GET /items ---
+// --- GET /chores ---
 
-func TestItems_List_EmptyForFreshUser(t *testing.T) {
+func TestChores_List_EmptyForFreshUser(t *testing.T) {
 	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
-		srv := buildServer(t, tx, auth.AppleIdentity{Sub: "sub-items-D"})
+		srv := buildServer(t, tx, auth.AppleIdentity{Sub: "sub-chores-D"})
 		token, _ := signInHelper(t, srv)
 
-		req := httptest.NewRequest(http.MethodGet, "/items", nil)
+		req := httptest.NewRequest(http.MethodGet, "/chores", nil)
 		req.Header.Set("Authorization", "Bearer "+token)
 		w := httptest.NewRecorder()
 		srv.Router().ServeHTTP(w, req)
@@ -106,25 +106,25 @@ func TestItems_List_EmptyForFreshUser(t *testing.T) {
 		}
 
 		var resp struct {
-			Items []map[string]any `json:"items"`
+			Chores []map[string]any `json:"chores"`
 		}
 		if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
 			t.Fatalf("decode: %v", err)
 		}
-		if len(resp.Items) != 0 {
-			t.Errorf("expected empty, got %d items", len(resp.Items))
+		if len(resp.Chores) != 0 {
+			t.Errorf("expected empty, got %d chores", len(resp.Chores))
 		}
 	})
 }
 
-func TestItems_List_ReturnsCreatedItems(t *testing.T) {
+func TestChores_List_ReturnsCreatedChores(t *testing.T) {
 	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
-		srv := buildServer(t, tx, auth.AppleIdentity{Sub: "sub-items-E"})
+		srv := buildServer(t, tx, auth.AppleIdentity{Sub: "sub-chores-E"})
 		token, _ := signInHelper(t, srv)
 
 		titles := []string{"trash", "dishes", "mop"}
 		for _, title := range titles {
-			req := httptest.NewRequest(http.MethodPost, "/items",
+			req := httptest.NewRequest(http.MethodPost, "/chores",
 				strings.NewReader(`{"title":"`+title+`"}`))
 			req.Header.Set("Content-Type", "application/json")
 			req.Header.Set("Authorization", "Bearer "+token)
@@ -135,7 +135,7 @@ func TestItems_List_ReturnsCreatedItems(t *testing.T) {
 			}
 		}
 
-		req := httptest.NewRequest(http.MethodGet, "/items", nil)
+		req := httptest.NewRequest(http.MethodGet, "/chores", nil)
 		req.Header.Set("Authorization", "Bearer "+token)
 		w := httptest.NewRecorder()
 		srv.Router().ServeHTTP(w, req)
@@ -145,15 +145,15 @@ func TestItems_List_ReturnsCreatedItems(t *testing.T) {
 		}
 
 		var resp struct {
-			Items []map[string]any `json:"items"`
+			Chores []map[string]any `json:"chores"`
 		}
 		_ = json.NewDecoder(w.Body).Decode(&resp)
-		if len(resp.Items) != len(titles) {
-			t.Fatalf("count: got %d want %d", len(resp.Items), len(titles))
+		if len(resp.Chores) != len(titles) {
+			t.Fatalf("count: got %d want %d", len(resp.Chores), len(titles))
 		}
 		got := map[string]bool{}
-		for _, i := range resp.Items {
-			got[i["title"].(string)] = true
+		for _, c := range resp.Chores {
+			got[c["title"].(string)] = true
 		}
 		for _, want := range titles {
 			if !got[want] {
@@ -163,14 +163,14 @@ func TestItems_List_ReturnsCreatedItems(t *testing.T) {
 	})
 }
 
-func TestItems_List_IsScopedToCaller(t *testing.T) {
+func TestChores_List_IsScopedToCaller(t *testing.T) {
 	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
 		// Alice gets her own server + sign-in.
-		aliceSrv := buildServer(t, tx, auth.AppleIdentity{Sub: "sub-items-alice"})
+		aliceSrv := buildServer(t, tx, auth.AppleIdentity{Sub: "sub-chores-alice"})
 		aliceToken, _ := signInHelper(t, aliceSrv)
 
-		// Alice creates an item.
-		req := httptest.NewRequest(http.MethodPost, "/items",
+		// Alice creates a chore.
+		req := httptest.NewRequest(http.MethodPost, "/chores",
 			strings.NewReader(`{"title":"alice-only"}`))
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", "Bearer "+aliceToken)
@@ -181,10 +181,10 @@ func TestItems_List_IsScopedToCaller(t *testing.T) {
 		}
 
 		// Bob signs in on a server wired to his apple sub.
-		bobSrv := buildServer(t, tx, auth.AppleIdentity{Sub: "sub-items-bob"})
+		bobSrv := buildServer(t, tx, auth.AppleIdentity{Sub: "sub-chores-bob"})
 		bobToken, _ := signInHelper(t, bobSrv)
 
-		req = httptest.NewRequest(http.MethodGet, "/items", nil)
+		req = httptest.NewRequest(http.MethodGet, "/chores", nil)
 		req.Header.Set("Authorization", "Bearer "+bobToken)
 		w = httptest.NewRecorder()
 		bobSrv.Router().ServeHTTP(w, req)
@@ -193,11 +193,11 @@ func TestItems_List_IsScopedToCaller(t *testing.T) {
 			t.Fatalf("bob list: %d body=%s", w.Code, w.Body.String())
 		}
 		var resp struct {
-			Items []map[string]any `json:"items"`
+			Chores []map[string]any `json:"chores"`
 		}
 		_ = json.NewDecoder(w.Body).Decode(&resp)
-		if len(resp.Items) != 0 {
-			t.Errorf("bob should see no items, got %d: %+v", len(resp.Items), resp.Items)
+		if len(resp.Chores) != 0 {
+			t.Errorf("bob should see no chores, got %d: %+v", len(resp.Chores), resp.Chores)
 		}
 	})
 }

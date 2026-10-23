@@ -43,9 +43,9 @@ struct APIErrorResponse: Codable, Equatable {
     let error: String
 }
 
-// MARK: - Items
+// MARK: - Chores
 
-struct HearthItem: Codable, Equatable, Identifiable {
+struct HearthChore: Codable, Equatable, Identifiable {
     let id: String
     let listId: String
     let creatorId: String
@@ -54,7 +54,6 @@ struct HearthItem: Codable, Equatable, Identifiable {
     let state: String
     let claimedBy: String?
     let claimedAt: String?
-    let assignedBy: String?
     let willCompleteBy: String?
     let completedBy: String?
     let completedAt: String?
@@ -70,7 +69,6 @@ struct HearthItem: Codable, Equatable, Identifiable {
         case state
         case claimedBy = "claimed_by"
         case claimedAt = "claimed_at"
-        case assignedBy = "assigned_by"
         case willCompleteBy = "will_complete_by"
         case completedBy = "completed_by"
         case completedAt = "completed_at"
@@ -79,11 +77,11 @@ struct HearthItem: Codable, Equatable, Identifiable {
     }
 }
 
-struct CreateItemRequest: Codable {
+struct CreateChoreRequest: Codable {
     let title: String
     let notes: String?
 }
 
 struct BacklogResponse: Codable, Equatable {
-    let items: [HearthItem]
+    let chores: [HearthChore]
 }

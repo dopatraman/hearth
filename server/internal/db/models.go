@@ -4,18 +4,7 @@
 
 package db
 
-type Event struct {
-	ID           string
-	ListID       string
-	ItemID       string
-	ActorID      string
-	TargetUserID *string
-	Type         string
-	Payload      *string
-	CreatedAt    string
-}
-
-type Item struct {
+type Chore struct {
 	ID             string
 	ListID         string
 	CreatorID      string
@@ -24,12 +13,20 @@ type Item struct {
 	State          string
 	ClaimedBy      *string
 	ClaimedAt      *string
-	AssignedBy     *string
 	WillCompleteBy *string
 	CompletedBy    *string
 	CompletedAt    *string
 	CreatedAt      string
 	UpdatedAt      string
+}
+
+type Event struct {
+	ID        string
+	ListID    string
+	ChoreID   string
+	ActorID   string
+	Type      string
+	CreatedAt string
 }
 
 type List struct {
@@ -40,9 +37,8 @@ type List struct {
 }
 
 type ListMembership struct {
-	ListID   string
-	UserID   string
-	JoinedAt string
+	ListID string
+	UserID string
 }
 
 type User struct {

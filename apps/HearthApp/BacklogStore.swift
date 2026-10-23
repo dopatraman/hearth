@@ -1,6 +1,6 @@
 import Foundation
 
-/// BacklogStore owns the current list of items and the loading / mutation
+/// BacklogStore owns the current list of chores and the loading / mutation
 /// operations against the server. SwiftUI views observe this; it owns no UI.
 @Observable
 @MainActor
@@ -12,7 +12,7 @@ final class BacklogStore {
         case failed(String)
     }
 
-    private(set) var items: [HearthItem] = []
+    private(set) var chores: [HearthChore] = []
     private(set) var phase: Phase = .idle
     private(set) var isCreating: Bool = false
 
@@ -24,8 +24,8 @@ final class BacklogStore {
         self.session = session
     }
 
-    /// Load (or reload) the backlog. Safe to call repeatedly — overwrites items
-    /// on success, leaves them unchanged on failure.
+    /// Load (or reload) the backlog. Safe to call repeatedly — overwrites
+    /// chores on success, leaves them unchanged on failure.
     func reload() async {
         guard let token = session() else {
             phase = .failed("Not signed in")
@@ -33,15 +33,15 @@ final class BacklogStore {
         }
         phase = .loading
         do {
-            items = try await api.backlog(sessionToken: token)
+            chores = try await api.backlog(sessionToken: token)
             phase = .loaded
         } catch {
             phase = .failed(error.localizedDescription)
         }
     }
 
-    /// Create a new item and optimistically prepend it on success. On failure,
-    /// `phase` surfaces the error without touching the list.
+    /// Create a new chore and optimistically prepend it on success. On
+    /// failure, `phase` surfaces the error without touching the list.
     func create(title: String, notes: String?) async {
         guard let token = session() else {
             phase = .failed("Not signed in")
@@ -51,12 +51,12 @@ final class BacklogStore {
         defer { isCreating = false }
 
         do {
-            let item = try await api.createItem(
+            let chore = try await api.createChore(
                 sessionToken: token,
                 title: title.trimmingCharacters(in: .whitespacesAndNewlines),
                 notes: notes?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
             )
-            items.insert(item, at: 0)
+            chores.insert(chore, at: 0)
         } catch {
             phase = .failed(error.localizedDescription)
         }

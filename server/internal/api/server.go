@@ -31,8 +31,8 @@ func (s *Server) Router() *chi.Mux {
 
 		r.Get("/me", s.handleMe)
 
-		r.Get("/items", s.handleListItems)
-		r.Post("/items", s.handleCreateItem)
+		r.Get("/chores", s.handleListChores)
+		r.Post("/chores", s.handleCreateChore)
 	})
 
 	return r

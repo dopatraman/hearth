@@ -9,15 +9,15 @@ import (
 	"context"
 )
 
-const eventsForItem = `-- name: EventsForItem :many
-SELECT id, list_id, item_id, actor_id, target_user_id, type, payload, created_at
+const eventsForChore = `-- name: EventsForChore :many
+SELECT id, list_id, chore_id, actor_id, type, created_at
 FROM events
-WHERE item_id = ?
+WHERE chore_id = ?
 ORDER BY created_at ASC
 `
 
-func (q *Queries) EventsForItem(ctx context.Context, itemID string) ([]Event, error) {
-	rows, err := q.db.QueryContext(ctx, eventsForItem, itemID)
+func (q *Queries) EventsForChore(ctx context.Context, choreID string) ([]Event, error) {
+	rows, err := q.db.QueryContext(ctx, eventsForChore, choreID)
 	if err != nil {
 		return nil, err
 	}
@@ -28,11 +28,9 @@ func (q *Queries) EventsForItem(ctx context.Context, itemID string) ([]Event, er
 		if err := rows.Scan(
 			&i.ID,
 			&i.ListID,
-			&i.ItemID,
+			&i.ChoreID,
 			&i.ActorID,
-			&i.TargetUserID,
 			&i.Type,
-			&i.Payload,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err
@@ -49,29 +47,25 @@ func (q *Queries) EventsForItem(ctx context.Context, itemID string) ([]Event, er
 }
 
 const insertEvent = `-- name: InsertEvent :exec
-INSERT INTO events (id, list_id, item_id, actor_id, target_user_id, type, payload)
-VALUES (?, ?, ?, ?, ?, ?, ?)
+INSERT INTO events (id, list_id, chore_id, actor_id, type)
+VALUES (?, ?, ?, ?, ?)
 `
 
 type InsertEventParams struct {
-	ID           string
-	ListID       string
-	ItemID       string
-	ActorID      string
-	TargetUserID *string
-	Type         string
-	Payload      *string
+	ID      string
+	ListID  string
+	ChoreID string
+	ActorID string
+	Type    string
 }
 
 func (q *Queries) InsertEvent(ctx context.Context, arg InsertEventParams) error {
 	_, err := q.db.ExecContext(ctx, insertEvent,
 		arg.ID,
 		arg.ListID,
-		arg.ItemID,
+		arg.ChoreID,
 		arg.ActorID,
-		arg.TargetUserID,
 		arg.Type,
-		arg.Payload,
 	)
 	return err
 }

@@ -1,4 +1,4 @@
-package items_test
+package chores_test
 
 import (
 	"context"
@@ -6,9 +6,9 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/dopatraman/hearth/server/internal/chores"
 	"github.com/dopatraman/hearth/server/internal/db"
 	"github.com/dopatraman/hearth/server/internal/dbtest"
-	"github.com/dopatraman/hearth/server/internal/items"
 	"github.com/dopatraman/hearth/server/internal/lists"
 	"github.com/dopatraman/hearth/server/internal/users"
 )
@@ -28,31 +28,30 @@ func setupUserInList(t *testing.T, ctx context.Context, q *db.Queries, appleSub 
 	return u.ID, listID
 }
 
-func TestItems_Create_WritesItemAndEvent(t *testing.T) {
+func TestChores_Create_WritesChoreAndEvent(t *testing.T) {
 	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
 		q := db.New(tx)
-		userID, listID := setupUserInList(t, ctx, q, "sub-item-A")
+		userID, listID := setupUserInList(t, ctx, q, "sub-chore-A")
 
 		notes := "take out both bins"
-		item, err := items.NewService(q).Create(ctx, listID, userID, "trash", &notes)
+		chore, err := chores.NewService(q).Create(ctx, listID, userID, "trash", &notes)
 		if err != nil {
 			t.Fatalf("create: %v", err)
 		}
-		if item.ID == "" {
+		if chore.ID == "" {
 			t.Error("id empty")
 		}
-		if item.Title != "trash" {
-			t.Errorf("title: got %q want %q", item.Title, "trash")
+		if chore.Title != "trash" {
+			t.Errorf("title: got %q want %q", chore.Title, "trash")
 		}
-		if item.State != "open" {
-			t.Errorf("state default: got %q want %q", item.State, "open")
+		if chore.State != "open" {
+			t.Errorf("state default: got %q want %q", chore.State, "open")
 		}
-		if item.CreatorID != userID {
-			t.Errorf("creator_id: got %q want %q", item.CreatorID, userID)
+		if chore.CreatorID != userID {
+			t.Errorf("creator_id: got %q want %q", chore.CreatorID, userID)
 		}
 
-		// Event row must exist with type='created' and actor=creator.
-		events, err := q.EventsForItem(ctx, item.ID)
+		events, err := q.EventsForChore(ctx, chore.ID)
 		if err != nil {
 			t.Fatalf("events: %v", err)
 		}
@@ -66,29 +65,29 @@ func TestItems_Create_WritesItemAndEvent(t *testing.T) {
 		if ev.ActorID != userID {
 			t.Errorf("event actor: got %q want %q", ev.ActorID, userID)
 		}
-		if ev.ItemID != item.ID {
-			t.Errorf("event item_id mismatch")
+		if ev.ChoreID != chore.ID {
+			t.Errorf("event chore_id mismatch")
 		}
 	})
 }
 
-func TestItems_Create_RejectsEmptyTitle(t *testing.T) {
+func TestChores_Create_RejectsEmptyTitle(t *testing.T) {
 	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
 		q := db.New(tx)
-		userID, listID := setupUserInList(t, ctx, q, "sub-item-B")
+		userID, listID := setupUserInList(t, ctx, q, "sub-chore-B")
 
-		_, err := items.NewService(q).Create(ctx, listID, userID, "", nil)
-		if !errors.Is(err, items.ErrEmptyTitle) {
+		_, err := chores.NewService(q).Create(ctx, listID, userID, "", nil)
+		if !errors.Is(err, chores.ErrEmptyTitle) {
 			t.Fatalf("want ErrEmptyTitle, got %v", err)
 		}
 	})
 }
 
-func TestItems_Backlog_ReturnsOpenItemsNewestFirst(t *testing.T) {
+func TestChores_Backlog_ReturnsOpenChoresNewestFirst(t *testing.T) {
 	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
 		q := db.New(tx)
-		userID, listID := setupUserInList(t, ctx, q, "sub-item-C")
-		svc := items.NewService(q)
+		userID, listID := setupUserInList(t, ctx, q, "sub-chore-C")
+		svc := chores.NewService(q)
 
 		for _, title := range []string{"first", "second", "third"} {
 			if _, err := svc.Create(ctx, listID, userID, title, nil); err != nil {
@@ -101,12 +100,8 @@ func TestItems_Backlog_ReturnsOpenItemsNewestFirst(t *testing.T) {
 			t.Fatalf("backlog: %v", err)
 		}
 		if len(backlog) != 3 {
-			t.Fatalf("want 3 items, got %d", len(backlog))
+			t.Fatalf("want 3 chores, got %d", len(backlog))
 		}
-		// Newest first; uuidv7 + default created_at = creation order descending.
-		// Technically rows are ordered by created_at DESC; if two created_at
-		// strings are equal (sub-millisecond resolution lost), order is
-		// unspecified but we at least want all three present.
 		titles := map[string]bool{}
 		for _, b := range backlog {
 			titles[b.Title] = true
@@ -119,7 +114,7 @@ func TestItems_Backlog_ReturnsOpenItemsNewestFirst(t *testing.T) {
 	})
 }
 
-func TestItems_Backlog_IsScopedToList(t *testing.T) {
+func TestChores_Backlog_IsScopedToList(t *testing.T) {
 	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
 		q := db.New(tx)
 		aliceID, aliceList := setupUserInList(t, ctx, q, "sub-alice")
@@ -129,7 +124,7 @@ func TestItems_Backlog_IsScopedToList(t *testing.T) {
 			t.Fatal("expected distinct lists for distinct users")
 		}
 
-		svc := items.NewService(q)
+		svc := chores.NewService(q)
 		if _, err := svc.Create(ctx, aliceList, aliceID, "alice-only", nil); err != nil {
 			t.Fatalf("alice create: %v", err)
 		}

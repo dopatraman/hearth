@@ -11,8 +11,8 @@ struct DecodingTests {
         #expect(decoded == HealthResponse(status: "ok"))
     }
 
-    @Test("HearthItem decodes server JSON with nulls")
-    func hearthItemDecoding() throws {
+    @Test("HearthChore decodes server JSON with nulls")
+    func hearthChoreDecoding() throws {
         let json = Data(#"""
         {
           "id": "01HFXYZ",
@@ -23,7 +23,6 @@ struct DecodingTests {
           "state": "open",
           "claimed_by": null,
           "claimed_at": null,
-          "assigned_by": null,
           "will_complete_by": null,
           "completed_by": null,
           "completed_at": null,
@@ -31,34 +30,34 @@ struct DecodingTests {
           "updated_at": "2026-10-22T19:30:00.000Z"
         }
         """#.utf8)
-        let item = try JSONDecoder().decode(HearthItem.self, from: json)
-        #expect(item.id == "01HFXYZ")
-        #expect(item.title == "take out trash")
-        #expect(item.state == "open")
-        #expect(item.notes == nil)
-        #expect(item.claimedBy == nil)
+        let chore = try JSONDecoder().decode(HearthChore.self, from: json)
+        #expect(chore.id == "01HFXYZ")
+        #expect(chore.title == "take out trash")
+        #expect(chore.state == "open")
+        #expect(chore.notes == nil)
+        #expect(chore.claimedBy == nil)
     }
 
     @Test("BacklogResponse decodes an empty list and a populated one")
     func backlogDecoding() throws {
-        let empty = try JSONDecoder().decode(BacklogResponse.self, from: Data(#"{"items":[]}"#.utf8))
-        #expect(empty.items.isEmpty)
+        let empty = try JSONDecoder().decode(BacklogResponse.self, from: Data(#"{"chores":[]}"#.utf8))
+        #expect(empty.chores.isEmpty)
 
         let populated = try JSONDecoder().decode(BacklogResponse.self, from: Data(#"""
         {
-          "items": [
+          "chores": [
             {
               "id": "a", "list_id": "l", "creator_id": "u", "title": "t",
               "notes": null, "state": "open",
               "claimed_by": null, "claimed_at": null,
-              "assigned_by": null, "will_complete_by": null,
+              "will_complete_by": null,
               "completed_by": null, "completed_at": null,
               "created_at": "now", "updated_at": "now"
             }
           ]
         }
         """#.utf8))
-        #expect(populated.items.count == 1)
-        #expect(populated.items.first?.title == "t")
+        #expect(populated.chores.count == 1)
+        #expect(populated.chores.first?.title == "t")
     }
 }

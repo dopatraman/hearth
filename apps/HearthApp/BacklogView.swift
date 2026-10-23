@@ -34,7 +34,7 @@ struct BacklogView: View {
                     }
                 }
                 .sheet(isPresented: $presentingCreate) {
-                    CreateItemSheet(onSave: { title, notes in
+                    CreateChoreSheet(onSave: { title, notes in
                         await store.create(title: title, notes: notes)
                     })
                 }
@@ -51,7 +51,7 @@ struct BacklogView: View {
     @ViewBuilder
     private var content: some View {
         switch store.phase {
-        case .idle, .loading where store.items.isEmpty:
+        case .idle, .loading where store.chores.isEmpty:
             VStack(spacing: 12) {
                 ProgressView()
                 Text("Loading backlog…")
@@ -60,10 +60,10 @@ struct BacklogView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-        case .loaded where store.items.isEmpty:
+        case .loaded where store.chores.isEmpty:
             emptyState
 
-        case .failed(let message) where store.items.isEmpty:
+        case .failed(let message) where store.chores.isEmpty:
             VStack(spacing: 12) {
                 Image(systemName: "exclamationmark.triangle")
                     .font(.largeTitle)
@@ -80,8 +80,8 @@ struct BacklogView: View {
 
         default:
             List {
-                ForEach(store.items) { item in
-                    ItemRow(item: item)
+                ForEach(store.chores) { chore in
+                    ChoreRow(chore: chore)
                         .listRowBackground(Color.clear)
                         .listRowSeparatorTint(Color.hearthTextSecondary.opacity(0.2))
                 }

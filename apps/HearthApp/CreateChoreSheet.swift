@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct CreateItemSheet: View {
+struct CreateChoreSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var title: String = ""
     @State private var notes: String = ""
