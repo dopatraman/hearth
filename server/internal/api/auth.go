@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/dopatraman/hearth/server/internal/db"
+	"github.com/dopatraman/hearth/server/internal/users"
 )
 
 type ctxKey int
@@ -59,7 +60,7 @@ func (s *Server) handleAuthApple(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := s.Users.UpsertByAppleSub(r.Context(), identity.Sub, req.DisplayName)
+	user, err := users.NewService(s.UoW.Queries()).UpsertByAppleSub(r.Context(), identity.Sub, req.DisplayName)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "upsert user", "err", err)
 		writeError(w, http.StatusInternalServerError, "internal error")
@@ -94,7 +95,7 @@ func (s *Server) requireAuth(next http.Handler) http.Handler {
 			return
 		}
 
-		user, err := s.Users.ByID(r.Context(), userID)
+		user, err := users.NewService(s.UoW.Queries()).ByID(r.Context(), userID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				writeError(w, http.StatusUnauthorized, "user not found")

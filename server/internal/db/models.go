@@ -4,6 +4,43 @@
 
 package db
 
+type Chore struct {
+	ID             string
+	ListID         string
+	CreatorID      string
+	Title          string
+	Notes          *string
+	State          string
+	ClaimedBy      *string
+	ClaimedAt      *string
+	WillCompleteBy *string
+	CompletedBy    *string
+	CompletedAt    *string
+	CreatedAt      string
+	UpdatedAt      string
+}
+
+type Event struct {
+	ID        string
+	ListID    string
+	ChoreID   string
+	ActorID   string
+	Type      string
+	CreatedAt string
+}
+
+type List struct {
+	ID        string
+	Name      string
+	CreatedAt string
+	UpdatedAt string
+}
+
+type ListMembership struct {
+	ListID string
+	UserID string
+}
+
 type User struct {
 	ID                   string
 	AppleSub             string

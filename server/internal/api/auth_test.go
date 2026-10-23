@@ -15,7 +15,6 @@ import (
 	"github.com/dopatraman/hearth/server/internal/auth"
 	"github.com/dopatraman/hearth/server/internal/db"
 	"github.com/dopatraman/hearth/server/internal/dbtest"
-	"github.com/dopatraman/hearth/server/internal/users"
 )
 
 // stubApple returns a canned identity for a canned id_token, errors otherwise.
@@ -44,7 +43,7 @@ func testSessions(t *testing.T) *auth.SessionTokens {
 func buildServer(t *testing.T, tx *sql.Tx, appleID auth.AppleIdentity) *api.Server {
 	t.Helper()
 	return &api.Server{
-		Users: users.NewService(db.New(tx)),
+		UoW: &db.TxUoW{Tx: tx},
 		AppleVerifier: &stubApple{byToken: map[string]auth.AppleIdentity{
 			"valid-apple-token": appleID,
 		}},

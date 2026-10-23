@@ -14,7 +14,6 @@ import (
 	"github.com/dopatraman/hearth/server/internal/api"
 	"github.com/dopatraman/hearth/server/internal/auth"
 	"github.com/dopatraman/hearth/server/internal/db"
-	"github.com/dopatraman/hearth/server/internal/users"
 	"github.com/dopatraman/hearth/server/migrations"
 
 	_ "modernc.org/sqlite"
@@ -68,7 +67,7 @@ func main() {
 	srv := &http.Server{
 		Addr: addr,
 		Handler: (&api.Server{
-			Users:         users.NewService(db.New(database)),
+			UoW:           &db.PoolUoW{Pool: database},
 			AppleVerifier: appleVerifier,
 			Session:       sessionTokens,
 		}).Router(),
