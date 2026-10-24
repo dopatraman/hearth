@@ -114,6 +114,211 @@ func TestChores_Backlog_ReturnsOpenChoresNewestFirst(t *testing.T) {
 	})
 }
 
+// --- claim ---
+
+func TestChores_Claim_SetsClaimedBy(t *testing.T) {
+	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
+		q := db.New(tx)
+		userID, listID := setupUserInList(t, ctx, q, "sub-claim-A")
+
+		svc := chores.NewService(q)
+		created, err := svc.Create(ctx, listID, userID, "trash", nil)
+		if err != nil {
+			t.Fatalf("create: %v", err)
+		}
+
+		claimed, err := svc.Claim(ctx, created.ID, userID)
+		if err != nil {
+			t.Fatalf("claim: %v", err)
+		}
+		if claimed.ClaimedBy == nil || *claimed.ClaimedBy != userID {
+			t.Errorf("claimed_by: got %v want %q", claimed.ClaimedBy, userID)
+		}
+		if claimed.ClaimedAt == nil {
+			t.Error("claimed_at: nil")
+		}
+	})
+}
+
+func TestChores_Claim_SecondClaimReturnsErrNotClaimable(t *testing.T) {
+	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
+		q := db.New(tx)
+		aliceID, listID := setupUserInList(t, ctx, q, "sub-claim-race-A")
+		bobID, _ := setupUserInList(t, ctx, q, "sub-claim-race-B")
+
+		svc := chores.NewService(q)
+		chore, err := svc.Create(ctx, listID, aliceID, "trash", nil)
+		if err != nil {
+			t.Fatalf("create: %v", err)
+		}
+
+		if _, err := svc.Claim(ctx, chore.ID, aliceID); err != nil {
+			t.Fatalf("alice claim: %v", err)
+		}
+
+		_, err = svc.Claim(ctx, chore.ID, bobID)
+		if !errors.Is(err, chores.ErrNotClaimable) {
+			t.Fatalf("want ErrNotClaimable, got %v", err)
+		}
+	})
+}
+
+func TestChores_Claim_WritesClaimedEvent(t *testing.T) {
+	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
+		q := db.New(tx)
+		userID, listID := setupUserInList(t, ctx, q, "sub-claim-event")
+
+		svc := chores.NewService(q)
+		chore, err := svc.Create(ctx, listID, userID, "trash", nil)
+		if err != nil {
+			t.Fatalf("create: %v", err)
+		}
+
+		_, err = svc.Claim(ctx, chore.ID, userID)
+		if err != nil {
+			t.Fatalf("claim: %v", err)
+		}
+
+		events, err := q.EventsForChore(ctx, chore.ID)
+		if err != nil {
+			t.Fatalf("events: %v", err)
+		}
+		var seenClaimed bool
+		for _, e := range events {
+			if e.Type == "claimed" && e.ActorID == userID {
+				seenClaimed = true
+			}
+		}
+		if !seenClaimed {
+			t.Errorf("no 'claimed' event with actor=%q in %+v", userID, events)
+		}
+	})
+}
+
+// --- complete ---
+
+func TestChores_Complete_SetsStateAndCompletedBy(t *testing.T) {
+	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
+		q := db.New(tx)
+		userID, listID := setupUserInList(t, ctx, q, "sub-complete-A")
+		svc := chores.NewService(q)
+
+		chore, err := svc.Create(ctx, listID, userID, "trash", nil)
+		if err != nil {
+			t.Fatalf("create: %v", err)
+		}
+		if _, err := svc.Claim(ctx, chore.ID, userID); err != nil {
+			t.Fatalf("claim: %v", err)
+		}
+
+		completed, err := svc.Complete(ctx, chore.ID, userID)
+		if err != nil {
+			t.Fatalf("complete: %v", err)
+		}
+		if completed.State != "completed" {
+			t.Errorf("state: got %q want completed", completed.State)
+		}
+		if completed.CompletedBy == nil || *completed.CompletedBy != userID {
+			t.Errorf("completed_by: got %v want %q", completed.CompletedBy, userID)
+		}
+	})
+}
+
+func TestChores_Complete_RejectsNonClaimant(t *testing.T) {
+	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
+		q := db.New(tx)
+		aliceID, listID := setupUserInList(t, ctx, q, "sub-complete-alice")
+		bobID, _ := setupUserInList(t, ctx, q, "sub-complete-bob")
+		svc := chores.NewService(q)
+
+		chore, err := svc.Create(ctx, listID, aliceID, "trash", nil)
+		if err != nil {
+			t.Fatalf("create: %v", err)
+		}
+		if _, err := svc.Claim(ctx, chore.ID, aliceID); err != nil {
+			t.Fatalf("claim: %v", err)
+		}
+
+		// Bob tries to complete Alice's claimed chore.
+		_, err = svc.Complete(ctx, chore.ID, bobID)
+		if !errors.Is(err, chores.ErrNotCompletable) {
+			t.Fatalf("want ErrNotCompletable, got %v", err)
+		}
+	})
+}
+
+func TestChores_Complete_UnclaimedChoreReturnsErrNotCompletable(t *testing.T) {
+	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
+		q := db.New(tx)
+		userID, listID := setupUserInList(t, ctx, q, "sub-complete-unclaimed")
+		svc := chores.NewService(q)
+
+		chore, err := svc.Create(ctx, listID, userID, "trash", nil)
+		if err != nil {
+			t.Fatalf("create: %v", err)
+		}
+
+		// Skipping claim; try to complete directly.
+		_, err = svc.Complete(ctx, chore.ID, userID)
+		if !errors.Is(err, chores.ErrNotCompletable) {
+			t.Fatalf("want ErrNotCompletable, got %v", err)
+		}
+	})
+}
+
+// --- graveyard ---
+
+func TestChores_Graveyard_ListsCompletedChoresNewestFirst(t *testing.T) {
+	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
+		q := db.New(tx)
+		userID, listID := setupUserInList(t, ctx, q, "sub-grave-A")
+		svc := chores.NewService(q)
+
+		for _, title := range []string{"trash", "dishes", "mop"} {
+			c, err := svc.Create(ctx, listID, userID, title, nil)
+			if err != nil {
+				t.Fatalf("create %q: %v", title, err)
+			}
+			if _, err := svc.Claim(ctx, c.ID, userID); err != nil {
+				t.Fatalf("claim %q: %v", title, err)
+			}
+			if _, err := svc.Complete(ctx, c.ID, userID); err != nil {
+				t.Fatalf("complete %q: %v", title, err)
+			}
+		}
+
+		grave, err := svc.Graveyard(ctx, userID)
+		if err != nil {
+			t.Fatalf("graveyard: %v", err)
+		}
+		if len(grave) != 3 {
+			t.Fatalf("want 3 completed, got %d", len(grave))
+		}
+	})
+}
+
+func TestChores_SearchGraveyard_MatchesSubstringCaseInsensitive(t *testing.T) {
+	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
+		q := db.New(tx)
+		userID, listID := setupUserInList(t, ctx, q, "sub-search")
+		svc := chores.NewService(q)
+
+		for _, title := range []string{"Take out trash", "Dishes", "Mop"} {
+			c, _ := svc.Create(ctx, listID, userID, title, nil)
+			_, _ = svc.Claim(ctx, c.ID, userID)
+			_, _ = svc.Complete(ctx, c.ID, userID)
+		}
+
+		results, err := svc.SearchGraveyard(ctx, userID, "TRASH")
+		if err != nil {
+			t.Fatalf("search: %v", err)
+		}
+		if len(results) != 1 || results[0].Title != "Take out trash" {
+			t.Errorf("search TRASH: got %+v", results)
+		}
+	})
+}
+
 func TestChores_Backlog_IsScopedToList(t *testing.T) {
 	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
 		q := db.New(tx)

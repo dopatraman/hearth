@@ -102,6 +102,84 @@ func (q *Queries) BacklogForUser(ctx context.Context, userID string) ([]Chore, e
 	return items, nil
 }
 
+const claimChore = `-- name: ClaimChore :one
+UPDATE chores
+SET claimed_by = ?,
+    claimed_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+WHERE id = ?
+  AND state = 'open'
+  AND claimed_by IS NULL
+RETURNING id, list_id, creator_id, title, notes, state,
+          claimed_by, claimed_at, will_complete_by,
+          completed_by, completed_at, created_at, updated_at
+`
+
+type ClaimChoreParams struct {
+	ClaimedBy *string
+	ID        string
+}
+
+func (q *Queries) ClaimChore(ctx context.Context, arg ClaimChoreParams) (Chore, error) {
+	row := q.db.QueryRowContext(ctx, claimChore, arg.ClaimedBy, arg.ID)
+	var i Chore
+	err := row.Scan(
+		&i.ID,
+		&i.ListID,
+		&i.CreatorID,
+		&i.Title,
+		&i.Notes,
+		&i.State,
+		&i.ClaimedBy,
+		&i.ClaimedAt,
+		&i.WillCompleteBy,
+		&i.CompletedBy,
+		&i.CompletedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const completeChore = `-- name: CompleteChore :one
+UPDATE chores
+SET state        = 'completed',
+    completed_by = ?,
+    completed_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+WHERE id = ?
+  AND state = 'open'
+  AND claimed_by = ?
+RETURNING id, list_id, creator_id, title, notes, state,
+          claimed_by, claimed_at, will_complete_by,
+          completed_by, completed_at, created_at, updated_at
+`
+
+type CompleteChoreParams struct {
+	CompletedBy *string
+	ID          string
+	ClaimedBy   *string
+}
+
+func (q *Queries) CompleteChore(ctx context.Context, arg CompleteChoreParams) (Chore, error) {
+	row := q.db.QueryRowContext(ctx, completeChore, arg.CompletedBy, arg.ID, arg.ClaimedBy)
+	var i Chore
+	err := row.Scan(
+		&i.ID,
+		&i.ListID,
+		&i.CreatorID,
+		&i.Title,
+		&i.Notes,
+		&i.State,
+		&i.ClaimedBy,
+		&i.ClaimedAt,
+		&i.WillCompleteBy,
+		&i.CompletedBy,
+		&i.CompletedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const createChore = `-- name: CreateChore :one
 INSERT INTO chores (id, list_id, creator_id, title, notes)
 VALUES (?, ?, ?, ?, ?)
@@ -172,4 +250,105 @@ func (q *Queries) GetChoreByID(ctx context.Context, id string) (Chore, error) {
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const graveyardForUser = `-- name: GraveyardForUser :many
+SELECT c.id, c.list_id, c.creator_id, c.title, c.notes, c.state,
+       c.claimed_by, c.claimed_at, c.will_complete_by,
+       c.completed_by, c.completed_at, c.created_at, c.updated_at
+FROM chores c
+JOIN list_memberships m ON m.list_id = c.list_id
+WHERE m.user_id = ? AND c.state = 'completed'
+ORDER BY c.completed_at DESC
+`
+
+func (q *Queries) GraveyardForUser(ctx context.Context, userID string) ([]Chore, error) {
+	rows, err := q.db.QueryContext(ctx, graveyardForUser, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Chore{}
+	for rows.Next() {
+		var i Chore
+		if err := rows.Scan(
+			&i.ID,
+			&i.ListID,
+			&i.CreatorID,
+			&i.Title,
+			&i.Notes,
+			&i.State,
+			&i.ClaimedBy,
+			&i.ClaimedAt,
+			&i.WillCompleteBy,
+			&i.CompletedBy,
+			&i.CompletedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const searchGraveyard = `-- name: SearchGraveyard :many
+SELECT c.id, c.list_id, c.creator_id, c.title, c.notes, c.state,
+       c.claimed_by, c.claimed_at, c.will_complete_by,
+       c.completed_by, c.completed_at, c.created_at, c.updated_at
+FROM chores c
+JOIN list_memberships m ON m.list_id = c.list_id
+WHERE m.user_id = ?1
+  AND c.state = 'completed'
+  AND lower(c.title) LIKE '%' || lower(?2) || '%'
+ORDER BY c.completed_at DESC
+`
+
+type SearchGraveyardParams struct {
+	UserID string
+	Query  string
+}
+
+func (q *Queries) SearchGraveyard(ctx context.Context, arg SearchGraveyardParams) ([]Chore, error) {
+	rows, err := q.db.QueryContext(ctx, searchGraveyard, arg.UserID, arg.Query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Chore{}
+	for rows.Next() {
+		var i Chore
+		if err := rows.Scan(
+			&i.ID,
+			&i.ListID,
+			&i.CreatorID,
+			&i.Title,
+			&i.Notes,
+			&i.State,
+			&i.ClaimedBy,
+			&i.ClaimedAt,
+			&i.WillCompleteBy,
+			&i.CompletedBy,
+			&i.CompletedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
