@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -27,6 +28,7 @@ type choreDTO struct {
 	CompletedAt    *string `json:"completed_at"`
 	CreatedAt      string  `json:"created_at"`
 	UpdatedAt      string  `json:"updated_at"`
+	Overdue        bool    `json:"overdue"`
 }
 
 func toChoreDTO(c db.Chore) choreDTO {
@@ -44,7 +46,25 @@ func toChoreDTO(c db.Chore) choreDTO {
 		CompletedAt:    c.CompletedAt,
 		CreatedAt:      c.CreatedAt,
 		UpdatedAt:      c.UpdatedAt,
+		Overdue:        isOverdue(c),
 	}
+}
+
+// isOverdue — pure derivation from (state, will_complete_by, now). Chore is
+// overdue iff it's still open AND has a will_complete_by in the past.
+func isOverdue(c db.Chore) bool {
+	if c.State != "open" || c.WillCompleteBy == nil {
+		return false
+	}
+	t, err := time.Parse(time.RFC3339Nano, *c.WillCompleteBy)
+	if err != nil {
+		// Fall back to the SQLite strftime format we write.
+		t, err = time.Parse("2006-01-02T15:04:05.000Z", *c.WillCompleteBy)
+		if err != nil {
+			return false
+		}
+	}
+	return t.Before(time.Now().UTC())
 }
 
 type createChoreRequest struct {
@@ -181,6 +201,80 @@ func (s *Server) handleCompleteChore(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, toChoreDTO(completed))
+}
+
+// PATCH /chores/{id}/will-complete-by — sets (or clears, with null body) the
+// claimant's committed completion date. 409 if the chore is not claimed by
+// the caller or already completed.
+func (s *Server) handleSetWillCompleteBy(w http.ResponseWriter, r *http.Request) {
+	u, ok := userFromContext(r.Context())
+	if !ok {
+		writeError(w, http.StatusInternalServerError, "no user in context")
+		return
+	}
+	choreID := chi.URLParam(r, "id")
+	if choreID == "" {
+		writeError(w, http.StatusBadRequest, "chore id is required")
+		return
+	}
+
+	var req struct {
+		WillCompleteBy *string `json:"will_complete_by"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	var updated db.Chore
+	err := s.UoW.InTx(r.Context(), func(q *db.Queries) error {
+		var err error
+		updated, err = chores.NewService(q).SetWillCompleteBy(r.Context(), choreID, u.ID, req.WillCompleteBy)
+		return err
+	})
+	if err != nil {
+		if errors.Is(err, chores.ErrNotModifiable) {
+			writeError(w, http.StatusConflict, "chore cannot be modified")
+			return
+		}
+		slog.ErrorContext(r.Context(), "set will_complete_by", "err", err)
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	writeJSON(w, http.StatusOK, toChoreDTO(updated))
+}
+
+// DELETE /chores/{id}/claim — releases the caller's claim, clearing
+// claimed_by, claimed_at, and will_complete_by. 409 if the caller isn't the
+// current claimant or the chore is already completed.
+func (s *Server) handleReleaseClaim(w http.ResponseWriter, r *http.Request) {
+	u, ok := userFromContext(r.Context())
+	if !ok {
+		writeError(w, http.StatusInternalServerError, "no user in context")
+		return
+	}
+	choreID := chi.URLParam(r, "id")
+	if choreID == "" {
+		writeError(w, http.StatusBadRequest, "chore id is required")
+		return
+	}
+
+	var released db.Chore
+	err := s.UoW.InTx(r.Context(), func(q *db.Queries) error {
+		var err error
+		released, err = chores.NewService(q).Release(r.Context(), choreID, u.ID)
+		return err
+	})
+	if err != nil {
+		if errors.Is(err, chores.ErrNotReleasable) {
+			writeError(w, http.StatusConflict, "chore cannot be released")
+			return
+		}
+		slog.ErrorContext(r.Context(), "release chore", "err", err)
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	writeJSON(w, http.StatusOK, toChoreDTO(released))
 }
 
 // GET /chores/graveyard?q=<substring> — completed chores across the user's

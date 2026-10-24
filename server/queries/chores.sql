@@ -40,6 +40,28 @@ RETURNING id, list_id, creator_id, title, notes, state,
           claimed_by, claimed_at, will_complete_by,
           completed_by, completed_at, created_at, updated_at;
 
+-- name: ReleaseClaim :one
+UPDATE chores
+SET claimed_by       = NULL,
+    claimed_at       = NULL,
+    will_complete_by = NULL
+WHERE id = sqlc.arg(id)
+  AND state = 'open'
+  AND claimed_by = sqlc.arg(claimed_by)
+RETURNING id, list_id, creator_id, title, notes, state,
+          claimed_by, claimed_at, will_complete_by,
+          completed_by, completed_at, created_at, updated_at;
+
+-- name: SetWillCompleteBy :one
+UPDATE chores
+SET will_complete_by = sqlc.narg(will_complete_by)
+WHERE id = sqlc.arg(id)
+  AND state = 'open'
+  AND claimed_by = sqlc.arg(claimed_by)
+RETURNING id, list_id, creator_id, title, notes, state,
+          claimed_by, claimed_at, will_complete_by,
+          completed_by, completed_at, created_at, updated_at;
+
 -- name: CompleteChore :one
 UPDATE chores
 SET state        = 'completed',

@@ -20,6 +20,17 @@ enum HearthAPIError: Error, LocalizedError {
 /// Zero-field request body for endpoints that take no payload.
 private struct EmptyRequest: Encodable {}
 
+extension ISO8601DateFormatter {
+    /// Matches the server's TIMESTAMP format: YYYY-MM-DDTHH:MM:SS.sssZ.
+    /// Returns a fresh instance per call — ISO8601DateFormatter isn't
+    /// Sendable and we don't want a shared mutable static.
+    static func hearthISO() -> ISO8601DateFormatter {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f
+    }
+}
+
 /// Thin async wrapper over URLSession for talking to the Hearth server.
 /// Each call maps 1:1 to an endpoint. No retries, no caching — handlers do what
 /// handlers do, callers decide what to do with failures.
@@ -70,8 +81,22 @@ struct HearthAPI {
         try await patch("/chores/\(choreID)/claim", bearerToken: sessionToken)
     }
 
+    func releaseClaim(sessionToken: String, choreID: String) async throws -> HearthChore {
+        try await delete("/chores/\(choreID)/claim", bearerToken: sessionToken)
+    }
+
     func completeChore(sessionToken: String, choreID: String) async throws -> HearthChore {
         try await post("/chores/\(choreID)/complete", body: EmptyRequest(), bearerToken: sessionToken)
+    }
+
+    func setWillCompleteBy(sessionToken: String, choreID: String, when: Date?) async throws -> HearthChore {
+        struct Body: Encodable {
+            let will_complete_by: String?
+        }
+        let iso = when.map { ISO8601DateFormatter.hearthISO().string(from: $0) }
+        return try await patch("/chores/\(choreID)/will-complete-by",
+                               body: Body(will_complete_by: iso),
+                               bearerToken: sessionToken)
     }
 
     func graveyard(sessionToken: String, query: String? = nil) async throws -> [HearthChore] {
@@ -139,6 +164,33 @@ struct HearthAPI {
         if let bearerToken {
             req.setValue("Bearer \(bearerToken)", forHTTPHeaderField: "Authorization")
         }
+        return try await perform(req)
+    }
+
+    private func delete<ResponseBody: Decodable>(
+        _ path: String,
+        bearerToken: String? = nil
+    ) async throws -> ResponseBody {
+        var req = URLRequest(url: baseURL.appendingPathComponent(path))
+        req.httpMethod = "DELETE"
+        if let bearerToken {
+            req.setValue("Bearer \(bearerToken)", forHTTPHeaderField: "Authorization")
+        }
+        return try await perform(req)
+    }
+
+    private func patch<RequestBody: Encodable, ResponseBody: Decodable>(
+        _ path: String,
+        body: RequestBody,
+        bearerToken: String? = nil
+    ) async throws -> ResponseBody {
+        var req = URLRequest(url: baseURL.appendingPathComponent(path))
+        req.httpMethod = "PATCH"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let bearerToken {
+            req.setValue("Bearer \(bearerToken)", forHTTPHeaderField: "Authorization")
+        }
+        req.httpBody = try JSONEncoder().encode(body)
         return try await perform(req)
     }
 

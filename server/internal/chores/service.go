@@ -23,6 +23,8 @@ var (
 	ErrEmptyTitle   = errors.New("chores: title must not be empty")
 	ErrNotClaimable = errors.New("chores: cannot claim (not found, already claimed, or completed)")
 	ErrNotCompletable = errors.New("chores: cannot complete (not found, not claimed by you, or already completed)")
+	ErrNotModifiable  = errors.New("chores: cannot modify (not found, not claimed by you, or already completed)")
+	ErrNotReleasable  = errors.New("chores: cannot release (not found, not claimed by you, or already completed)")
 )
 
 // Create inserts a new chore + a corresponding 'created' event. Pass tx-bound
@@ -136,6 +138,72 @@ func (s *Service) Complete(ctx context.Context, choreID, userID string) (db.Chor
 		ChoreID: chore.ID,
 		ActorID: userID,
 		Type:    "completed",
+	}); err != nil {
+		return db.Chore{}, err
+	}
+	return chore, nil
+}
+
+// SetWillCompleteBy sets (or clears, if when == nil) the claimant's committed
+// completion date. Only the current claimant can set it; unclaimed or
+// someone-else's-claim returns ErrNotModifiable. Writes a
+// 'will_complete_by_set' event on success.
+func (s *Service) SetWillCompleteBy(ctx context.Context, choreID, userID string, when *string) (db.Chore, error) {
+	user := userID
+	chore, err := s.q.SetWillCompleteBy(ctx, db.SetWillCompleteByParams{
+		WillCompleteBy: when,
+		ID:             choreID,
+		ClaimedBy:      &user,
+	})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return db.Chore{}, ErrNotModifiable
+		}
+		return db.Chore{}, err
+	}
+
+	eventID, err := uuid.NewV7()
+	if err != nil {
+		return db.Chore{}, err
+	}
+	if err := s.q.InsertEvent(ctx, db.InsertEventParams{
+		ID:      eventID.String(),
+		ListID:  chore.ListID,
+		ChoreID: chore.ID,
+		ActorID: userID,
+		Type:    "will_complete_by_set",
+	}); err != nil {
+		return db.Chore{}, err
+	}
+	return chore, nil
+}
+
+// Release atomically clears claimed_by, claimed_at, and will_complete_by iff
+// the chore is open AND claimed by userID. On success, writes a 'released'
+// event. ErrNotReleasable otherwise.
+func (s *Service) Release(ctx context.Context, choreID, userID string) (db.Chore, error) {
+	user := userID
+	chore, err := s.q.ReleaseClaim(ctx, db.ReleaseClaimParams{
+		ID:        choreID,
+		ClaimedBy: &user,
+	})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return db.Chore{}, ErrNotReleasable
+		}
+		return db.Chore{}, err
+	}
+
+	eventID, err := uuid.NewV7()
+	if err != nil {
+		return db.Chore{}, err
+	}
+	if err := s.q.InsertEvent(ctx, db.InsertEventParams{
+		ID:      eventID.String(),
+		ListID:  chore.ListID,
+		ChoreID: chore.ID,
+		ActorID: userID,
+		Type:    "unclaimed",
 	}); err != nil {
 		return db.Chore{}, err
 	}

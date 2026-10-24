@@ -27,7 +27,8 @@ struct DecodingTests {
           "completed_by": null,
           "completed_at": null,
           "created_at": "2026-10-22T19:30:00.000Z",
-          "updated_at": "2026-10-22T19:30:00.000Z"
+          "updated_at": "2026-10-22T19:30:00.000Z",
+          "overdue": false
         }
         """#.utf8)
         let chore = try JSONDecoder().decode(HearthChore.self, from: json)
@@ -52,7 +53,8 @@ struct DecodingTests {
               "claimed_by": null, "claimed_at": null,
               "will_complete_by": null,
               "completed_by": null, "completed_at": null,
-              "created_at": "now", "updated_at": "now"
+              "created_at": "now", "updated_at": "now",
+              "overdue": false
             }
           ]
         }

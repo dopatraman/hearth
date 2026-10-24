@@ -59,6 +59,7 @@ struct HearthChore: Codable, Equatable, Identifiable {
     let completedAt: String?
     let createdAt: String
     let updatedAt: String
+    let overdue: Bool
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -74,6 +75,7 @@ struct HearthChore: Codable, Equatable, Identifiable {
         case completedAt = "completed_at"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+        case overdue
     }
 }
 

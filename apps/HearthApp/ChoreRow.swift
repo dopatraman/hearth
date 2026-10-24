@@ -21,23 +21,45 @@ struct ChoreRow: View {
         return claimant != currentUserID
     }
 
+    private var accentColor: Color {
+        if chore.overdue { return .hearthPeach }
+        if mine { return .hearthLavender }
+        return .clear
+    }
+
     var body: some View {
         HStack(spacing: 12) {
-            // Left accent — subtle lavender bar if mine, invisible otherwise.
+            // Left accent — peach if overdue, lavender if mine, invisible otherwise.
             Rectangle()
-                .fill(mine ? Color.hearthLavender : Color.clear)
+                .fill(accentColor)
                 .frame(width: 3)
                 .cornerRadius(1.5)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(chore.title)
-                    .font(.body)
-                    .foregroundStyle(Color.hearthTextPrimary)
+                HStack(spacing: 6) {
+                    Text(chore.title)
+                        .font(.body)
+                        .foregroundStyle(Color.hearthTextPrimary)
+                    if chore.overdue {
+                        Text("OVERDUE")
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.hearthPeach, in: Capsule())
+                    }
+                }
                 if let notes = chore.notes, !notes.isEmpty {
                     Text(notes)
                         .font(.footnote)
                         .foregroundStyle(Color.hearthTextSecondary)
                         .lineLimit(2)
+                }
+                if let wcb = chore.willCompleteBy,
+                   let date = ISO8601DateFormatter.hearthISO().date(from: wcb) {
+                    Text("by \(date.formatted(date: .abbreviated, time: .shortened))")
+                        .font(.caption)
+                        .foregroundStyle(chore.overdue ? Color.hearthPeach : Color.hearthTextSecondary)
                 }
             }
 
@@ -101,6 +123,7 @@ private func previewChore(title: String, notes: String?, claimedBy: String?) -> 
         willCompleteBy: nil,
         completedBy: nil,
         completedAt: nil,
-        createdAt: "", updatedAt: ""
+        createdAt: "", updatedAt: "",
+        overdue: false
     )
 }
