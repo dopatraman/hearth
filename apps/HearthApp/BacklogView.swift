@@ -152,25 +152,6 @@ struct BacklogView: View {
     }
 }
 
-// MARK: - FAB
-
-private struct FABButton: View {
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Image(systemName: "plus")
-                .font(.system(size: 24, weight: .semibold))
-                .foregroundStyle(Color.hearthTextPrimary)
-                .frame(width: 60, height: 60)
-                .background(.ultraThinMaterial, in: Circle())
-                .overlay(Circle().stroke(Color.hearthTextSecondary.opacity(0.2), lineWidth: 0.5))
-                .shadow(color: Color.black.opacity(0.1), radius: 10, y: 4)
-        }
-        .buttonStyle(.plain)
-    }
-}
-
 #Preview("Empty") {
     let store = BacklogStore(session: { "token" })
     return BacklogView(initialStore: store)

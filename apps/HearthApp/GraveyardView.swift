@@ -67,22 +67,9 @@ struct GraveyardView: View {
         default:
             List {
                 ForEach(store.chores) { chore in
-                    HStack(spacing: 12) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(Color.hearthMint)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(chore.title)
-                                .font(.body)
-                                .foregroundStyle(Color.hearthTextPrimary)
-                            if let completedAt = chore.completedAt {
-                                Text(completedAt)
-                                    .font(.caption)
-                                    .foregroundStyle(Color.hearthTextSecondary)
-                            }
-                        }
-                    }
-                    .listRowBackground(Color.clear)
-                    .listRowSeparatorTint(Color.hearthTextSecondary.opacity(0.2))
+                    GraveyardRow(chore: chore)
+                        .listRowBackground(Color.clear)
+                        .listRowSeparatorTint(Color.hearthTextSecondary.opacity(0.2))
                 }
             }
             .listStyle(.plain)
