@@ -74,6 +74,19 @@ final class BacklogStore {
         }
     }
 
+    /// Snooze a chore for the caller for 8 hours. Removes it from the local
+    /// backlog immediately; next reload won't see it either (server filters
+    /// snoozed chores for this user).
+    func snooze(choreID: String) async {
+        guard let token = session() else { return }
+        do {
+            try await api.snoozeChore(sessionToken: token, choreID: choreID)
+            chores.removeAll { $0.id == choreID }
+        } catch {
+            phase = .failed(error.localizedDescription)
+        }
+    }
+
     /// Release the caller's claim on a chore. Server clears claimed_by,
     /// claimed_at, and will_complete_by. Row stays in the list, now unclaimed.
     func release(choreID: String) async {

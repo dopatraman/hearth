@@ -19,7 +19,13 @@ SELECT c.id, c.list_id, c.creator_id, c.title, c.notes, c.state,
        c.completed_by, c.completed_at, c.created_at, c.updated_at
 FROM chores c
 JOIN list_memberships m ON m.list_id = c.list_id
-WHERE m.user_id = ? AND c.state = 'open'
+LEFT JOIN snoozes s
+       ON s.user_id = sqlc.arg(user_id)
+      AND s.chore_id = c.id
+      AND s.snoozed_until > strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+WHERE m.user_id = sqlc.arg(user_id)
+  AND c.state = 'open'
+  AND s.chore_id IS NULL
 ORDER BY c.created_at DESC;
 
 -- name: GetChoreByID :one

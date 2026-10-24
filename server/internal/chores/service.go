@@ -178,6 +178,34 @@ func (s *Service) SetWillCompleteBy(ctx context.Context, choreID, userID string,
 	return chore, nil
 }
 
+// Snooze inserts (or refreshes) a per-user snooze for 8 hours. Writes a
+// 'snoozed' event. Snoozes are per-(user, chore) — Alice snoozing doesn't
+// affect Bob. Does not check claim/membership — anyone who can see a chore
+// can snooze it from their own view.
+func (s *Service) Snooze(ctx context.Context, choreID, userID string) error {
+	chore, err := s.q.GetChoreByID(ctx, choreID)
+	if err != nil {
+		return err
+	}
+	if err := s.q.UpsertSnooze(ctx, db.UpsertSnoozeParams{
+		UserID:  userID,
+		ChoreID: choreID,
+	}); err != nil {
+		return err
+	}
+	eventID, err := uuid.NewV7()
+	if err != nil {
+		return err
+	}
+	return s.q.InsertEvent(ctx, db.InsertEventParams{
+		ID:      eventID.String(),
+		ListID:  chore.ListID,
+		ChoreID: choreID,
+		ActorID: userID,
+		Type:    "snoozed",
+	})
+}
+
 // Release atomically clears claimed_by, claimed_at, and will_complete_by iff
 // the chore is open AND claimed by userID. On success, writes a 'released'
 // event. ErrNotReleasable otherwise.

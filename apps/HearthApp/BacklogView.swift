@@ -130,6 +130,17 @@ struct BacklogView: View {
                     )
                     .listRowBackground(Color.clear)
                     .listRowSeparatorTint(Color.hearthTextSecondary.opacity(0.2))
+                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                        if filter == .mine {
+                            Button {
+                                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                                Task { await store.snooze(choreID: chore.id) }
+                            } label: {
+                                Label("Snooze", systemImage: "moon.zzz.fill")
+                            }
+                            .tint(Color.hearthSky)
+                        }
+                    }
                     .swipeActions(edge: .leading, allowsFullSwipe: true) {
                         if chore.claimedBy == nil {
                             Button {

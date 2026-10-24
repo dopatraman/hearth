@@ -85,6 +85,10 @@ struct HearthAPI {
         try await delete("/chores/\(choreID)/claim", bearerToken: sessionToken)
     }
 
+    func snoozeChore(sessionToken: String, choreID: String) async throws {
+        try await postNoContent("/chores/\(choreID)/snooze", bearerToken: sessionToken)
+    }
+
     func completeChore(sessionToken: String, choreID: String) async throws -> HearthChore {
         try await post("/chores/\(choreID)/complete", body: EmptyRequest(), bearerToken: sessionToken)
     }
@@ -165,6 +169,26 @@ struct HearthAPI {
             req.setValue("Bearer \(bearerToken)", forHTTPHeaderField: "Authorization")
         }
         return try await perform(req)
+    }
+
+    private func postNoContent(
+        _ path: String,
+        bearerToken: String? = nil
+    ) async throws {
+        var req = URLRequest(url: baseURL.appendingPathComponent(path))
+        req.httpMethod = "POST"
+        if let bearerToken {
+            req.setValue("Bearer \(bearerToken)", forHTTPHeaderField: "Authorization")
+        }
+        let (data, response) = try await session.data(for: req)
+        guard let http = response as? HTTPURLResponse else {
+            throw HearthAPIError.unexpectedStatus(0, "non-HTTP response")
+        }
+        guard (200..<300).contains(http.statusCode) else {
+            let message = (try? JSONDecoder().decode(APIErrorResponse.self, from: data).error)
+                ?? String(data: data, encoding: .utf8) ?? ""
+            throw HearthAPIError.unexpectedStatus(http.statusCode, message)
+        }
     }
 
     private func delete<ResponseBody: Decodable>(
