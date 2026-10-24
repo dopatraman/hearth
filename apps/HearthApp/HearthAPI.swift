@@ -89,6 +89,26 @@ struct HearthAPI {
         try await postNoContent("/chores/\(choreID)/snooze", bearerToken: sessionToken)
     }
 
+    // MARK: - Devices + Notifications
+
+    func registerDevice(sessionToken: String, token: String, platform: String) async throws {
+        struct Body: Encodable { let token: String; let platform: String }
+        try await postNoContent(
+            "/devices",
+            body: Body(token: token, platform: platform),
+            bearerToken: sessionToken
+        )
+    }
+
+    func setNotificationsEnabled(sessionToken: String, enabled: Bool) async throws {
+        struct Body: Encodable { let enabled: Bool }
+        try await putNoContent(
+            "/me/notifications",
+            body: Body(enabled: enabled),
+            bearerToken: sessionToken
+        )
+    }
+
     func completeChore(sessionToken: String, choreID: String) async throws -> HearthChore {
         try await post("/chores/\(choreID)/complete", body: EmptyRequest(), bearerToken: sessionToken)
     }
@@ -180,6 +200,40 @@ struct HearthAPI {
         if let bearerToken {
             req.setValue("Bearer \(bearerToken)", forHTTPHeaderField: "Authorization")
         }
+        try await performNoContent(req)
+    }
+
+    private func postNoContent<Body: Encodable>(
+        _ path: String,
+        body: Body,
+        bearerToken: String? = nil
+    ) async throws {
+        var req = URLRequest(url: baseURL.appendingPathComponent(path))
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let bearerToken {
+            req.setValue("Bearer \(bearerToken)", forHTTPHeaderField: "Authorization")
+        }
+        req.httpBody = try JSONEncoder().encode(body)
+        try await performNoContent(req)
+    }
+
+    private func putNoContent<Body: Encodable>(
+        _ path: String,
+        body: Body,
+        bearerToken: String? = nil
+    ) async throws {
+        var req = URLRequest(url: baseURL.appendingPathComponent(path))
+        req.httpMethod = "PUT"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let bearerToken {
+            req.setValue("Bearer \(bearerToken)", forHTTPHeaderField: "Authorization")
+        }
+        req.httpBody = try JSONEncoder().encode(body)
+        try await performNoContent(req)
+    }
+
+    private func performNoContent(_ req: URLRequest) async throws {
         let (data, response) = try await session.data(for: req)
         guard let http = response as? HTTPURLResponse else {
             throw HearthAPIError.unexpectedStatus(0, "non-HTTP response")

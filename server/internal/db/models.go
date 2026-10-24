@@ -20,6 +20,13 @@ type Chore struct {
 	UpdatedAt      string
 }
 
+type DeviceToken struct {
+	UserID    string
+	Token     string
+	Platform  string
+	CreatedAt string
+}
+
 type Event struct {
 	ID        string
 	ListID    string

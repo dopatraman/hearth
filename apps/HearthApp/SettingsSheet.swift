@@ -6,6 +6,14 @@ struct SettingsSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(AuthStore.self) private var auth
     @State private var presentingInvite: Bool = false
+    @State private var notificationsOn: Bool = true
+    @State private var notificationsSyncing: Bool = false
+    private let api = HearthAPI()
+
+    private var currentUser: HearthUser? {
+        if case .signedIn(let user) = auth.phase { return user }
+        return nil
+    }
 
     var body: some View {
         NavigationStack {
@@ -19,6 +27,14 @@ struct SettingsSheet: View {
                     }
                 }
 
+                Section("Notifications") {
+                    Toggle("Push notifications", isOn: $notificationsOn)
+                        .disabled(notificationsSyncing)
+                        .onChange(of: notificationsOn) { _, newValue in
+                            Task { await setNotifications(newValue) }
+                        }
+                }
+
                 Section {
                     Button(role: .destructive) {
                         auth.signOut()
@@ -27,6 +43,9 @@ struct SettingsSheet: View {
                         Text("Sign out")
                     }
                 }
+            }
+            .onAppear {
+                if let u = currentUser { notificationsOn = u.notificationsEnabled }
             }
             .scrollContentBackground(.hidden)
             .background(Color.hearthBackground)
@@ -42,6 +61,20 @@ struct SettingsSheet: View {
             }
         }
         .presentationDetents([.medium, .large])
+    }
+
+    private func setNotifications(_ enabled: Bool) async {
+        guard let token = Keychain().read() else { return }
+        notificationsSyncing = true
+        defer { notificationsSyncing = false }
+        do {
+            try await api.setNotificationsEnabled(sessionToken: token, enabled: enabled)
+            if enabled {
+                await PushRegistration.shared.requestPermissionAndRegister()
+            }
+        } catch {
+            notificationsOn = !enabled
+        }
     }
 }
 

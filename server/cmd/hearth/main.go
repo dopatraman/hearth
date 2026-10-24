@@ -14,6 +14,7 @@ import (
 	"github.com/dopatraman/hearth/server/internal/api"
 	"github.com/dopatraman/hearth/server/internal/auth"
 	"github.com/dopatraman/hearth/server/internal/db"
+	"github.com/dopatraman/hearth/server/internal/notifications"
 	"github.com/dopatraman/hearth/server/migrations"
 
 	_ "modernc.org/sqlite"
@@ -64,12 +65,19 @@ func main() {
 		os.Exit(1)
 	}
 
+	uow := &db.PoolUoW{Pool: database}
+	dispatcher := &notifications.Dispatcher{
+		UoW:    uow,
+		Pusher: notifications.NoopPusher{},
+	}
+
 	srv := &http.Server{
 		Addr: addr,
 		Handler: (&api.Server{
-			UoW:           &db.PoolUoW{Pool: database},
+			UoW:           uow,
 			AppleVerifier: appleVerifier,
 			Session:       sessionTokens,
+			Dispatcher:    dispatcher,
 		}).Router(),
 		ReadHeaderTimeout: 5 * time.Second,
 	}

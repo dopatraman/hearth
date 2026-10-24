@@ -111,6 +111,7 @@ func (s *Server) handleCreateChore(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	s.Dispatcher.Dispatch(r.Context(), created.ListID, u.ID, "New chore: "+created.Title)
 	writeJSON(w, http.StatusCreated, toChoreDTO(created))
 }
 
@@ -168,6 +169,7 @@ func (s *Server) handleClaimChore(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+	s.Dispatcher.Dispatch(r.Context(), claimed.ListID, u.ID, "Claimed: "+claimed.Title)
 	writeJSON(w, http.StatusOK, toChoreDTO(claimed))
 }
 
@@ -200,6 +202,7 @@ func (s *Server) handleCompleteChore(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+	s.Dispatcher.Dispatch(r.Context(), completed.ListID, u.ID, "Done: "+completed.Title)
 	writeJSON(w, http.StatusOK, toChoreDTO(completed))
 }
 
@@ -241,6 +244,7 @@ func (s *Server) handleSetWillCompleteBy(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+	s.Dispatcher.Dispatch(r.Context(), updated.ListID, u.ID, "Scheduled: "+updated.Title)
 	writeJSON(w, http.StatusOK, toChoreDTO(updated))
 }
 
@@ -299,6 +303,7 @@ func (s *Server) handleReleaseClaim(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+	s.Dispatcher.Dispatch(r.Context(), released.ListID, u.ID, "Released: "+released.Title)
 	writeJSON(w, http.StatusOK, toChoreDTO(released))
 }
 
