@@ -19,9 +19,7 @@ struct ContentView: View {
             case .signedOut, .signingIn:
                 SignInScreen()
             case .signedIn:
-                BacklogView(initialStore: BacklogStore(
-                    session: { Keychain().read() }
-                ))
+                RootTabView(sessionProvider: { Keychain().read() })
             }
         }
         .animation(.easeInOut(duration: 0.3), value: auth.phase)

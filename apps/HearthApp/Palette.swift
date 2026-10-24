@@ -1,7 +1,9 @@
 import SwiftUI
 
 /// Hearth palette — semantic names, light + dark values from the build plan.
-/// Expand incrementally; only what Slice 2 needs is defined for now.
+/// A color here always carries meaning: a lavender highlight ALWAYS means
+/// "mine"; a peach badge ALWAYS means "overdue". Users learn the system by
+/// using it.
 extension Color {
     /// Warm cream in light, near-black warm in dark.
     static let hearthBackground = Color(
@@ -19,6 +21,30 @@ extension Color {
     static let hearthTextSecondary = Color(
         light: Color(red: 0x6B / 255, green: 0x65 / 255, blue: 0x60 / 255),
         dark: Color(red: 0xA6 / 255, green: 0xA0 / 255, blue: 0x9A / 255)
+    )
+
+    /// Primary / "mine" — a chore claimed by the current user.
+    static let hearthLavender = Color(
+        light: Color(red: 0xC9 / 255, green: 0xB6 / 255, blue: 0xE4 / 255),
+        dark: Color(red: 0x8A / 255, green: 0x7B / 255, blue: 0xA8 / 255)
+    )
+
+    /// Success / completed — the mint check button and graveyard accents.
+    static let hearthMint = Color(
+        light: Color(red: 0xB6 / 255, green: 0xE4 / 255, blue: 0xCF / 255),
+        dark: Color(red: 0x7A / 255, green: 0xA8 / 255, blue: 0x96 / 255)
+    )
+
+    /// Warning / overdue — chores past their will_complete_by.
+    static let hearthPeach = Color(
+        light: Color(red: 0xF4 / 255, green: 0xC4 / 255, blue: 0xA3 / 255),
+        dark: Color(red: 0xB8 / 255, green: 0x8A / 255, blue: 0x6E / 255)
+    )
+
+    /// Info / claimed-by-other — avatar chip for chores someone else owns.
+    static let hearthSky = Color(
+        light: Color(red: 0xA3 / 255, green: 0xC9 / 255, blue: 0xF4 / 255),
+        dark: Color(red: 0x6B / 255, green: 0x94 / 255, blue: 0xC2 / 255)
     )
 }
 
