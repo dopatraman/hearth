@@ -66,6 +66,27 @@ struct HearthAPI {
         try await post("/invites/\(code)/accept", body: EmptyRequest(), bearerToken: sessionToken)
     }
 
+    func claimChore(sessionToken: String, choreID: String) async throws -> HearthChore {
+        try await patch("/chores/\(choreID)/claim", bearerToken: sessionToken)
+    }
+
+    func completeChore(sessionToken: String, choreID: String) async throws -> HearthChore {
+        try await post("/chores/\(choreID)/complete", body: EmptyRequest(), bearerToken: sessionToken)
+    }
+
+    func graveyard(sessionToken: String, query: String? = nil) async throws -> [HearthChore] {
+        var path = "/chores/graveyard"
+        if let q = query, !q.isEmpty {
+            var comps = URLComponents()
+            comps.queryItems = [URLQueryItem(name: "q", value: q)]
+            if let qs = comps.query {
+                path += "?" + qs
+            }
+        }
+        let resp: BacklogResponse = try await get(path, bearerToken: sessionToken)
+        return resp.chores
+    }
+
     // MARK: - Internals
 
     private func post<RequestBody: Encodable, ResponseBody: Decodable>(
@@ -87,8 +108,34 @@ struct HearthAPI {
         _ path: String,
         bearerToken: String? = nil
     ) async throws -> ResponseBody {
-        var req = URLRequest(url: baseURL.appendingPathComponent(path))
+        // Preserve any query string in path.
+        let url: URL = {
+            if path.contains("?"),
+               let components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) {
+                var mutable = components
+                let parts = path.split(separator: "?", maxSplits: 1, omittingEmptySubsequences: false)
+                mutable.path = parts[0].hasPrefix("/") ? String(parts[0]) : "/\(parts[0])"
+                if parts.count == 2 {
+                    mutable.query = String(parts[1])
+                }
+                return mutable.url ?? baseURL.appendingPathComponent(path)
+            }
+            return baseURL.appendingPathComponent(path)
+        }()
+        var req = URLRequest(url: url)
         req.httpMethod = "GET"
+        if let bearerToken {
+            req.setValue("Bearer \(bearerToken)", forHTTPHeaderField: "Authorization")
+        }
+        return try await perform(req)
+    }
+
+    private func patch<ResponseBody: Decodable>(
+        _ path: String,
+        bearerToken: String? = nil
+    ) async throws -> ResponseBody {
+        var req = URLRequest(url: baseURL.appendingPathComponent(path))
+        req.httpMethod = "PATCH"
         if let bearerToken {
             req.setValue("Bearer \(bearerToken)", forHTTPHeaderField: "Authorization")
         }
