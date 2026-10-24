@@ -49,6 +49,12 @@ type ListMembership struct {
 	UserID string
 }
 
+type Snooze struct {
+	UserID       string
+	ChoreID      string
+	SnoozedUntil string
+}
+
 type User struct {
 	ID                   string
 	AppleSub             string

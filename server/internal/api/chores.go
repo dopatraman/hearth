@@ -244,6 +244,31 @@ func (s *Server) handleSetWillCompleteBy(w http.ResponseWriter, r *http.Request)
 	writeJSON(w, http.StatusOK, toChoreDTO(updated))
 }
 
+// POST /chores/{id}/snooze — upserts a per-user snooze (8h). Returns 204.
+// Idempotent: snoozing an already-snoozed chore refreshes the window.
+func (s *Server) handleSnoozeChore(w http.ResponseWriter, r *http.Request) {
+	u, ok := userFromContext(r.Context())
+	if !ok {
+		writeError(w, http.StatusInternalServerError, "no user in context")
+		return
+	}
+	choreID := chi.URLParam(r, "id")
+	if choreID == "" {
+		writeError(w, http.StatusBadRequest, "chore id is required")
+		return
+	}
+
+	err := s.UoW.InTx(r.Context(), func(q *db.Queries) error {
+		return chores.NewService(q).Snooze(r.Context(), choreID, u.ID)
+	})
+	if err != nil {
+		slog.ErrorContext(r.Context(), "snooze chore", "err", err)
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 // DELETE /chores/{id}/claim — releases the caller's claim, clearing
 // claimed_by, claimed_at, and will_complete_by. 409 if the caller isn't the
 // current claimant or the chore is already completed.
