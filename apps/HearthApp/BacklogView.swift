@@ -1,54 +1,84 @@
 import SwiftUI
+import UIKit
 
 struct BacklogView: View {
     @Environment(AuthStore.self) private var auth
     @State private var store: BacklogStore
     @State private var presentingCreate: Bool = false
     @State private var presentingSettings: Bool = false
+    @State private var filter: Filter = .all
 
     init(initialStore: BacklogStore? = nil) {
         _store = State(initialValue: initialStore ?? BacklogStore(session: { nil }))
     }
 
+    enum Filter: Hashable {
+        case all
+        case mine
+    }
+
+    private var currentUserID: String? {
+        if case .signedIn(let user) = auth.phase { return user.id }
+        return nil
+    }
+
+    private var visibleChores: [HearthChore] {
+        switch filter {
+        case .all:
+            return store.chores
+        case .mine:
+            guard let me = currentUserID else { return [] }
+            return store.chores.filter { $0.claimedBy == me }
+        }
+    }
+
     var body: some View {
         NavigationStack {
-            content
-                .navigationTitle("Backlog")
-                .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button {
-                            presentingSettings = true
-                        } label: {
-                            Image(systemName: "gearshape")
-                        }
+            VStack(spacing: 0) {
+                Picker("Filter", selection: $filter) {
+                    Text("All").tag(Filter.all)
+                    Text("Mine").tag(Filter.mine)
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .sensoryFeedback(.selection, trigger: filter)
+
+                content
+            }
+            .navigationTitle("Backlog")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        presentingSettings = true
+                    } label: {
+                        Image(systemName: "gearshape")
                     }
                 }
-                .background(Color.hearthBackground)
-                .scrollContentBackground(.hidden)
-                .refreshable { await store.reload() }
-                .task {
-                    // First-appear load. BacklogStore uses the current session
-                    // token lazily; wiring is replaced by rootStore(for:) when
-                    // used from ContentView.
-                    if case .idle = store.phase {
-                        await store.reload()
-                    }
+            }
+            .background(Color.hearthBackground)
+            .scrollContentBackground(.hidden)
+            .refreshable { await store.reload() }
+            .task {
+                if case .idle = store.phase {
+                    await store.reload()
                 }
-                .sheet(isPresented: $presentingCreate) {
-                    CreateChoreSheet(onSave: { title, notes in
-                        await store.create(title: title, notes: notes)
-                    })
+            }
+            .sheet(isPresented: $presentingCreate) {
+                CreateChoreSheet(onSave: { title, notes in
+                    await store.create(title: title, notes: notes)
+                })
+            }
+            .sheet(isPresented: $presentingSettings) {
+                SettingsSheet()
+            }
+            .overlay(alignment: .bottomTrailing) {
+                FABButton {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    presentingCreate = true
                 }
-                .sheet(isPresented: $presentingSettings) {
-                    SettingsSheet()
-                }
-                .overlay(alignment: .bottomTrailing) {
-                    FABButton {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        presentingCreate = true
-                    }
-                    .padding(24)
-                }
+                .padding(24)
+            }
         }
     }
 
@@ -64,7 +94,7 @@ struct BacklogView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-        case .loaded where store.chores.isEmpty:
+        case .loaded where visibleChores.isEmpty:
             emptyState
 
         case .failed(let message) where store.chores.isEmpty:
@@ -84,22 +114,37 @@ struct BacklogView: View {
 
         default:
             List {
-                ForEach(store.chores) { chore in
-                    ChoreRow(chore: chore)
-                        .listRowBackground(Color.clear)
-                        .listRowSeparatorTint(Color.hearthTextSecondary.opacity(0.2))
+                ForEach(visibleChores) { chore in
+                    ChoreRow(
+                        chore: chore,
+                        currentUserID: currentUserID,
+                        onComplete: { Task { await store.complete(choreID: chore.id) } }
+                    )
+                    .listRowBackground(Color.clear)
+                    .listRowSeparatorTint(Color.hearthTextSecondary.opacity(0.2))
+                    .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                        if chore.claimedBy == nil {
+                            Button {
+                                Task { await store.claim(choreID: chore.id) }
+                            } label: {
+                                Label("Claim", systemImage: "hand.raised.fill")
+                            }
+                            .tint(Color.hearthLavender)
+                        }
+                    }
                 }
             }
             .listStyle(.plain)
+            .animation(.easeInOut(duration: 0.25), value: visibleChores.map(\.id))
         }
     }
 
     private var emptyState: some View {
         VStack(spacing: 8) {
-            Text("No chores yet.")
+            Text(filter == .mine ? "No chores claimed." : "No chores yet.")
                 .font(.title3)
                 .foregroundStyle(Color.hearthTextPrimary)
-            Text("Tap + to add one.")
+            Text(filter == .mine ? "Swipe right on a chore to claim it." : "Tap + to add one.")
                 .font(.footnote)
                 .foregroundStyle(Color.hearthTextSecondary)
         }

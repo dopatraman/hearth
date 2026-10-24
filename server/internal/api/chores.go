@@ -6,6 +6,8 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
+
 	"github.com/dopatraman/hearth/server/internal/chores"
 	"github.com/dopatraman/hearth/server/internal/db"
 	"github.com/dopatraman/hearth/server/internal/lists"
@@ -112,6 +114,94 @@ func (s *Server) handleListChores(w http.ResponseWriter, r *http.Request) {
 
 	out := backlogResponse{Chores: make([]choreDTO, 0, len(backlog))}
 	for _, c := range backlog {
+		out.Chores = append(out.Chores, toChoreDTO(c))
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+// PATCH /chores/{id}/claim — atomic claim-if-unclaimed.
+// 409 if the chore doesn't exist, is already claimed, or is completed.
+func (s *Server) handleClaimChore(w http.ResponseWriter, r *http.Request) {
+	u, ok := userFromContext(r.Context())
+	if !ok {
+		writeError(w, http.StatusInternalServerError, "no user in context")
+		return
+	}
+	choreID := chi.URLParam(r, "id")
+	if choreID == "" {
+		writeError(w, http.StatusBadRequest, "chore id is required")
+		return
+	}
+
+	var claimed db.Chore
+	err := s.UoW.InTx(r.Context(), func(q *db.Queries) error {
+		var err error
+		claimed, err = chores.NewService(q).Claim(r.Context(), choreID, u.ID)
+		return err
+	})
+	if err != nil {
+		if errors.Is(err, chores.ErrNotClaimable) {
+			writeError(w, http.StatusConflict, "chore cannot be claimed")
+			return
+		}
+		slog.ErrorContext(r.Context(), "claim chore", "err", err)
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	writeJSON(w, http.StatusOK, toChoreDTO(claimed))
+}
+
+// POST /chores/{id}/complete — mark completed. Only the current claimant can
+// complete; 409 otherwise.
+func (s *Server) handleCompleteChore(w http.ResponseWriter, r *http.Request) {
+	u, ok := userFromContext(r.Context())
+	if !ok {
+		writeError(w, http.StatusInternalServerError, "no user in context")
+		return
+	}
+	choreID := chi.URLParam(r, "id")
+	if choreID == "" {
+		writeError(w, http.StatusBadRequest, "chore id is required")
+		return
+	}
+
+	var completed db.Chore
+	err := s.UoW.InTx(r.Context(), func(q *db.Queries) error {
+		var err error
+		completed, err = chores.NewService(q).Complete(r.Context(), choreID, u.ID)
+		return err
+	})
+	if err != nil {
+		if errors.Is(err, chores.ErrNotCompletable) {
+			writeError(w, http.StatusConflict, "chore cannot be completed")
+			return
+		}
+		slog.ErrorContext(r.Context(), "complete chore", "err", err)
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	writeJSON(w, http.StatusOK, toChoreDTO(completed))
+}
+
+// GET /chores/graveyard?q=<substring> — completed chores across the user's
+// lists, optionally filtered by title substring (case-insensitive).
+func (s *Server) handleGraveyard(w http.ResponseWriter, r *http.Request) {
+	u, ok := userFromContext(r.Context())
+	if !ok {
+		writeError(w, http.StatusInternalServerError, "no user in context")
+		return
+	}
+	query := r.URL.Query().Get("q")
+
+	results, err := chores.NewService(s.UoW.Queries()).SearchGraveyard(r.Context(), u.ID, query)
+	if err != nil {
+		slog.ErrorContext(r.Context(), "graveyard", "err", err)
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	out := backlogResponse{Chores: make([]choreDTO, 0, len(results))}
+	for _, c := range results {
 		out.Chores = append(out.Chores, toChoreDTO(c))
 	}
 	writeJSON(w, http.StatusOK, out)
