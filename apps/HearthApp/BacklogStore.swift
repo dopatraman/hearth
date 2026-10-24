@@ -74,6 +74,20 @@ final class BacklogStore {
         }
     }
 
+    /// Release the caller's claim on a chore. Server clears claimed_by,
+    /// claimed_at, and will_complete_by. Row stays in the list, now unclaimed.
+    func release(choreID: String) async {
+        guard let token = session() else { return }
+        do {
+            let updated = try await api.releaseClaim(sessionToken: token, choreID: choreID)
+            if let idx = chores.firstIndex(where: { $0.id == choreID }) {
+                chores[idx] = updated
+            }
+        } catch {
+            phase = .failed(error.localizedDescription)
+        }
+    }
+
     /// Complete a chore. On success, removes it from the backlog (only open
     /// chores live here) and returns the completed chore for post-removal
     /// animations.

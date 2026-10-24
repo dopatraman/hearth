@@ -244,6 +244,39 @@ func (s *Server) handleSetWillCompleteBy(w http.ResponseWriter, r *http.Request)
 	writeJSON(w, http.StatusOK, toChoreDTO(updated))
 }
 
+// DELETE /chores/{id}/claim — releases the caller's claim, clearing
+// claimed_by, claimed_at, and will_complete_by. 409 if the caller isn't the
+// current claimant or the chore is already completed.
+func (s *Server) handleReleaseClaim(w http.ResponseWriter, r *http.Request) {
+	u, ok := userFromContext(r.Context())
+	if !ok {
+		writeError(w, http.StatusInternalServerError, "no user in context")
+		return
+	}
+	choreID := chi.URLParam(r, "id")
+	if choreID == "" {
+		writeError(w, http.StatusBadRequest, "chore id is required")
+		return
+	}
+
+	var released db.Chore
+	err := s.UoW.InTx(r.Context(), func(q *db.Queries) error {
+		var err error
+		released, err = chores.NewService(q).Release(r.Context(), choreID, u.ID)
+		return err
+	})
+	if err != nil {
+		if errors.Is(err, chores.ErrNotReleasable) {
+			writeError(w, http.StatusConflict, "chore cannot be released")
+			return
+		}
+		slog.ErrorContext(r.Context(), "release chore", "err", err)
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	writeJSON(w, http.StatusOK, toChoreDTO(released))
+}
+
 // GET /chores/graveyard?q=<substring> — completed chores across the user's
 // lists, optionally filtered by title substring (case-insensitive).
 func (s *Server) handleGraveyard(w http.ResponseWriter, r *http.Request) {

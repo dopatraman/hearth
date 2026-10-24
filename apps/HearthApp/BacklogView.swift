@@ -146,6 +146,14 @@ struct BacklogView: View {
                                 Label("Claim", systemImage: "hand.raised.fill")
                             }
                             .tint(Color.hearthLavender)
+                        } else if chore.claimedBy == currentUserID {
+                            Button {
+                                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                                Task { await store.release(choreID: chore.id) }
+                            } label: {
+                                Label("Release", systemImage: "hand.raised.slash.fill")
+                            }
+                            .tint(Color.hearthPeach)
                         }
                     }
                 }

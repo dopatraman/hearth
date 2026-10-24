@@ -81,6 +81,10 @@ struct HearthAPI {
         try await patch("/chores/\(choreID)/claim", bearerToken: sessionToken)
     }
 
+    func releaseClaim(sessionToken: String, choreID: String) async throws -> HearthChore {
+        try await delete("/chores/\(choreID)/claim", bearerToken: sessionToken)
+    }
+
     func completeChore(sessionToken: String, choreID: String) async throws -> HearthChore {
         try await post("/chores/\(choreID)/complete", body: EmptyRequest(), bearerToken: sessionToken)
     }
@@ -157,6 +161,18 @@ struct HearthAPI {
     ) async throws -> ResponseBody {
         var req = URLRequest(url: baseURL.appendingPathComponent(path))
         req.httpMethod = "PATCH"
+        if let bearerToken {
+            req.setValue("Bearer \(bearerToken)", forHTTPHeaderField: "Authorization")
+        }
+        return try await perform(req)
+    }
+
+    private func delete<ResponseBody: Decodable>(
+        _ path: String,
+        bearerToken: String? = nil
+    ) async throws -> ResponseBody {
+        var req = URLRequest(url: baseURL.appendingPathComponent(path))
+        req.httpMethod = "DELETE"
         if let bearerToken {
             req.setValue("Bearer \(bearerToken)", forHTTPHeaderField: "Authorization")
         }
