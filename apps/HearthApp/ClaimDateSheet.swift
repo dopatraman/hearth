@@ -23,7 +23,10 @@ struct ClaimDateSheet: View {
                     .foregroundStyle(Color.hearthTextPrimary)
                     .multilineTextAlignment(.center)
 
-                DatePicker("", selection: $selectedDate, in: Date()...)
+                DatePicker("",
+                           selection: $selectedDate,
+                           in: Date()...,
+                           displayedComponents: .date)
                     .datePickerStyle(.graphical)
                     .labelsHidden()
                     .padding(.horizontal)
@@ -43,7 +46,9 @@ struct ClaimDateSheet: View {
 
                     Button("Save") {
                         Task {
-                            await onSave(selectedDate)
+                            let endOfDay = Calendar.current.startOfDay(for: selectedDate)
+                                .addingTimeInterval(24 * 60 * 60 - 1)
+                            await onSave(endOfDay)
                             dismiss()
                         }
                     }

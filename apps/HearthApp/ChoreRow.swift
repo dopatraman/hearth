@@ -57,7 +57,7 @@ struct ChoreRow: View {
                 }
                 if let wcb = chore.willCompleteBy,
                    let date = ISO8601DateFormatter.hearthISO().date(from: wcb) {
-                    Text("by \(date.formatted(date: .abbreviated, time: .shortened))")
+                    Text("by \(date.formatted(date: .abbreviated, time: .omitted))")
                         .font(.caption)
                         .foregroundStyle(chore.overdue ? Color.hearthPeach : Color.hearthTextSecondary)
                 }
@@ -85,7 +85,9 @@ struct ChoreRow: View {
                 .sensoryFeedback(.success, trigger: chore.id)
             }
         }
-        .padding(.vertical, 6)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

@@ -129,6 +129,7 @@ struct BacklogView: View {
                         onComplete: { Task { await store.complete(choreID: chore.id) } }
                     )
                     .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets())
                     .listRowSeparatorTint(Color.hearthTextSecondary.opacity(0.2))
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                         if filter == .mine {
