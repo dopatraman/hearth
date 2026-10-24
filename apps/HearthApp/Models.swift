@@ -85,3 +85,25 @@ struct CreateChoreRequest: Codable {
 struct BacklogResponse: Codable, Equatable {
     let chores: [HearthChore]
 }
+
+// MARK: - Invites
+
+struct InviteDTO: Codable, Equatable {
+    let code: String
+    let listId: String
+    let expiresAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case code
+        case listId = "list_id"
+        case expiresAt = "expires_at"
+    }
+}
+
+struct AcceptInviteResponse: Codable, Equatable {
+    let listId: String
+
+    enum CodingKeys: String, CodingKey {
+        case listId = "list_id"
+    }
+}

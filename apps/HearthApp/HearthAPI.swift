@@ -17,6 +17,9 @@ enum HearthAPIError: Error, LocalizedError {
     }
 }
 
+/// Zero-field request body for endpoints that take no payload.
+private struct EmptyRequest: Encodable {}
+
 /// Thin async wrapper over URLSession for talking to the Hearth server.
 /// Each call maps 1:1 to an endpoint. No retries, no caching — handlers do what
 /// handlers do, callers decide what to do with failures.
@@ -51,6 +54,16 @@ struct HearthAPI {
     func createChore(sessionToken: String, title: String, notes: String?) async throws -> HearthChore {
         let body = CreateChoreRequest(title: title, notes: notes)
         return try await post("/chores", body: body, bearerToken: sessionToken)
+    }
+
+    // MARK: - Invites
+
+    func createInvite(sessionToken: String) async throws -> InviteDTO {
+        try await post("/invites", body: EmptyRequest(), bearerToken: sessionToken)
+    }
+
+    func acceptInvite(sessionToken: String, code: String) async throws -> AcceptInviteResponse {
+        try await post("/invites/\(code)/accept", body: EmptyRequest(), bearerToken: sessionToken)
     }
 
     // MARK: - Internals

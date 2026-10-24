@@ -1,4 +1,12 @@
 api.hearth.prakashvenkat.com {
+    # apple-app-site-association for universal links. iOS fetches this when
+    # the app installs; it ties this domain's /invite/* paths to the Hearth
+    # bundle. No auth, no cache busting — Apple expects a plain JSON file.
+    handle /.well-known/apple-app-site-association {
+        header Content-Type application/json
+        respond `{"applinks":{"details":[{"appIDs":["ZL24TUN668.com.dopatraman.hearth"],"components":[{"/":"/invite/*"}]}]}}`
+    }
+
     reverse_proxy 127.0.0.1:8080
 
     log {

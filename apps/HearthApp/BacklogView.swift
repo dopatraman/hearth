@@ -4,6 +4,7 @@ struct BacklogView: View {
     @Environment(AuthStore.self) private var auth
     @State private var store: BacklogStore
     @State private var presentingCreate: Bool = false
+    @State private var presentingSettings: Bool = false
 
     init(initialStore: BacklogStore? = nil) {
         _store = State(initialValue: initialStore ?? BacklogStore(session: { nil }))
@@ -16,9 +17,9 @@ struct BacklogView: View {
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button {
-                            auth.signOut()
+                            presentingSettings = true
                         } label: {
-                            Image(systemName: "person.crop.circle")
+                            Image(systemName: "gearshape")
                         }
                     }
                 }
@@ -37,6 +38,9 @@ struct BacklogView: View {
                     CreateChoreSheet(onSave: { title, notes in
                         await store.create(title: title, notes: notes)
                     })
+                }
+                .sheet(isPresented: $presentingSettings) {
+                    SettingsSheet()
                 }
                 .overlay(alignment: .bottomTrailing) {
                     FABButton {
@@ -119,7 +123,6 @@ private struct FABButton: View {
                 .shadow(color: Color.black.opacity(0.1), radius: 10, y: 4)
         }
         .buttonStyle(.plain)
-        .sensoryFeedback(.impact(weight: .light), trigger: UUID())
     }
 }
 

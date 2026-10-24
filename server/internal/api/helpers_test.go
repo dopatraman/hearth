@@ -10,8 +10,52 @@ import (
 	"github.com/dopatraman/hearth/server/internal/api"
 )
 
+// createInvite POSTs /invites and returns the issued code.
+func createInvite(t *testing.T, srv *api.Server, token string) string {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodPost, "/invites", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	w := httptest.NewRecorder()
+	srv.Router().ServeHTTP(w, req)
+	if w.Code != http.StatusCreated {
+		t.Fatalf("createInvite: %d body=%s", w.Code, w.Body.String())
+	}
+	var resp struct {
+		Code string `json:"code"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Fatalf("createInvite decode: %v", err)
+	}
+	return resp.Code
+}
+
+// listChoreTitles GETs /chores and returns the titles in order.
+func listChoreTitles(t *testing.T, srv *api.Server, token string) []string {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodGet, "/chores", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	w := httptest.NewRecorder()
+	srv.Router().ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("listChoreTitles: %d body=%s", w.Code, w.Body.String())
+	}
+	var resp struct {
+		Chores []struct {
+			Title string `json:"title"`
+		} `json:"chores"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Fatalf("listChoreTitles decode: %v", err)
+	}
+	titles := make([]string, 0, len(resp.Chores))
+	for _, c := range resp.Chores {
+		titles = append(titles, c.Title)
+	}
+	return titles
+}
+
 // signInHelper POSTs /auth/apple with the stub-recognized token and returns
-// the (sessionToken, userID). Centralizes the pattern across items/me tests.
+// the (sessionToken, userID). Centralizes the pattern across chores/me tests.
 func signInHelper(t *testing.T, srv *api.Server) (string, string) {
 	t.Helper()
 	req := httptest.NewRequest(http.MethodPost, "/auth/apple",

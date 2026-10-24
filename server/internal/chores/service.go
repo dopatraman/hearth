@@ -64,3 +64,10 @@ func (s *Service) Create(ctx context.Context, listID, creatorID, title string, n
 func (s *Service) Backlog(ctx context.Context, listID string) ([]db.Chore, error) {
 	return s.q.BacklogForList(ctx, listID)
 }
+
+// BacklogForUser returns the union of open chores across every list the user
+// is a member of, newest first. Preferred over Backlog(listID) when the user
+// may belong to multiple lists (invite flow).
+func (s *Service) BacklogForUser(ctx context.Context, userID string) ([]db.Chore, error) {
+	return s.q.BacklogForUser(ctx, userID)
+}
