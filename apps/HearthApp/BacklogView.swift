@@ -7,6 +7,7 @@ struct BacklogView: View {
     @State private var presentingCreate: Bool = false
     @State private var presentingSettings: Bool = false
     @State private var filter: Filter = .all
+    @State private var dateSheetFor: HearthChore?
 
     init(initialStore: BacklogStore? = nil) {
         _store = State(initialValue: initialStore ?? BacklogStore(session: { nil }))
@@ -72,6 +73,13 @@ struct BacklogView: View {
             .sheet(isPresented: $presentingSettings) {
                 SettingsSheet()
             }
+            .sheet(item: $dateSheetFor) { chore in
+                ClaimDateSheet(choreTitle: chore.title) { date in
+                    if let date {
+                        await store.setWillCompleteBy(choreID: chore.id, when: date)
+                    }
+                }
+            }
             .overlay(alignment: .bottomTrailing) {
                 FABButton {
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -125,7 +133,15 @@ struct BacklogView: View {
                     .swipeActions(edge: .leading, allowsFullSwipe: true) {
                         if chore.claimedBy == nil {
                             Button {
-                                Task { await store.claim(choreID: chore.id) }
+                                Task {
+                                    await store.claim(choreID: chore.id)
+                                    // After successful claim, prompt for an
+                                    // optional date commitment.
+                                    if let claimed = store.chores.first(where: { $0.id == chore.id }),
+                                       claimed.claimedBy == currentUserID {
+                                        dateSheetFor = claimed
+                                    }
+                                }
                             } label: {
                                 Label("Claim", systemImage: "hand.raised.fill")
                             }

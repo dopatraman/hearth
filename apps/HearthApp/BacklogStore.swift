@@ -77,6 +77,20 @@ final class BacklogStore {
     /// Complete a chore. On success, removes it from the backlog (only open
     /// chores live here) and returns the completed chore for post-removal
     /// animations.
+    /// Set (or clear with nil) the will_complete_by for a chore. Must already
+    /// be claimed by the caller server-side.
+    func setWillCompleteBy(choreID: String, when: Date?) async {
+        guard let token = session() else { return }
+        do {
+            let updated = try await api.setWillCompleteBy(sessionToken: token, choreID: choreID, when: when)
+            if let idx = chores.firstIndex(where: { $0.id == choreID }) {
+                chores[idx] = updated
+            }
+        } catch {
+            phase = .failed(error.localizedDescription)
+        }
+    }
+
     @discardableResult
     func complete(choreID: String) async -> HearthChore? {
         guard let token = session() else { return nil }

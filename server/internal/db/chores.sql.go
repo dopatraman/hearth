@@ -352,3 +352,41 @@ func (q *Queries) SearchGraveyard(ctx context.Context, arg SearchGraveyardParams
 	}
 	return items, nil
 }
+
+const setWillCompleteBy = `-- name: SetWillCompleteBy :one
+UPDATE chores
+SET will_complete_by = ?1
+WHERE id = ?2
+  AND state = 'open'
+  AND claimed_by = ?3
+RETURNING id, list_id, creator_id, title, notes, state,
+          claimed_by, claimed_at, will_complete_by,
+          completed_by, completed_at, created_at, updated_at
+`
+
+type SetWillCompleteByParams struct {
+	WillCompleteBy *string
+	ID             string
+	ClaimedBy      *string
+}
+
+func (q *Queries) SetWillCompleteBy(ctx context.Context, arg SetWillCompleteByParams) (Chore, error) {
+	row := q.db.QueryRowContext(ctx, setWillCompleteBy, arg.WillCompleteBy, arg.ID, arg.ClaimedBy)
+	var i Chore
+	err := row.Scan(
+		&i.ID,
+		&i.ListID,
+		&i.CreatorID,
+		&i.Title,
+		&i.Notes,
+		&i.State,
+		&i.ClaimedBy,
+		&i.ClaimedAt,
+		&i.WillCompleteBy,
+		&i.CompletedBy,
+		&i.CompletedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}

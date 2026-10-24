@@ -35,7 +35,8 @@ struct GraveyardRow: View {
             willCompleteBy: nil,
             completedBy: "u",
             completedAt: "2026-10-23T19:30:00.000Z",
-            createdAt: "", updatedAt: ""
+            createdAt: "", updatedAt: "",
+            overdue: false
         ))
     }
     .listStyle(.plain)

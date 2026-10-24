@@ -21,6 +21,7 @@
 		7FDEC7F54260FE1A9BA1C98A /* GraveyardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0759AD20FF49573C41872ABB /* GraveyardView.swift */; };
 		889D1C833DC318E868409959 /* SignInScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3EB1A8B05EDE6E9F9D12C8B /* SignInScreen.swift */; };
 		9511D2465057C4684E1EDAB2 /* FABButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11C180916D2AF79C4264A84B /* FABButton.swift */; };
+		982C229C52DFBED61CFEE397 /* ClaimDateSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94CA390E0E7B6C997F58DEA3 /* ClaimDateSheet.swift */; };
 		C2CAE7F05711E53B13A039A2 /* Keychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = F182F34FD96686F757ADDB8E /* Keychain.swift */; };
 		C9E1D28AE70E0E00B1F8D805 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B2B4F2AE4AF93C22AFF4BC99 /* Assets.xcassets */; };
 		D895165661854A0484F9B76F /* HearthAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEB5F2AAC13B09F521E40FFE /* HearthAPI.swift */; };
@@ -59,6 +60,7 @@
 		85D240E3AC5F9B16473FD699 /* CreateChoreSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateChoreSheet.swift; sourceTree = "<group>"; };
 		884FF6B5F62978460594E705 /* AuthStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthStore.swift; sourceTree = "<group>"; };
 		933F92F6D50007BE186E3E3D /* GraveyardStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraveyardStore.swift; sourceTree = "<group>"; };
+		94CA390E0E7B6C997F58DEA3 /* ClaimDateSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaimDateSheet.swift; sourceTree = "<group>"; };
 		9E5A6F32C7146A850EDC99AA /* HearthApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = HearthApp.entitlements; sourceTree = "<group>"; };
 		B0BEB6212CE76B524AB5B46A /* InviteSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InviteSheet.swift; sourceTree = "<group>"; };
 		B2B4F2AE4AF93C22AFF4BC99 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -102,6 +104,7 @@
 				E329EBE61038AFD92A0AB182 /* BacklogStore.swift */,
 				35D84895D16FD69B1EF09532 /* BacklogView.swift */,
 				78C1F4A87E0AF9F6769D9F1F /* ChoreRow.swift */,
+				94CA390E0E7B6C997F58DEA3 /* ClaimDateSheet.swift */,
 				600AB893185DEB8491B86D64 /* ContentView.swift */,
 				85D240E3AC5F9B16473FD699 /* CreateChoreSheet.swift */,
 				11C180916D2AF79C4264A84B /* FABButton.swift */,
@@ -260,6 +263,7 @@
 				246B03DCFE5192417F1D3E2B /* BacklogStore.swift in Sources */,
 				FE6701545DE657353A860688 /* BacklogView.swift in Sources */,
 				1872E078E091D22126C9A9AC /* ChoreRow.swift in Sources */,
+				982C229C52DFBED61CFEE397 /* ClaimDateSheet.swift in Sources */,
 				F57C81DB3282DC8FFE5FA42F /* ContentView.swift in Sources */,
 				751535B8D945AFAE4D88FD0D /* CreateChoreSheet.swift in Sources */,
 				9511D2465057C4684E1EDAB2 /* FABButton.swift in Sources */,
