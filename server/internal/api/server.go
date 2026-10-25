@@ -1,8 +1,12 @@
 package api
 
 import (
+	"time"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+
+	"golang.org/x/time/rate"
 
 	"github.com/dopatraman/hearth/server/internal/auth"
 	"github.com/dopatraman/hearth/server/internal/db"
@@ -22,9 +26,12 @@ func (s *Server) Router() *chi.Mux {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Recoverer)
 
+	authLimiter := newIPLimiter(rate.Every(6*time.Second), 10)
+	inviteLimiter := newIPLimiter(rate.Every(10*time.Second), 5)
+
 	r.Get("/healthz", healthz)
 
-	r.Post("/auth/apple", s.handleAuthApple)
+	r.With(rateLimit(authLimiter)).Post("/auth/apple", s.handleAuthApple)
 
 	r.Group(func(r chi.Router) {
 		r.Use(s.requireAuth)
@@ -41,7 +48,7 @@ func (s *Server) Router() *chi.Mux {
 		r.Get("/chores/graveyard", s.handleGraveyard)
 
 		r.Post("/invites", s.handleCreateInvite)
-		r.Post("/invites/{code}/accept", s.handleAcceptInvite)
+		r.With(rateLimit(inviteLimiter)).Post("/invites/{code}/accept", s.handleAcceptInvite)
 
 		r.Post("/devices", s.handleRegisterDevice)
 		r.Delete("/devices", s.handleUnregisterDevice)
