@@ -25,6 +25,7 @@ func (s *Server) Router() *chi.Mux {
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Recoverer)
+	r.Use(requestLogger)
 
 	authLimiter := newIPLimiter(rate.Every(6*time.Second), 10)
 	inviteLimiter := newIPLimiter(rate.Every(10*time.Second), 5)

@@ -21,7 +21,7 @@ import (
 )
 
 func main() {
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	logger := slog.New(api.NewContextSlogHandler(slog.NewJSONHandler(os.Stdout, nil)))
 	slog.SetDefault(logger)
 
 	sqlitePath := envDefault("SQLITE_PATH", "./hearth.db")

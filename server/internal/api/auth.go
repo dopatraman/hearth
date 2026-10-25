@@ -107,6 +107,7 @@ func (s *Server) requireAuth(next http.Handler) http.Handler {
 		}
 
 		ctx := context.WithValue(r.Context(), ctxKeyUser, user)
+		setLogUserID(ctx, user.ID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
