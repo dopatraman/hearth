@@ -73,6 +73,35 @@ jobs:
             server/dist/hearth \
             "deploy@${DROPLET_HOST}:/opt/hearth/staging/hearth.new"
 
+      - name: Install APNs credentials (optional)
+        env:
+          DROPLET_HOST: ${{ secrets.DROPLET_HOST }}
+          APNS_KEY_P8_B64: ${{ secrets.APNS_KEY_P8_B64 }}
+          APNS_KEY_ID: ${{ secrets.APNS_KEY_ID }}
+          APNS_TEAM_ID: ${{ secrets.APNS_TEAM_ID }}
+          APNS_BUNDLE_ID: ${{ secrets.APNS_BUNDLE_ID }}
+          APNS_PRODUCTION: ${{ secrets.APNS_PRODUCTION }}
+        run: |
+          if [[ -z "$APNS_KEY_P8_B64" ]]; then
+            echo "APNS secrets not set — server will use NoopPusher"
+            exit 0
+          fi
+          printf '%s' "$APNS_KEY_P8_B64" | base64 -d > /tmp/apns.p8
+          scp -i ~/.ssh/id_ed25519 /tmp/apns.p8 "deploy@${DROPLET_HOST}:/opt/hearth/apns.p8"
+          rm -f /tmp/apns.p8
+          ssh -i ~/.ssh/id_ed25519 "deploy@${DROPLET_HOST}" bash -s <<REMOTE
+          set -eu
+          chmod 600 /opt/hearth/apns.p8
+          cat > /opt/hearth/apns.env <<ENV
+          APNS_KEY_ID=${APNS_KEY_ID}
+          APNS_TEAM_ID=${APNS_TEAM_ID}
+          APNS_BUNDLE_ID=${APNS_BUNDLE_ID}
+          APNS_KEY_P8_PATH=/opt/hearth/apns.p8
+          APNS_PRODUCTION=${APNS_PRODUCTION:-0}
+          ENV
+          chmod 600 /opt/hearth/apns.env
+          REMOTE
+
       - name: Atomic swap and restart
         env:
           DROPLET_HOST: ${{ secrets.DROPLET_HOST }}

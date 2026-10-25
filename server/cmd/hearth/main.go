@@ -14,6 +14,7 @@ import (
 	"github.com/dopatraman/hearth/server/internal/api"
 	"github.com/dopatraman/hearth/server/internal/auth"
 	"github.com/dopatraman/hearth/server/internal/db"
+	"github.com/dopatraman/hearth/server/internal/notifications"
 	"github.com/dopatraman/hearth/server/migrations"
 
 	_ "modernc.org/sqlite"
@@ -64,12 +65,28 @@ func main() {
 		os.Exit(1)
 	}
 
+	uow := &db.PoolUoW{Pool: database}
+	var pusher notifications.Pusher = notifications.NoopPusher{}
+	if cfg, ok := notifications.APNSConfigFromEnv(); ok {
+		ap, err := notifications.NewAPNSPusher(cfg)
+		if err != nil {
+			logger.Error("apns init", "err", err)
+			os.Exit(1)
+		}
+		pusher = ap
+		logger.Info("apns pusher configured", "production", cfg.Production, "bundle_id", cfg.BundleID)
+	} else {
+		logger.Info("apns env not set — using noop pusher")
+	}
+	dispatcher := &notifications.Dispatcher{UoW: uow, Pusher: pusher}
+
 	srv := &http.Server{
 		Addr: addr,
 		Handler: (&api.Server{
-			UoW:           &db.PoolUoW{Pool: database},
+			UoW:           uow,
 			AppleVerifier: appleVerifier,
 			Session:       sessionTokens,
+			Dispatcher:    dispatcher,
 		}).Router(),
 		ReadHeaderTimeout: 5 * time.Second,
 	}

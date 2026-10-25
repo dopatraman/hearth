@@ -6,14 +6,14 @@ import (
 
 	"github.com/dopatraman/hearth/server/internal/auth"
 	"github.com/dopatraman/hearth/server/internal/db"
+	"github.com/dopatraman/hearth/server/internal/notifications"
 )
 
-// Server bundles handler dependencies and mounts routes via Router().
-// Zero value is NOT useful; UoW, AppleVerifier, Session must all be set.
 type Server struct {
 	UoW           db.UoW
 	AppleVerifier auth.AppleVerifier
 	Session       *auth.SessionTokens
+	Dispatcher    *notifications.Dispatcher
 }
 
 func (s *Server) Router() *chi.Mux {
@@ -42,6 +42,10 @@ func (s *Server) Router() *chi.Mux {
 
 		r.Post("/invites", s.handleCreateInvite)
 		r.Post("/invites/{code}/accept", s.handleAcceptInvite)
+
+		r.Post("/devices", s.handleRegisterDevice)
+		r.Delete("/devices", s.handleUnregisterDevice)
+		r.Put("/me/notifications", s.handleSetNotifications)
 	})
 
 	return r

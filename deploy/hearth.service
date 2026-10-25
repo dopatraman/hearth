@@ -18,6 +18,8 @@ Environment=HEARTH_ADDR=127.0.0.1:8080
 Environment=APPLE_AUDIENCE=com.dopatraman.hearth
 # SESSION_SECRET and anything else sensitive comes from .env (not in git).
 EnvironmentFile=/opt/hearth/.env
+# APNs env (optional; written by the deploy workflow when APNS_* secrets are set).
+EnvironmentFile=-/opt/hearth/apns.env
 
 # Security hardening
 NoNewPrivileges=true
