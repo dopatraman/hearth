@@ -66,10 +66,19 @@ func main() {
 	}
 
 	uow := &db.PoolUoW{Pool: database}
-	dispatcher := &notifications.Dispatcher{
-		UoW:    uow,
-		Pusher: notifications.NoopPusher{},
+	var pusher notifications.Pusher = notifications.NoopPusher{}
+	if cfg, ok := notifications.APNSConfigFromEnv(); ok {
+		ap, err := notifications.NewAPNSPusher(cfg)
+		if err != nil {
+			logger.Error("apns init", "err", err)
+			os.Exit(1)
+		}
+		pusher = ap
+		logger.Info("apns pusher configured", "production", cfg.Production, "bundle_id", cfg.BundleID)
+	} else {
+		logger.Info("apns env not set — using noop pusher")
 	}
+	dispatcher := &notifications.Dispatcher{UoW: uow, Pusher: pusher}
 
 	srv := &http.Server{
 		Addr: addr,
