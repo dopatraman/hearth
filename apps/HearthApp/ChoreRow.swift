@@ -1,142 +1,179 @@
 import SwiftUI
 
-/// Row representation of a single `HearthChore`. Carries visual state based
-/// on claim status and offers the tap-to-complete affordance (mint check)
-/// when the current user is the claimant.
+/// Rounded white card representation of a single `HearthChore` — closed state
+/// only. The left-side slot carries semantic role (mine / open / other). The
+/// title stacks over an optional chip when there's time pressure. A trailing
+/// chevron hints the row will expand (expand drawer lands in Slice 6).
 struct ChoreRow: View {
     let chore: HearthChore
-    /// The current user's id, used to decide whether a chore is "mine" or
-    /// "someone else's". Nil before auth bootstrap finishes.
     let currentUserID: String?
-    /// Household members, used to resolve the claimant's display name/initial
-    /// when the chore belongs to someone else.
     let members: [HearthMember]
-    /// Called when the user taps the mint check button on their own chore.
     let onComplete: () -> Void
 
-    private var mine: Bool {
-        guard let currentUserID else { return false }
-        return chore.claimedBy == currentUserID
+    private var roleValue: ChoreRole {
+        role(for: chore, me: currentUserID)
     }
 
-    private var claimedByOther: Bool {
-        guard let claimant = chore.claimedBy else { return false }
-        return claimant != currentUserID
+    private var otherInitial: String? {
+        guard roleValue == .other, let claimant = chore.claimedBy else { return nil }
+        return MembersStore.initial(for: claimant, in: members)
     }
 
-    private var accentColor: Color {
-        if chore.overdue { return .hearthPeach }
-        if mine { return .hearthLavender }
-        return .clear
+    private var chip: Chip? {
+        let dueDate: Date? = chore.willCompleteBy.flatMap { s in
+            ISO8601DateFormatter.hearthISO().date(from: s)
+                ?? ISO8601DateFormatter().date(from: s)
+        }
+        return chipFor(overdue: chore.overdue, willCompleteBy: dueDate, now: Date())
     }
 
     var body: some View {
-        HStack(spacing: 12) {
-            // Left accent — peach if overdue, lavender if mine, invisible otherwise.
-            Rectangle()
-                .fill(accentColor)
-                .frame(width: 3)
-                .cornerRadius(1.5)
+        HStack(spacing: 4) {
+            leftSlot
 
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 6) {
-                    Text(chore.title)
-                        .font(.body)
-                        .foregroundStyle(Color.hearthTextPrimary)
-                    if chore.overdue {
-                        Text("OVERDUE")
-                            .font(.caption2.weight(.bold))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.hearthPeach, in: Capsule())
-                    }
-                }
-                if let notes = chore.notes, !notes.isEmpty {
-                    Text(notes)
-                        .font(.footnote)
-                        .foregroundStyle(Color.hearthTextSecondary)
-                        .lineLimit(2)
-                }
-                if let wcb = chore.willCompleteBy,
-                   let date = ISO8601DateFormatter.hearthISO().date(from: wcb) {
-                    Text("by \(date.formatted(date: .abbreviated, time: .omitted))")
-                        .font(.caption)
-                        .foregroundStyle(chore.overdue ? Color.hearthPeach : Color.hearthTextSecondary)
+            VStack(alignment: .leading, spacing: 5) {
+                Text(chore.title)
+                    .font(.hearthBody(size: 16, weight: .medium))
+                    .foregroundStyle(Color.hearthTextPrimary)
+                    .lineLimit(2)
+
+                if let chip {
+                    ChipView(chip: chip)
                 }
             }
+            .padding(.vertical, 8)
+            .padding(.leading, 4)
+            .frame(maxWidth: .infinity, alignment: .leading)
 
-            Spacer()
-
-            if claimedByOther, let claimant = chore.claimedBy {
-                MemberAvatar(
-                    initial: MembersStore.initial(for: claimant, in: members) ?? "?",
-                    isSelf: false,
-                    size: 28,
-                    borderColor: .clear
-                )
-                .accessibilityLabel("Claimed by \(MembersStore.displayName(for: claimant, in: members) ?? "someone")")
-            } else if mine {
-                // Mint check — tap to complete.
-                Button(action: onComplete) {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(width: 32, height: 32)
-                        .background(Color.hearthMint, in: Circle())
-                }
-                .buttonStyle(.plain)
-                .sensoryFeedback(.success, trigger: chore.id)
-            }
+            Image(systemName: "chevron.down")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(Color.hearthChevron)
+                .frame(width: 24)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.leading, 6)
+        .padding(.trailing, 12)
+        .padding(.vertical, 8)
+        .frame(minHeight: 56)
+        .background(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(Color.hearthCardBackground)
+                .shadow(color: .black.opacity(0.04), radius: 2, y: 1)
+                .shadow(color: .black.opacity(0.04), radius: 18, y: 6)
+        )
+    }
+
+    @ViewBuilder
+    private var leftSlot: some View {
+        if roleValue == .mine {
+            Button(action: onComplete) {
+                RingSlot(role: roleValue, otherInitial: otherInitial)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Mark done")
+        } else {
+            RingSlot(role: roleValue, otherInitial: otherInitial)
+                .accessibilityHidden(roleValue == .open)
+                .accessibilityLabel(otherLabel)
+        }
+    }
+
+    private var otherLabel: String {
+        guard roleValue == .other, let claimant = chore.claimedBy else { return "" }
+        let name = MembersStore.displayName(for: claimant, in: members) ?? "someone"
+        return "Claimed by \(name)"
     }
 }
 
+extension Color {
+    /// White card background — pure white in light, warm-dark in dark.
+    static let hearthCardBackground = Color(
+        light: .white,
+        dark: Color(red: 0x2A / 255, green: 0x27 / 255, blue: 0x24 / 255)
+    )
+
+    /// Muted chevron tint.
+    static let hearthChevron = Color(
+        light: Color(red: 0x9E / 255, green: 0x9A / 255, blue: 0xAF / 255),
+        dark: Color(red: 0x7E / 255, green: 0x7A / 255, blue: 0x8F / 255)
+    )
+}
+
+private extension Color {
+    init(light: Color, dark: Color) {
+        self.init(uiColor: UIColor { trait in
+            trait.userInterfaceStyle == .dark ? UIColor(dark) : UIColor(light)
+        })
+    }
+}
+
+#if DEBUG
 #Preview {
     let members = [
         HearthMember(id: "me", displayName: "Venkat"),
-        HearthMember(id: "someone-else", displayName: "Maya"),
+        HearthMember(id: "u_maya", displayName: "Maya"),
     ]
-    return List {
-        ChoreRow(
-            chore: previewChore(title: "Take out trash", notes: "Both bins", claimedBy: nil),
-            currentUserID: "me",
-            members: members,
-            onComplete: {}
-        )
-        ChoreRow(
-            chore: previewChore(title: "Water plants", notes: nil, claimedBy: "me"),
-            currentUserID: "me",
-            members: members,
-            onComplete: {}
-        )
-        ChoreRow(
-            chore: previewChore(title: "Mop floor", notes: nil, claimedBy: "someone-else"),
-            currentUserID: "me",
-            members: members,
-            onComplete: {}
-        )
+    return ScrollView {
+        VStack(spacing: 10) {
+            ChoreRow(
+                chore: previewChore(title: "Clean out the fridge", claimedBy: "me",
+                                    willCompleteBy: "2026-10-23T23:59:59.000Z", overdue: true),
+                currentUserID: "me",
+                members: members,
+                onComplete: {}
+            )
+            ChoreRow(
+                chore: previewChore(title: "Take out the bins", claimedBy: "me",
+                                    willCompleteBy: "2026-10-25T23:59:59.000Z"),
+                currentUserID: "me",
+                members: members,
+                onComplete: {}
+            )
+            ChoreRow(
+                chore: previewChore(title: "Water the plants", claimedBy: "me"),
+                currentUserID: "me",
+                members: members,
+                onComplete: {}
+            )
+            ChoreRow(
+                chore: previewChore(title: "Mop the kitchen", claimedBy: "u_maya",
+                                    willCompleteBy: "2026-10-26T23:59:59.000Z"),
+                currentUserID: "me",
+                members: members,
+                onComplete: {}
+            )
+            ChoreRow(
+                chore: previewChore(title: "Wipe down the stove", claimedBy: nil),
+                currentUserID: "me",
+                members: members,
+                onComplete: {}
+            )
+        }
+        .padding(16)
     }
-    .listStyle(.plain)
+    .background(Color.hearthBackground)
 }
 
-private func previewChore(title: String, notes: String?, claimedBy: String?) -> HearthChore {
+private func previewChore(
+    title: String,
+    claimedBy: String? = nil,
+    willCompleteBy: String? = nil,
+    overdue: Bool = false
+) -> HearthChore {
     HearthChore(
         id: UUID().uuidString,
         listId: "l",
         creatorId: "me",
         title: title,
-        notes: notes,
+        notes: nil,
         state: "open",
         claimedBy: claimedBy,
         claimedAt: nil,
-        willCompleteBy: nil,
+        willCompleteBy: willCompleteBy,
         completedBy: nil,
         completedAt: nil,
-        createdAt: "", updatedAt: "",
-        overdue: false
+        createdAt: "2026-10-20T10:00:00.000Z",
+        updatedAt: "2026-10-20T10:00:00.000Z",
+        overdue: overdue
     )
 }
+#endif
