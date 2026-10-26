@@ -9,6 +9,7 @@ struct BacklogView: View {
     @State private var presentingSettings: Bool = false
     @State private var filter: Filter = .all
     @State private var dateSheetFor: HearthChore?
+    @State private var didLoad: Bool = false
 
     init(initialStore: BacklogStore? = nil, members: MembersStore? = nil) {
         _store = State(initialValue: initialStore ?? BacklogStore(session: { nil }))
@@ -33,6 +34,10 @@ struct BacklogView: View {
             guard let me = currentUserID else { return [] }
             return store.chores.filter { $0.claimedBy == me }
         }
+    }
+
+    private var sections: [BacklogSection] {
+        groupedSections(chores: store.chores, currentUserID: currentUserID, filter: filter)
     }
 
     var body: some View {
@@ -69,6 +74,7 @@ struct BacklogView: View {
                 if members.members.isEmpty {
                     await members.load()
                 }
+                withAnimation { didLoad = true }
             }
             .sheet(isPresented: $presentingCreate) {
                 CreateChoreSheet(onSave: { title, notes in
@@ -131,70 +137,43 @@ struct BacklogView: View {
     }
 
     private var loadedList: some View {
-        List {
-            ForEach(visibleChores) { chore in
-                choreRow(for: chore)
-            }
-        }
-        .listStyle(.plain)
-        .animation(.easeInOut(duration: 0.25), value: visibleChores.map(\.id))
-    }
-
-    private func choreRow(for chore: HearthChore) -> some View {
-        ChoreRow(
-            chore: chore,
-            currentUserID: currentUserID,
-            members: members.members,
-            onComplete: { Task { await store.complete(choreID: chore.id) } }
-        )
-        .listRowBackground(Color.clear)
-        .listRowInsets(EdgeInsets())
-        .listRowSeparatorTint(Color.hearthTextSecondary.opacity(0.2))
-        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-            trailingSwipeActions(for: chore)
-        }
-        .swipeActions(edge: .leading, allowsFullSwipe: true) {
-            leadingSwipeActions(for: chore)
-        }
-    }
-
-    @ViewBuilder
-    private func trailingSwipeActions(for chore: HearthChore) -> some View {
-        if filter == .mine {
-            Button {
-                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
-                Task { await store.snooze(choreID: chore.id) }
-            } label: {
-                Label("Snooze", systemImage: "moon.zzz.fill")
-            }
-            .tint(Color.hearthSky)
-        }
-    }
-
-    @ViewBuilder
-    private func leadingSwipeActions(for chore: HearthChore) -> some View {
-        if chore.claimedBy == nil {
-            Button {
-                Task {
-                    await store.claim(choreID: chore.id)
-                    if let claimed = store.chores.first(where: { $0.id == chore.id }),
-                       claimed.claimedBy == currentUserID {
-                        dateSheetFor = claimed
-                    }
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 18) {
+                ForEach(Array(sections.enumerated()), id: \.element.id) { index, section in
+                    sectionView(section, index: index)
                 }
-            } label: {
-                Label("Claim", systemImage: "hand.raised.fill")
             }
-            .tint(Color.hearthLavender)
-        } else if chore.claimedBy == currentUserID {
-            Button {
-                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
-                Task { await store.release(choreID: chore.id) }
-            } label: {
-                Label("Release", systemImage: "hand.raised.slash.fill")
-            }
-            .tint(Color.hearthPeach)
+            .padding(.horizontal, 16)
+            .padding(.top, 6)
+            .padding(.bottom, 150)
         }
+        .animation(.easeInOut(duration: 0.25), value: sections.map(\.id))
+    }
+
+    private func sectionView(_ section: BacklogSection, index: Int) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            SectionHeader(
+                label: section.label,
+                dotColor: section.dotColor,
+                count: section.items.count
+            )
+            VStack(spacing: 10) {
+                ForEach(section.items) { chore in
+                    ChoreRow(
+                        chore: chore,
+                        currentUserID: currentUserID,
+                        members: members.members,
+                        onComplete: { Task { await store.complete(choreID: chore.id) } }
+                    )
+                }
+            }
+        }
+        .opacity(didLoad ? 1 : 0)
+        .offset(y: didLoad ? 0 : 10)
+        .animation(
+            .easeOut(duration: 0.55).delay(Double(index) * 0.06),
+            value: didLoad
+        )
     }
 
     private var emptyState: some View {
