@@ -119,4 +119,11 @@ final class AuthStore {
     func dismissPendingInvite() {
         pendingInviteCode = nil
     }
+
+    #if DEBUG
+    convenience init(previewSignedInUser user: HearthUser) {
+        self.init()
+        self.phase = .signedIn(user)
+    }
+    #endif
 }

@@ -55,4 +55,12 @@ final class MembersStore {
         guard let firstChar = trimmed.first else { return "?" }
         return String(firstChar).uppercased()
     }
+
+    #if DEBUG
+    init(preview members: [HearthMember]) {
+        self.api = HearthAPI()
+        self.session = { nil }
+        self.members = members
+    }
+    #endif
 }
