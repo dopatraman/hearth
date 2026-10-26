@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		0B385237E9188A8886D5D38D /* ChipView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53901662611B71A110CA2976 /* ChipView.swift */; };
+		0B96CA4D0FF730A6BEA5229E /* BacklogStoreCompletionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE9FDA5ED427DC6F6B93D6F3 /* BacklogStoreCompletionTests.swift */; };
 		1872E078E091D22126C9A9AC /* ChoreRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78C1F4A87E0AF9F6769D9F1F /* ChoreRow.swift */; };
 		1C932475B43A19CACE23693C /* BacklogSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A942B20E31B5CEE96DB3139 /* BacklogSummary.swift */; };
 		1D8F209B8BC359F4BE9DF152 /* BacklogHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B0ECE7A8A6634CE8F37208C /* BacklogHeader.swift */; };
@@ -23,6 +24,7 @@
 		59DDF4D72682D0A0D3C255CC /* BacklogSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D705583A57B64B7893D99B /* BacklogSections.swift */; };
 		5A03F2745120E80BD86131AA /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D61F9280CA2185FD1200A3D /* ContentView.swift */; };
 		5B17A7DC167BCAFDF5FC3AF5 /* MembersStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 342BA74BF16171DB9236407C /* MembersStoreTests.swift */; };
+		5D0893AAE2DC874C0D1BFC29 /* Toast.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E24500FADAF50637E23BEA0 /* Toast.swift */; };
 		5DD43C2BD93E0BE2E22C07FA /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE5028520EA72843371CB930 /* AppDelegate.swift */; };
 		60076DC0BF2C788AFA41418F /* InviteSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0BEB6212CE76B524AB5B46A /* InviteSheet.swift */; };
 		65A3ACB6340FB76FBDA27FF5 /* HearthAppTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1945B64FC16BDFE702F27691 /* HearthAppTests.swift */; };
@@ -93,6 +95,7 @@
 		600AB893185DEB8491B86D64 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		69B49E34A87F5EE3FC5E484D /* Geist-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Geist-Regular.ttf"; sourceTree = "<group>"; };
 		6B0ECE7A8A6634CE8F37208C /* BacklogHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BacklogHeader.swift; sourceTree = "<group>"; };
+		6E24500FADAF50637E23BEA0 /* Toast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Toast.swift; sourceTree = "<group>"; };
 		789B7FB0B4BEBBA7C2235763 /* ChoreRowModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChoreRowModelTests.swift; sourceTree = "<group>"; };
 		78C1F4A87E0AF9F6769D9F1F /* ChoreRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChoreRow.swift; sourceTree = "<group>"; };
 		7B517E2393CCDF26A1394726 /* AvatarStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarStack.swift; sourceTree = "<group>"; };
@@ -116,6 +119,7 @@
 		E329EBE61038AFD92A0AB182 /* BacklogStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BacklogStore.swift; sourceTree = "<group>"; };
 		EBE592C777C4D1BBE58F29EE /* Palette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Palette.swift; sourceTree = "<group>"; };
 		EE5028520EA72843371CB930 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		EE9FDA5ED427DC6F6B93D6F3 /* BacklogStoreCompletionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BacklogStoreCompletionTests.swift; sourceTree = "<group>"; };
 		EF57DDC6D708A5FD93792419 /* GraveyardRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraveyardRow.swift; sourceTree = "<group>"; };
 		F182F34FD96686F757ADDB8E /* Keychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keychain.swift; sourceTree = "<group>"; };
 		F3EB1A8B05EDE6E9F9D12C8B /* SignInScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInScreen.swift; sourceTree = "<group>"; };
@@ -196,6 +200,7 @@
 				449D982FB775933F071FBE60 /* SettingsSheet.swift */,
 				F3EB1A8B05EDE6E9F9D12C8B /* SignInScreen.swift */,
 				39BE884C477F368551B4F960 /* SinceLine.swift */,
+				6E24500FADAF50637E23BEA0 /* Toast.swift */,
 				7F0CA1C7233E1AA1129ACCB9 /* Resources */,
 			);
 			path = HearthApp;
@@ -223,6 +228,7 @@
 			isa = PBXGroup;
 			children = (
 				D26C9C8C06D47CFC35AC5473 /* BacklogSectionsTests.swift */,
+				EE9FDA5ED427DC6F6B93D6F3 /* BacklogStoreCompletionTests.swift */,
 				2158D209613581A52909B32C /* BacklogSummaryTests.swift */,
 				789B7FB0B4BEBBA7C2235763 /* ChoreRowModelTests.swift */,
 				1945B64FC16BDFE702F27691 /* HearthAppTests.swift */,
@@ -387,6 +393,7 @@
 				D8A9BD61E2D45060AE2156C3 /* SettingsSheet.swift in Sources */,
 				889D1C833DC318E868409959 /* SignInScreen.swift in Sources */,
 				C794DDA4730623BFEAA0A756 /* SinceLine.swift in Sources */,
+				5D0893AAE2DC874C0D1BFC29 /* Toast.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -395,6 +402,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				FFF89558DF97A807ADB3C34B /* BacklogSectionsTests.swift in Sources */,
+				0B96CA4D0FF730A6BEA5229E /* BacklogStoreCompletionTests.swift in Sources */,
 				555E830F67A21ACECBD628D5 /* BacklogSummaryTests.swift in Sources */,
 				E91265AC63F4EA9DD5C36D20 /* ChoreRowModelTests.swift in Sources */,
 				65A3ACB6340FB76FBDA27FF5 /* HearthAppTests.swift in Sources */,

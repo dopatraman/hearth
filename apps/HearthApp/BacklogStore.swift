@@ -15,13 +15,90 @@ final class BacklogStore {
     private(set) var chores: [HearthChore] = []
     private(set) var phase: Phase = .idle
     private(set) var isCreating: Bool = false
+    private(set) var pendingCompletions: Set<String> = []
+
+    private var pendingTasks: [String: Task<Void, Never>] = [:]
+    private var completionSnapshots: [String: (chore: HearthChore, index: Int)] = [:]
 
     private let api: HearthAPI
     private let session: () -> String?
+    let completionDelay: Duration
+    private let completionCommit: @Sendable (_ token: String, _ choreID: String) async throws -> HearthChore
 
-    init(api: HearthAPI = HearthAPI(), session: @escaping () -> String?) {
+    init(
+        api: HearthAPI = HearthAPI(),
+        session: @escaping () -> String?,
+        completionDelay: Duration = .seconds(3),
+        completionCommit: (@Sendable (_ token: String, _ choreID: String) async throws -> HearthChore)? = nil
+    ) {
         self.api = api
         self.session = session
+        self.completionDelay = completionDelay
+        self.completionCommit = completionCommit ?? { token, id in
+            try await api.completeChore(sessionToken: token, choreID: id)
+        }
+    }
+
+    /// Optimistically remove `choreID` from the backlog, then (after
+    /// `completionDelay`) hit the server. If `cancelCompletion(choreID:)` is
+    /// called before the delay elapses the task is cancelled and the chore is
+    /// restored at its previous index — no network call fires.
+    func startCompletion(choreID: String) {
+        guard pendingTasks[choreID] == nil else { return }
+        guard let index = chores.firstIndex(where: { $0.id == choreID }) else { return }
+        guard let token = session() else {
+            phase = .failed("Not signed in")
+            return
+        }
+
+        let chore = chores[index]
+        completionSnapshots[choreID] = (chore, index)
+        chores.remove(at: index)
+        pendingCompletions.insert(choreID)
+
+        let commit = completionCommit
+        let delay = completionDelay
+
+        let task = Task { [weak self] in
+            do {
+                try await Task.sleep(for: delay)
+                try Task.checkCancellation()
+                _ = try await commit(token, choreID)
+                await self?.finishCompletion(choreID: choreID)
+            } catch is CancellationError {
+                // Cancellation path is handled by cancelCompletion.
+            } catch {
+                await self?.failCompletion(choreID: choreID, error: error)
+            }
+        }
+        pendingTasks[choreID] = task
+    }
+
+    /// Cancels a pending completion, restoring the chore at its previous index.
+    func cancelCompletion(choreID: String) {
+        guard let task = pendingTasks.removeValue(forKey: choreID) else { return }
+        task.cancel()
+        pendingCompletions.remove(choreID)
+        restoreSnapshot(choreID: choreID)
+    }
+
+    private func finishCompletion(choreID: String) {
+        pendingTasks[choreID] = nil
+        pendingCompletions.remove(choreID)
+        completionSnapshots[choreID] = nil
+    }
+
+    private func failCompletion(choreID: String, error: Error) {
+        pendingTasks[choreID] = nil
+        pendingCompletions.remove(choreID)
+        restoreSnapshot(choreID: choreID)
+        phase = .failed(error.localizedDescription)
+    }
+
+    private func restoreSnapshot(choreID: String) {
+        guard let snapshot = completionSnapshots.removeValue(forKey: choreID) else { return }
+        let safeIndex = min(snapshot.index, chores.count)
+        chores.insert(snapshot.chore, at: safeIndex)
     }
 
     /// Load (or reload) the backlog. Overwrites chores on success, leaves them
@@ -140,6 +217,12 @@ private extension String {
 extension BacklogStore {
     convenience init(preview chores: [HearthChore]) {
         self.init(session: { nil })
+        self.chores = chores
+        self.phase = .loaded
+    }
+
+    /// Preview + test-only backdoor to seed the chore list without hitting the API.
+    func setChoresForTesting(_ chores: [HearthChore]) {
         self.chores = chores
         self.phase = .loaded
     }

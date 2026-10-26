@@ -11,6 +11,7 @@ struct BacklogView: View {
     @State private var dateSheetFor: HearthChore?
     @State private var didLoad: Bool = false
     @State private var openID: String?
+    @State private var toast: ToastModel?
 
     init(initialStore: BacklogStore? = nil, members: MembersStore? = nil) {
         _store = State(initialValue: initialStore ?? BacklogStore(session: { nil }))
@@ -100,6 +101,55 @@ struct BacklogView: View {
                 }
                 .padding(24)
             }
+            .overlay(alignment: .bottom) {
+                if let toast {
+                    ToastView(
+                        toast: toast,
+                        onUndo: toast.undoLabel != nil ? { undoLastCompletion() } : nil
+                    )
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 90)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .task(id: toast.id) {
+                        try? await Task.sleep(for: .milliseconds(3200))
+                        if self.toast?.id == toast.id {
+                            withAnimation(.easeOut(duration: 0.3)) {
+                                self.toast = nil
+                                self.lastCompletedChoreID = nil
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @State private var lastCompletedChoreID: String?
+
+    private func undoLastCompletion() {
+        guard let id = lastCompletedChoreID else { return }
+        store.cancelCompletion(choreID: id)
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        withAnimation(.easeOut(duration: 0.3)) {
+            toast = nil
+            lastCompletedChoreID = nil
+        }
+    }
+
+    private func beginCompletion(choreID: String) {
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        lastCompletedChoreID = choreID
+        openID = nil
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.78)) {
+            store.startCompletion(choreID: choreID)
+            toast = ToastModel(text: "Moved to Done", undoLabel: "Undo")
+        }
+    }
+
+    private func showClaimToast() {
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.78)) {
+            toast = ToastModel(text: "Yours.", undoLabel: nil)
         }
     }
 
@@ -162,6 +212,12 @@ struct BacklogView: View {
             VStack(spacing: 10) {
                 ForEach(section.items) { chore in
                     choreRow(for: chore)
+                        .transition(
+                            .asymmetric(
+                                insertion: .scale(scale: 0.94).combined(with: .opacity),
+                                removal: .opacity.combined(with: .offset(x: 28))
+                            )
+                        )
                 }
             }
         }
@@ -183,7 +239,7 @@ struct BacklogView: View {
                 openID = openID == chore.id ? nil : chore.id
             },
             onComplete: {
-                Task { await store.complete(choreID: chore.id) }
+                beginCompletion(choreID: chore.id)
             },
             onClaim: {
                 Task {
@@ -192,6 +248,7 @@ struct BacklogView: View {
                        claimed.claimedBy == currentUserID {
                         openID = nil
                         dateSheetFor = claimed
+                        showClaimToast()
                     }
                 }
             },
