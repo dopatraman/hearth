@@ -45,14 +45,13 @@ struct BacklogView: View {
                     onSettings: { presentingSettings = true }
                 )
 
-                Picker("Filter", selection: $filter) {
-                    Text("All").tag(Filter.all)
-                    Text("Mine").tag(Filter.mine)
-                }
-                .pickerStyle(.segmented)
-                .padding(.horizontal, 16)
+                SegmentedPill(
+                    selection: $filter,
+                    options: [(Filter.all, "All"), (Filter.mine, "Mine")]
+                )
+                .padding(.horizontal, 20)
                 .padding(.vertical, 8)
-                .sensoryFeedback(.selection, trigger: filter)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
                 content
             }
