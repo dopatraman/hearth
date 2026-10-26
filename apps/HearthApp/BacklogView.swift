@@ -132,58 +132,74 @@ struct BacklogView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
         default:
-            List {
-                ForEach(visibleChores) { chore in
-                    ChoreRow(
-                        chore: chore,
-                        currentUserID: currentUserID,
-                        members: members.members,
-                        onComplete: { Task { await store.complete(choreID: chore.id) } }
-                    )
-                    .listRowBackground(Color.clear)
-                    .listRowInsets(EdgeInsets())
-                    .listRowSeparatorTint(Color.hearthTextSecondary.opacity(0.2))
-                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                        if filter == .mine {
-                            Button {
-                                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
-                                Task { await store.snooze(choreID: chore.id) }
-                            } label: {
-                                Label("Snooze", systemImage: "moon.zzz.fill")
-                            }
-                            .tint(Color.hearthSky)
-                        }
-                    }
-                    .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                        if chore.claimedBy == nil {
-                            Button {
-                                Task {
-                                    await store.claim(choreID: chore.id)
-                                    // After successful claim, prompt for an
-                                    // optional date commitment.
-                                    if let claimed = store.chores.first(where: { $0.id == chore.id }),
-                                       claimed.claimedBy == currentUserID {
-                                        dateSheetFor = claimed
-                                    }
-                                }
-                            } label: {
-                                Label("Claim", systemImage: "hand.raised.fill")
-                            }
-                            .tint(Color.hearthLavender)
-                        } else if chore.claimedBy == currentUserID {
-                            Button {
-                                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
-                                Task { await store.release(choreID: chore.id) }
-                            } label: {
-                                Label("Release", systemImage: "hand.raised.slash.fill")
-                            }
-                            .tint(Color.hearthPeach)
-                        }
+            loadedList
+        }
+    }
+
+    private var loadedList: some View {
+        List {
+            ForEach(visibleChores) { chore in
+                choreRow(for: chore)
+            }
+        }
+        .listStyle(.plain)
+        .animation(.easeInOut(duration: 0.25), value: visibleChores.map(\.id))
+    }
+
+    private func choreRow(for chore: HearthChore) -> some View {
+        ChoreRow(
+            chore: chore,
+            currentUserID: currentUserID,
+            members: members.members,
+            onComplete: { Task { await store.complete(choreID: chore.id) } }
+        )
+        .listRowBackground(Color.clear)
+        .listRowInsets(EdgeInsets())
+        .listRowSeparatorTint(Color.hearthTextSecondary.opacity(0.2))
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            trailingSwipeActions(for: chore)
+        }
+        .swipeActions(edge: .leading, allowsFullSwipe: true) {
+            leadingSwipeActions(for: chore)
+        }
+    }
+
+    @ViewBuilder
+    private func trailingSwipeActions(for chore: HearthChore) -> some View {
+        if filter == .mine {
+            Button {
+                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                Task { await store.snooze(choreID: chore.id) }
+            } label: {
+                Label("Snooze", systemImage: "moon.zzz.fill")
+            }
+            .tint(Color.hearthSky)
+        }
+    }
+
+    @ViewBuilder
+    private func leadingSwipeActions(for chore: HearthChore) -> some View {
+        if chore.claimedBy == nil {
+            Button {
+                Task {
+                    await store.claim(choreID: chore.id)
+                    if let claimed = store.chores.first(where: { $0.id == chore.id }),
+                       claimed.claimedBy == currentUserID {
+                        dateSheetFor = claimed
                     }
                 }
+            } label: {
+                Label("Claim", systemImage: "hand.raised.fill")
             }
-            .listStyle(.plain)
-            .animation(.easeInOut(duration: 0.25), value: visibleChores.map(\.id))
+            .tint(Color.hearthLavender)
+        } else if chore.claimedBy == currentUserID {
+            Button {
+                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                Task { await store.release(choreID: chore.id) }
+            } label: {
+                Label("Release", systemImage: "hand.raised.slash.fill")
+            }
+            .tint(Color.hearthPeach)
         }
     }
 
