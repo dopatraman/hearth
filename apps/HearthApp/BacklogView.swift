@@ -10,6 +10,7 @@ struct BacklogView: View {
     @State private var filter: Filter = .all
     @State private var dateSheetFor: HearthChore?
     @State private var didLoad: Bool = false
+    @State private var openID: String?
 
     init(initialStore: BacklogStore? = nil, members: MembersStore? = nil) {
         _store = State(initialValue: initialStore ?? BacklogStore(session: { nil }))
@@ -160,12 +161,7 @@ struct BacklogView: View {
             )
             VStack(spacing: 10) {
                 ForEach(section.items) { chore in
-                    ChoreRow(
-                        chore: chore,
-                        currentUserID: currentUserID,
-                        members: members.members,
-                        onComplete: { Task { await store.complete(choreID: chore.id) } }
-                    )
+                    choreRow(for: chore)
                 }
             }
         }
@@ -174,6 +170,45 @@ struct BacklogView: View {
         .animation(
             .easeOut(duration: 0.55).delay(Double(index) * 0.06),
             value: didLoad
+        )
+    }
+
+    private func choreRow(for chore: HearthChore) -> some View {
+        ChoreRow(
+            chore: chore,
+            currentUserID: currentUserID,
+            members: members.members,
+            isOpen: openID == chore.id,
+            onToggle: {
+                openID = openID == chore.id ? nil : chore.id
+            },
+            onComplete: {
+                Task { await store.complete(choreID: chore.id) }
+            },
+            onClaim: {
+                Task {
+                    await store.claim(choreID: chore.id)
+                    if let claimed = store.chores.first(where: { $0.id == chore.id }),
+                       claimed.claimedBy == currentUserID {
+                        openID = nil
+                        dateSheetFor = claimed
+                    }
+                }
+            },
+            onSetDate: {
+                openID = nil
+                dateSheetFor = chore
+            },
+            onSnooze: {
+                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                openID = nil
+                Task { await store.snooze(choreID: chore.id) }
+            },
+            onRelease: {
+                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                openID = nil
+                Task { await store.release(choreID: chore.id) }
+            }
         )
     }
 
