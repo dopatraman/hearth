@@ -55,6 +55,11 @@ struct HearthAPI {
         try await get("/me", bearerToken: sessionToken)
     }
 
+    func members(sessionToken: String) async throws -> [HearthMember] {
+        let resp: MembersResponse = try await get("/lists/mine/members", bearerToken: sessionToken)
+        return resp.members
+    }
+
     // MARK: - Chores
 
     func backlog(sessionToken: String) async throws -> [HearthChore] {

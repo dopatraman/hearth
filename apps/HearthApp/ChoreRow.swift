@@ -8,6 +8,9 @@ struct ChoreRow: View {
     /// The current user's id, used to decide whether a chore is "mine" or
     /// "someone else's". Nil before auth bootstrap finishes.
     let currentUserID: String?
+    /// Household members, used to resolve the claimant's display name/initial
+    /// when the chore belongs to someone else.
+    let members: [HearthMember]
     /// Called when the user taps the mint check button on their own chore.
     let onComplete: () -> Void
 
@@ -65,13 +68,14 @@ struct ChoreRow: View {
 
             Spacer()
 
-            if claimedByOther {
-                // Sky chip indicating someone else owns this.
-                Image(systemName: "person.fill")
-                    .font(.footnote)
-                    .foregroundStyle(.white)
-                    .padding(8)
-                    .background(Color.hearthSky, in: Circle())
+            if claimedByOther, let claimant = chore.claimedBy {
+                MemberAvatar(
+                    initial: MembersStore.initial(for: claimant, in: members) ?? "?",
+                    isSelf: false,
+                    size: 28,
+                    borderColor: .clear
+                )
+                .accessibilityLabel("Claimed by \(MembersStore.displayName(for: claimant, in: members) ?? "someone")")
             } else if mine {
                 // Mint check — tap to complete.
                 Button(action: onComplete) {
@@ -92,20 +96,27 @@ struct ChoreRow: View {
 }
 
 #Preview {
-    List {
+    let members = [
+        HearthMember(id: "me", displayName: "Venkat"),
+        HearthMember(id: "someone-else", displayName: "Maya"),
+    ]
+    return List {
         ChoreRow(
             chore: previewChore(title: "Take out trash", notes: "Both bins", claimedBy: nil),
             currentUserID: "me",
+            members: members,
             onComplete: {}
         )
         ChoreRow(
             chore: previewChore(title: "Water plants", notes: nil, claimedBy: "me"),
             currentUserID: "me",
+            members: members,
             onComplete: {}
         )
         ChoreRow(
             chore: previewChore(title: "Mop floor", notes: nil, claimedBy: "someone-else"),
             currentUserID: "me",
+            members: members,
             onComplete: {}
         )
     }

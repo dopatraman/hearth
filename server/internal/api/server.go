@@ -38,6 +38,7 @@ func (s *Server) Router() *chi.Mux {
 		r.Use(s.requireAuth)
 
 		r.Get("/me", s.handleMe)
+		r.Get("/lists/mine/members", s.handleListMembers)
 
 		r.Get("/chores", s.handleListChores)
 		r.Post("/chores", s.handleCreateChore)

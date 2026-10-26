@@ -76,3 +76,44 @@ func (q *Queries) ListMembershipsForUser(ctx context.Context, userID string) ([]
 	}
 	return items, nil
 }
+
+const membersForUser = `-- name: MembersForUser :many
+SELECT DISTINCT u.id, u.display_name
+FROM users u
+JOIN list_memberships m ON m.user_id = u.id
+WHERE m.list_id IN (
+    SELECT list_id FROM list_memberships WHERE list_memberships.user_id = ?
+)
+ORDER BY u.display_name, u.id
+`
+
+type MembersForUserRow struct {
+	ID          string
+	DisplayName *string
+}
+
+// MembersForUser returns the distinct users who share any list with the given
+// user, including the user themselves. Scoped by list_memberships; sorted by
+// display_name so clients get a stable order without a client-side sort.
+func (q *Queries) MembersForUser(ctx context.Context, userID string) ([]MembersForUserRow, error) {
+	rows, err := q.db.QueryContext(ctx, membersForUser, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []MembersForUserRow{}
+	for rows.Next() {
+		var i MembersForUserRow
+		if err := rows.Scan(&i.ID, &i.DisplayName); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

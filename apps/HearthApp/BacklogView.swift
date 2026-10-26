@@ -4,13 +4,15 @@ import UIKit
 struct BacklogView: View {
     @Environment(AuthStore.self) private var auth
     @State private var store: BacklogStore
+    private let members: MembersStore
     @State private var presentingCreate: Bool = false
     @State private var presentingSettings: Bool = false
     @State private var filter: Filter = .all
     @State private var dateSheetFor: HearthChore?
 
-    init(initialStore: BacklogStore? = nil) {
+    init(initialStore: BacklogStore? = nil, members: MembersStore? = nil) {
         _store = State(initialValue: initialStore ?? BacklogStore(session: { nil }))
+        self.members = members ?? MembersStore(session: { nil })
     }
 
     enum Filter: Hashable {
@@ -49,6 +51,9 @@ struct BacklogView: View {
             }
             .navigationTitle("Backlog")
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    AvatarStack(members: members.members, currentUserID: currentUserID)
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         presentingSettings = true
@@ -59,10 +64,16 @@ struct BacklogView: View {
             }
             .background(Color.hearthBackground)
             .scrollContentBackground(.hidden)
-            .refreshable { await store.reload() }
+            .refreshable {
+                await store.reload()
+                await members.load()
+            }
             .task {
                 if case .idle = store.phase {
                     await store.reload()
+                }
+                if members.members.isEmpty {
+                    await members.load()
                 }
             }
             .sheet(isPresented: $presentingCreate) {
@@ -126,6 +137,7 @@ struct BacklogView: View {
                     ChoreRow(
                         chore: chore,
                         currentUserID: currentUserID,
+                        members: members.members,
                         onComplete: { Task { await store.complete(choreID: chore.id) } }
                     )
                     .listRowBackground(Color.clear)
