@@ -28,39 +28,41 @@ struct BacklogHeader: View {
     }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            VStack(alignment: .leading, spacing: 0) {
-                Text(dateLine)
-                    .font(.hearthBody(size: 13, weight: .medium))
-                    .foregroundStyle(Color.hearthTextSecondary)
-                    .padding(.bottom, 4)
-
-                Text("Backlog")
-                    .font(.hearthDisplay(size: 36, weight: .bold))
-                    .foregroundStyle(Color.hearthTextPrimary)
-                    .padding(.bottom, 10)
-
-                Text(summaryLine(chores: chores, currentUserID: currentUserID))
-                    .font(.hearthBody(size: 16))
-                    .foregroundStyle(Color.hearthTextSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            Spacer(minLength: 0)
-
-            HStack(spacing: 6) {
-                AvatarStack(members: members, currentUserID: currentUserID)
-
-                Button(action: onSettings) {
-                    Image(systemName: "gearshape")
-                        .font(.system(size: 20, weight: .regular))
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(dateLine)
+                        .font(.hearthBody(size: 13, weight: .medium))
                         .foregroundStyle(Color.hearthTextSecondary)
-                        .frame(width: 44, height: 44)
-                        .contentShape(Circle())
+                        .padding(.bottom, 4)
+
+                    Text("Backlog")
+                        .font(.hearthDisplay(size: 36, weight: .bold))
+                        .foregroundStyle(Color.hearthTextPrimary)
                 }
-                .accessibilityLabel("Settings")
+
+                Spacer(minLength: 0)
+
+                HStack(spacing: 6) {
+                    AvatarStack(members: members, currentUserID: currentUserID)
+
+                    Button(action: onSettings) {
+                        Image(systemName: "gearshape")
+                            .font(.system(size: 20, weight: .regular))
+                            .foregroundStyle(Color.hearthTextSecondary)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Circle())
+                    }
+                    .accessibilityLabel("Settings")
+                }
+                .padding(.top, 6)
             }
-            .padding(.top, 6)
+
+            Text(summaryLine(chores: chores, currentUserID: currentUserID))
+                .font(.hearthBody(size: 16))
+                .foregroundStyle(Color.hearthTextSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.horizontal, 20)
         .padding(.top, 8)
