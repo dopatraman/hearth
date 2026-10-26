@@ -29,15 +29,16 @@ struct BacklogHeader: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 0) {
                 Text(dateLine)
                     .font(.hearthBody(size: 13, weight: .medium))
                     .foregroundStyle(Color.hearthTextSecondary)
+                    .padding(.bottom, 4)
 
                 Text("Backlog")
                     .font(.hearthDisplay(size: 36, weight: .bold))
                     .foregroundStyle(Color.hearthTextPrimary)
-                    .padding(.bottom, 2)
+                    .padding(.bottom, 10)
 
                 Text(summaryLine(chores: chores, currentUserID: currentUserID))
                     .font(.hearthBody(size: 16))

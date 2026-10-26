@@ -41,7 +41,6 @@ struct ChoreRow: View {
                     ChipView(chip: chip)
                 }
             }
-            .padding(.vertical, 8)
             .padding(.leading, 4)
             .frame(maxWidth: .infinity, alignment: .leading)
 
