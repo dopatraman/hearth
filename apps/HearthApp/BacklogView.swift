@@ -55,7 +55,8 @@ struct BacklogView: View {
                     options: [(Filter.all, "All"), (Filter.mine, "Mine")]
                 )
                 .padding(.horizontal, 20)
-                .padding(.vertical, 8)
+                .padding(.top, 4)
+                .padding(.bottom, 22)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
                 content
