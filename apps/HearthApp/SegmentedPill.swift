@@ -28,13 +28,13 @@ struct SegmentedPill<Option: Hashable>: View {
         .padding(4)
         .background(Color.hearthSegmentTrack, in: Capsule())
         .animation(.spring(response: 0.35, dampingFraction: 0.78), value: selection)
+        .sensoryFeedback(.selection, trigger: selection)
     }
 
     private func segmentButton(for option: Option, label: String) -> some View {
         let isSelected = selection == option
         return Button {
             guard selection != option else { return }
-            UISelectionFeedbackGenerator().selectionChanged()
             selection = option
         } label: {
             ZStack {
