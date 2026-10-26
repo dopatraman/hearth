@@ -1,9 +1,9 @@
 import SwiftUI
 
 /// Floating action button. Primary-action affordance for a screen, floated
-/// bottom-right as an overlay. Styled with ultra-thin material + a subtle
-/// shadow; swap to Liquid Glass's `.glassEffect` in the design-polish pass
-/// once we're on an Xcode toolchain that has the modifier.
+/// bottom-right as an overlay. Lavender-tinted Liquid Glass on iOS 26, with a
+/// static material fallback for older runtime (deployment targets this, but
+/// `#available` keeps the surface defensive).
 struct FABButton: View {
     let systemImage: String
     let action: () -> Void
@@ -17,19 +17,23 @@ struct FABButton: View {
         Button(action: action) {
             Image(systemName: systemImage)
                 .font(.system(size: 24, weight: .semibold))
-                .foregroundStyle(Color.hearthTextPrimary)
-                .frame(width: 60, height: 60)
-                .background(.ultraThinMaterial, in: Circle())
-                .overlay(Circle().stroke(Color.hearthTextSecondary.opacity(0.2), lineWidth: 0.5))
-                .shadow(color: Color.black.opacity(0.1), radius: 10, y: 4)
+                .foregroundStyle(Color.hearthLavenderInk)
+                .frame(width: 62, height: 62)
+                .glassEffect(
+                    .regular.tint(Color.hearthLavender).interactive(),
+                    in: Circle()
+                )
+                .shadow(color: Color.hearthLavender.opacity(0.38), radius: 20, y: 8)
         }
         .buttonStyle(.plain)
     }
 }
 
+#if DEBUG
 #Preview {
     ZStack {
         Color.hearthBackground.ignoresSafeArea()
         FABButton(action: {})
     }
 }
+#endif
