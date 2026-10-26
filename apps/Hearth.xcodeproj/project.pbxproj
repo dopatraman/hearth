@@ -8,18 +8,25 @@
 
 /* Begin PBXBuildFile section */
 		1872E078E091D22126C9A9AC /* ChoreRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78C1F4A87E0AF9F6769D9F1F /* ChoreRow.swift */; };
+		1C932475B43A19CACE23693C /* BacklogSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A942B20E31B5CEE96DB3139 /* BacklogSummary.swift */; };
+		1D8F209B8BC359F4BE9DF152 /* BacklogHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B0ECE7A8A6634CE8F37208C /* BacklogHeader.swift */; };
+		1E7EF10B15C78240238829E2 /* Font+Hearth.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA0F6F1D91121A5F78B4495B /* Font+Hearth.swift */; };
+		23D7B4A634774C439D0EA517 /* Geist-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 9AD17F5C357092D1D9E96659 /* Geist-Medium.ttf */; };
 		246B03DCFE5192417F1D3E2B /* BacklogStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E329EBE61038AFD92A0AB182 /* BacklogStore.swift */; };
 		36E4C325F94EA0728F4450FD /* HearthWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F48EECA08814B123CED6020A /* HearthWatchApp.swift */; };
 		4BA48CC5182128B05284B219 /* GraveyardRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF57DDC6D708A5FD93792419 /* GraveyardRow.swift */; };
 		4E7527809BAC469BC03DFB9F /* GraveyardStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 933F92F6D50007BE186E3E3D /* GraveyardStore.swift */; };
 		553AD3065B0E0F9BBAA780DA /* AvatarStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B517E2393CCDF26A1394726 /* AvatarStack.swift */; };
+		555E830F67A21ACECBD628D5 /* BacklogSummaryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2158D209613581A52909B32C /* BacklogSummaryTests.swift */; };
 		58960FF05A951C0BF6A144C8 /* MembersStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B51959D2EBC486A3386D8198 /* MembersStore.swift */; };
 		5A03F2745120E80BD86131AA /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D61F9280CA2185FD1200A3D /* ContentView.swift */; };
 		5B17A7DC167BCAFDF5FC3AF5 /* MembersStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 342BA74BF16171DB9236407C /* MembersStoreTests.swift */; };
 		5DD43C2BD93E0BE2E22C07FA /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE5028520EA72843371CB930 /* AppDelegate.swift */; };
 		60076DC0BF2C788AFA41418F /* InviteSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0BEB6212CE76B524AB5B46A /* InviteSheet.swift */; };
 		65A3ACB6340FB76FBDA27FF5 /* HearthAppTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1945B64FC16BDFE702F27691 /* HearthAppTests.swift */; };
+		6CF035D443B95411FD7D896E /* BricolageGrotesque-VariableFont.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B8E786F7D615D2BAC32DFD0C /* BricolageGrotesque-VariableFont.ttf */; };
 		751535B8D945AFAE4D88FD0D /* CreateChoreSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85D240E3AC5F9B16473FD699 /* CreateChoreSheet.swift */; };
+		77529BFE8886327CA3FF8DE8 /* Geist-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1D9F39230AA010A947C3BF99 /* Geist-SemiBold.ttf */; };
 		78FF81C2795EE43A43A060A9 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = F62BD183CF0CFCF909DBCF97 /* Models.swift */; };
 		7B9B1C1FA7DD9B3C7F7403BE /* RootTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AA7FC09F71178A52047BDFF /* RootTabView.swift */; };
 		7FDEC7F54260FE1A9BA1C98A /* GraveyardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0759AD20FF49573C41872ABB /* GraveyardView.swift */; };
@@ -32,6 +39,7 @@
 		D895165661854A0484F9B76F /* HearthAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEB5F2AAC13B09F521E40FFE /* HearthAPI.swift */; };
 		D8A9BD61E2D45060AE2156C3 /* SettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 449D982FB775933F071FBE60 /* SettingsSheet.swift */; };
 		DB58F037C069A53628D9419F /* HearthApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2395D1A08ACF4931A7823EDA /* HearthApp.swift */; };
+		E08B2718899F125474A5FD81 /* Geist-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 69B49E34A87F5EE3FC5E484D /* Geist-Regular.ttf */; };
 		E56DE053E87C233B6196CBC9 /* Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBE592C777C4D1BBE58F29EE /* Palette.swift */; };
 		F57C81DB3282DC8FFE5FA42F /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600AB893185DEB8491B86D64 /* ContentView.swift */; };
 		FE6701545DE657353A860688 /* BacklogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35D84895D16FD69B1EF09532 /* BacklogView.swift */; };
@@ -51,9 +59,12 @@
 /* Begin PBXFileReference section */
 		045554955CA62C64C4404147 /* HearthWatch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = HearthWatch.entitlements; sourceTree = "<group>"; };
 		0759AD20FF49573C41872ABB /* GraveyardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraveyardView.swift; sourceTree = "<group>"; };
+		0A942B20E31B5CEE96DB3139 /* BacklogSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BacklogSummary.swift; sourceTree = "<group>"; };
 		0D61F9280CA2185FD1200A3D /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		11C180916D2AF79C4264A84B /* FABButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FABButton.swift; sourceTree = "<group>"; };
 		1945B64FC16BDFE702F27691 /* HearthAppTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HearthAppTests.swift; sourceTree = "<group>"; };
+		1D9F39230AA010A947C3BF99 /* Geist-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Geist-SemiBold.ttf"; sourceTree = "<group>"; };
+		2158D209613581A52909B32C /* BacklogSummaryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BacklogSummaryTests.swift; sourceTree = "<group>"; };
 		2395D1A08ACF4931A7823EDA /* HearthApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HearthApp.swift; sourceTree = "<group>"; };
 		315F86EFBFBD085E5F1717D9 /* HearthApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = HearthApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		342BA74BF16171DB9236407C /* MembersStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MembersStoreTests.swift; sourceTree = "<group>"; };
@@ -63,17 +74,22 @@
 		467FDEB39220E792FEE2620D /* PushRegistration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushRegistration.swift; sourceTree = "<group>"; };
 		5AA7FC09F71178A52047BDFF /* RootTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootTabView.swift; sourceTree = "<group>"; };
 		600AB893185DEB8491B86D64 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		69B49E34A87F5EE3FC5E484D /* Geist-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Geist-Regular.ttf"; sourceTree = "<group>"; };
+		6B0ECE7A8A6634CE8F37208C /* BacklogHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BacklogHeader.swift; sourceTree = "<group>"; };
 		78C1F4A87E0AF9F6769D9F1F /* ChoreRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChoreRow.swift; sourceTree = "<group>"; };
 		7B517E2393CCDF26A1394726 /* AvatarStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarStack.swift; sourceTree = "<group>"; };
 		85D240E3AC5F9B16473FD699 /* CreateChoreSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateChoreSheet.swift; sourceTree = "<group>"; };
 		884FF6B5F62978460594E705 /* AuthStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthStore.swift; sourceTree = "<group>"; };
 		933F92F6D50007BE186E3E3D /* GraveyardStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraveyardStore.swift; sourceTree = "<group>"; };
 		94CA390E0E7B6C997F58DEA3 /* ClaimDateSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaimDateSheet.swift; sourceTree = "<group>"; };
+		9AD17F5C357092D1D9E96659 /* Geist-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Geist-Medium.ttf"; sourceTree = "<group>"; };
 		9E5A6F32C7146A850EDC99AA /* HearthApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = HearthApp.entitlements; sourceTree = "<group>"; };
 		B0BEB6212CE76B524AB5B46A /* InviteSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InviteSheet.swift; sourceTree = "<group>"; };
 		B2B4F2AE4AF93C22AFF4BC99 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B349A8BC691ED2A295408123 /* HearthWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HearthWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B51959D2EBC486A3386D8198 /* MembersStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MembersStore.swift; sourceTree = "<group>"; };
+		B8E786F7D615D2BAC32DFD0C /* BricolageGrotesque-VariableFont.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "BricolageGrotesque-VariableFont.ttf"; sourceTree = "<group>"; };
+		CA0F6F1D91121A5F78B4495B /* Font+Hearth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Font+Hearth.swift"; sourceTree = "<group>"; };
 		DEB5F2AAC13B09F521E40FFE /* HearthAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HearthAPI.swift; sourceTree = "<group>"; };
 		E329EBE61038AFD92A0AB182 /* BacklogStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BacklogStore.swift; sourceTree = "<group>"; };
 		EBE592C777C4D1BBE58F29EE /* Palette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Palette.swift; sourceTree = "<group>"; };
@@ -83,6 +99,7 @@
 		F3EB1A8B05EDE6E9F9D12C8B /* SignInScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInScreen.swift; sourceTree = "<group>"; };
 		F48EECA08814B123CED6020A /* HearthWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HearthWatchApp.swift; sourceTree = "<group>"; };
 		F62BD183CF0CFCF909DBCF97 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		FE053D4E6601A6E369E5842C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -106,6 +123,17 @@
 			path = HearthWatch;
 			sourceTree = "<group>";
 		};
+		40DDD080720B57606CF091DC /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				B8E786F7D615D2BAC32DFD0C /* BricolageGrotesque-VariableFont.ttf */,
+				9AD17F5C357092D1D9E96659 /* Geist-Medium.ttf */,
+				69B49E34A87F5EE3FC5E484D /* Geist-Regular.ttf */,
+				1D9F39230AA010A947C3BF99 /* Geist-SemiBold.ttf */,
+			);
+			path = Fonts;
+			sourceTree = "<group>";
+		};
 		5D4FB7AE9354ABFBABDD8796 /* HearthApp */ = {
 			isa = PBXGroup;
 			children = (
@@ -113,19 +141,23 @@
 				B2B4F2AE4AF93C22AFF4BC99 /* Assets.xcassets */,
 				884FF6B5F62978460594E705 /* AuthStore.swift */,
 				7B517E2393CCDF26A1394726 /* AvatarStack.swift */,
+				6B0ECE7A8A6634CE8F37208C /* BacklogHeader.swift */,
 				E329EBE61038AFD92A0AB182 /* BacklogStore.swift */,
+				0A942B20E31B5CEE96DB3139 /* BacklogSummary.swift */,
 				35D84895D16FD69B1EF09532 /* BacklogView.swift */,
 				78C1F4A87E0AF9F6769D9F1F /* ChoreRow.swift */,
 				94CA390E0E7B6C997F58DEA3 /* ClaimDateSheet.swift */,
 				600AB893185DEB8491B86D64 /* ContentView.swift */,
 				85D240E3AC5F9B16473FD699 /* CreateChoreSheet.swift */,
 				11C180916D2AF79C4264A84B /* FABButton.swift */,
+				CA0F6F1D91121A5F78B4495B /* Font+Hearth.swift */,
 				EF57DDC6D708A5FD93792419 /* GraveyardRow.swift */,
 				933F92F6D50007BE186E3E3D /* GraveyardStore.swift */,
 				0759AD20FF49573C41872ABB /* GraveyardView.swift */,
 				DEB5F2AAC13B09F521E40FFE /* HearthAPI.swift */,
 				9E5A6F32C7146A850EDC99AA /* HearthApp.entitlements */,
 				2395D1A08ACF4931A7823EDA /* HearthApp.swift */,
+				FE053D4E6601A6E369E5842C /* Info.plist */,
 				B0BEB6212CE76B524AB5B46A /* InviteSheet.swift */,
 				F182F34FD96686F757ADDB8E /* Keychain.swift */,
 				B51959D2EBC486A3386D8198 /* MembersStore.swift */,
@@ -135,8 +167,17 @@
 				5AA7FC09F71178A52047BDFF /* RootTabView.swift */,
 				449D982FB775933F071FBE60 /* SettingsSheet.swift */,
 				F3EB1A8B05EDE6E9F9D12C8B /* SignInScreen.swift */,
+				7F0CA1C7233E1AA1129ACCB9 /* Resources */,
 			);
 			path = HearthApp;
+			sourceTree = "<group>";
+		};
+		7F0CA1C7233E1AA1129ACCB9 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				40DDD080720B57606CF091DC /* Fonts */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 		98F50AE03A1AFB85C69BC3DE /* Products */ = {
@@ -152,6 +193,7 @@
 		E84E301309EDCD93CD55DCC9 /* HearthAppTests */ = {
 			isa = PBXGroup;
 			children = (
+				2158D209613581A52909B32C /* BacklogSummaryTests.swift */,
 				1945B64FC16BDFE702F27691 /* HearthAppTests.swift */,
 				342BA74BF16171DB9236407C /* MembersStoreTests.swift */,
 			);
@@ -264,6 +306,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				C9E1D28AE70E0E00B1F8D805 /* Assets.xcassets in Resources */,
+				6CF035D443B95411FD7D896E /* BricolageGrotesque-VariableFont.ttf in Resources */,
+				23D7B4A634774C439D0EA517 /* Geist-Medium.ttf in Resources */,
+				E08B2718899F125474A5FD81 /* Geist-Regular.ttf in Resources */,
+				77529BFE8886327CA3FF8DE8 /* Geist-SemiBold.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -277,13 +323,16 @@
 				5DD43C2BD93E0BE2E22C07FA /* AppDelegate.swift in Sources */,
 				FFF5256A6DA0672956534A51 /* AuthStore.swift in Sources */,
 				553AD3065B0E0F9BBAA780DA /* AvatarStack.swift in Sources */,
+				1D8F209B8BC359F4BE9DF152 /* BacklogHeader.swift in Sources */,
 				246B03DCFE5192417F1D3E2B /* BacklogStore.swift in Sources */,
+				1C932475B43A19CACE23693C /* BacklogSummary.swift in Sources */,
 				FE6701545DE657353A860688 /* BacklogView.swift in Sources */,
 				1872E078E091D22126C9A9AC /* ChoreRow.swift in Sources */,
 				982C229C52DFBED61CFEE397 /* ClaimDateSheet.swift in Sources */,
 				F57C81DB3282DC8FFE5FA42F /* ContentView.swift in Sources */,
 				751535B8D945AFAE4D88FD0D /* CreateChoreSheet.swift in Sources */,
 				9511D2465057C4684E1EDAB2 /* FABButton.swift in Sources */,
+				1E7EF10B15C78240238829E2 /* Font+Hearth.swift in Sources */,
 				4BA48CC5182128B05284B219 /* GraveyardRow.swift in Sources */,
 				4E7527809BAC469BC03DFB9F /* GraveyardStore.swift in Sources */,
 				7FDEC7F54260FE1A9BA1C98A /* GraveyardView.swift in Sources */,
@@ -305,6 +354,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				555E830F67A21ACECBD628D5 /* BacklogSummaryTests.swift in Sources */,
 				65A3ACB6340FB76FBDA27FF5 /* HearthAppTests.swift in Sources */,
 				5B17A7DC167BCAFDF5FC3AF5 /* MembersStoreTests.swift in Sources */,
 			);
@@ -428,10 +478,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = HearthApp/HearthApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				INFOPLIST_KEY_CFBundleIconName = AppIcon;
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = HearthApp/Info.plist;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -466,10 +514,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = HearthApp/HearthApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				INFOPLIST_KEY_CFBundleIconName = AppIcon;
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = HearthApp/Info.plist;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (

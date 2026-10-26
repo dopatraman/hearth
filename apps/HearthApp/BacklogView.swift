@@ -38,6 +38,13 @@ struct BacklogView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
+                BacklogHeader(
+                    chores: store.chores,
+                    members: members.members,
+                    currentUserID: currentUserID,
+                    onSettings: { presentingSettings = true }
+                )
+
                 Picker("Filter", selection: $filter) {
                     Text("All").tag(Filter.all)
                     Text("Mine").tag(Filter.mine)
@@ -49,19 +56,7 @@ struct BacklogView: View {
 
                 content
             }
-            .navigationTitle("Backlog")
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    AvatarStack(members: members.members, currentUserID: currentUserID)
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        presentingSettings = true
-                    } label: {
-                        Image(systemName: "gearshape")
-                    }
-                }
-            }
+            .toolbar(.hidden, for: .navigationBar)
             .background(Color.hearthBackground)
             .scrollContentBackground(.hidden)
             .refreshable {
