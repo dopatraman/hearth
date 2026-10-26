@@ -39,6 +39,7 @@
 		982C229C52DFBED61CFEE397 /* ClaimDateSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94CA390E0E7B6C997F58DEA3 /* ClaimDateSheet.swift */; };
 		9E744842A7184E1575A9B59C /* ChoreRowModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C70EAE477AF5DC62C8A6501 /* ChoreRowModel.swift */; };
 		C2CAE7F05711E53B13A039A2 /* Keychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = F182F34FD96686F757ADDB8E /* Keychain.swift */; };
+		C794DDA4730623BFEAA0A756 /* SinceLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39BE884C477F368551B4F960 /* SinceLine.swift */; };
 		C9AF6D2D54DAE16A6CC9047F /* PushRegistration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 467FDEB39220E792FEE2620D /* PushRegistration.swift */; };
 		C9E1D28AE70E0E00B1F8D805 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B2B4F2AE4AF93C22AFF4BC99 /* Assets.xcassets */; };
 		D60A1C6BB39942F960394231 /* SectionHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A63E0C30ED6F695A9D87C206 /* SectionHeader.swift */; };
@@ -47,6 +48,7 @@
 		DB58F037C069A53628D9419F /* HearthApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2395D1A08ACF4931A7823EDA /* HearthApp.swift */; };
 		E08B2718899F125474A5FD81 /* Geist-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 69B49E34A87F5EE3FC5E484D /* Geist-Regular.ttf */; };
 		E56DE053E87C233B6196CBC9 /* Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBE592C777C4D1BBE58F29EE /* Palette.swift */; };
+		E86A293D578B66DDF2C502D6 /* SinceLineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D5E4935D50B1AF325E834C2 /* SinceLineTests.swift */; };
 		E91265AC63F4EA9DD5C36D20 /* ChoreRowModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 789B7FB0B4BEBBA7C2235763 /* ChoreRowModelTests.swift */; };
 		E9D198FE22A17A41E31A34DD /* RingSlot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 831581FFF70B679E7BF2F353 /* RingSlot.swift */; };
 		F57C81DB3282DC8FFE5FA42F /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600AB893185DEB8491B86D64 /* ContentView.swift */; };
@@ -70,6 +72,7 @@
 		045554955CA62C64C4404147 /* HearthWatch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = HearthWatch.entitlements; sourceTree = "<group>"; };
 		0759AD20FF49573C41872ABB /* GraveyardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraveyardView.swift; sourceTree = "<group>"; };
 		0A942B20E31B5CEE96DB3139 /* BacklogSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BacklogSummary.swift; sourceTree = "<group>"; };
+		0D5E4935D50B1AF325E834C2 /* SinceLineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SinceLineTests.swift; sourceTree = "<group>"; };
 		0D61F9280CA2185FD1200A3D /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		11C180916D2AF79C4264A84B /* FABButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FABButton.swift; sourceTree = "<group>"; };
 		1945B64FC16BDFE702F27691 /* HearthAppTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HearthAppTests.swift; sourceTree = "<group>"; };
@@ -81,6 +84,7 @@
 		342BA74BF16171DB9236407C /* MembersStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MembersStoreTests.swift; sourceTree = "<group>"; };
 		34B04515D002D89F105AD779 /* HearthAppTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = HearthAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		35D84895D16FD69B1EF09532 /* BacklogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BacklogView.swift; sourceTree = "<group>"; };
+		39BE884C477F368551B4F960 /* SinceLine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SinceLine.swift; sourceTree = "<group>"; };
 		3B8D1682444D55A0BFBAB4E2 /* SegmentedPill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SegmentedPill.swift; sourceTree = "<group>"; };
 		449D982FB775933F071FBE60 /* SettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSheet.swift; sourceTree = "<group>"; };
 		467FDEB39220E792FEE2620D /* PushRegistration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushRegistration.swift; sourceTree = "<group>"; };
@@ -191,6 +195,7 @@
 				3B8D1682444D55A0BFBAB4E2 /* SegmentedPill.swift */,
 				449D982FB775933F071FBE60 /* SettingsSheet.swift */,
 				F3EB1A8B05EDE6E9F9D12C8B /* SignInScreen.swift */,
+				39BE884C477F368551B4F960 /* SinceLine.swift */,
 				7F0CA1C7233E1AA1129ACCB9 /* Resources */,
 			);
 			path = HearthApp;
@@ -223,6 +228,7 @@
 				1945B64FC16BDFE702F27691 /* HearthAppTests.swift */,
 				342BA74BF16171DB9236407C /* MembersStoreTests.swift */,
 				00775C0BE6B93B0333D929CD /* SegmentedPillTests.swift */,
+				0D5E4935D50B1AF325E834C2 /* SinceLineTests.swift */,
 			);
 			path = HearthAppTests;
 			sourceTree = "<group>";
@@ -380,6 +386,7 @@
 				767495F42457CE8C95A525B5 /* SegmentedPill.swift in Sources */,
 				D8A9BD61E2D45060AE2156C3 /* SettingsSheet.swift in Sources */,
 				889D1C833DC318E868409959 /* SignInScreen.swift in Sources */,
+				C794DDA4730623BFEAA0A756 /* SinceLine.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -393,6 +400,7 @@
 				65A3ACB6340FB76FBDA27FF5 /* HearthAppTests.swift in Sources */,
 				5B17A7DC167BCAFDF5FC3AF5 /* MembersStoreTests.swift in Sources */,
 				8E28A5D2385717D1349A3428 /* SegmentedPillTests.swift in Sources */,
+				E86A293D578B66DDF2C502D6 /* SinceLineTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
