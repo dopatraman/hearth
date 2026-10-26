@@ -51,8 +51,9 @@ struct BacklogHeader: View {
                             .font(.system(size: 20, weight: .regular))
                             .foregroundStyle(Color.hearthTextSecondary)
                             .frame(width: 44, height: 44)
-                            .contentShape(Circle())
+                            .glassEffect(.regular.interactive(), in: Circle())
                     }
+                    .buttonStyle(.plain)
                     .accessibilityLabel("Settings")
                 }
                 .padding(.top, 6)
