@@ -47,7 +47,7 @@ struct BacklogHeader: View {
 
             Spacer(minLength: 0)
 
-            VStack(alignment: .trailing, spacing: 6) {
+            HStack(spacing: 6) {
                 AvatarStack(members: members, currentUserID: currentUserID)
 
                 Button(action: onSettings) {
@@ -59,6 +59,7 @@ struct BacklogHeader: View {
                 }
                 .accessibilityLabel("Settings")
             }
+            .padding(.top, 6)
         }
         .padding(.horizontal, 20)
         .padding(.top, 8)
