@@ -46,6 +46,18 @@ extension Color {
         light: Color(red: 0xA3 / 255, green: 0xC9 / 255, blue: 0xF4 / 255),
         dark: Color(red: 0x6B / 255, green: 0x94 / 255, blue: 0xC2 / 255)
     )
+
+    /// Ink color for text/initial drawn on `hearthLavender` surfaces (self avatar).
+    static let hearthLavenderInk = Color(
+        light: Color(red: 0x4B / 255, green: 0x3A / 255, blue: 0x8C / 255),
+        dark: Color(red: 0xC7 / 255, green: 0xB9 / 255, blue: 0xEC / 255)
+    )
+
+    /// Ink color for text/initial drawn on `hearthSky` surfaces (other-member avatar).
+    static let hearthSkyInk = Color(
+        light: Color(red: 0x1F / 255, green: 0x5A / 255, blue: 0x8F / 255),
+        dark: Color(red: 0xB4 / 255, green: 0xD1 / 255, blue: 0xEF / 255)
+    )
 }
 
 private extension Color {

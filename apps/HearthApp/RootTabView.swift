@@ -6,6 +6,7 @@ import SwiftUI
 struct RootTabView: View {
     @State private var backlog: BacklogStore
     @State private var graveyard: GraveyardStore
+    @State private var members: MembersStore
     @State private var selection: Tab = .backlog
 
     enum Tab: Hashable { case backlog, graveyard }
@@ -13,11 +14,12 @@ struct RootTabView: View {
     init(sessionProvider: @escaping () -> String?) {
         _backlog = State(initialValue: BacklogStore(session: sessionProvider))
         _graveyard = State(initialValue: GraveyardStore(session: sessionProvider))
+        _members = State(initialValue: MembersStore(session: sessionProvider))
     }
 
     var body: some View {
         TabView(selection: $selection) {
-            BacklogView(initialStore: backlog)
+            BacklogView(initialStore: backlog, members: members)
                 .tabItem {
                     Label("Backlog", systemImage: "tray.full")
                 }

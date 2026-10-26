@@ -135,3 +135,13 @@ final class BacklogStore {
 private extension String {
     var nilIfEmpty: String? { isEmpty ? nil : self }
 }
+
+#if DEBUG
+extension BacklogStore {
+    convenience init(preview chores: [HearthChore]) {
+        self.init(session: { nil })
+        self.chores = chores
+        self.phase = .loaded
+    }
+}
+#endif
