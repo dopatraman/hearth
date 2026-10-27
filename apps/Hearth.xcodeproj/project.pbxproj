@@ -29,7 +29,6 @@
 		60076DC0BF2C788AFA41418F /* InviteSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0BEB6212CE76B524AB5B46A /* InviteSheet.swift */; };
 		65A3ACB6340FB76FBDA27FF5 /* HearthAppTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1945B64FC16BDFE702F27691 /* HearthAppTests.swift */; };
 		6CF035D443B95411FD7D896E /* BricolageGrotesque-VariableFont.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B8E786F7D615D2BAC32DFD0C /* BricolageGrotesque-VariableFont.ttf */; };
-		751535B8D945AFAE4D88FD0D /* CreateChoreSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85D240E3AC5F9B16473FD699 /* CreateChoreSheet.swift */; };
 		767495F42457CE8C95A525B5 /* SegmentedPill.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B8D1682444D55A0BFBAB4E2 /* SegmentedPill.swift */; };
 		77529BFE8886327CA3FF8DE8 /* Geist-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1D9F39230AA010A947C3BF99 /* Geist-SemiBold.ttf */; };
 		78FF81C2795EE43A43A060A9 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = F62BD183CF0CFCF909DBCF97 /* Models.swift */; };
@@ -110,7 +109,6 @@
 		78C1F4A87E0AF9F6769D9F1F /* ChoreRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChoreRow.swift; sourceTree = "<group>"; };
 		7B517E2393CCDF26A1394726 /* AvatarStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarStack.swift; sourceTree = "<group>"; };
 		831581FFF70B679E7BF2F353 /* RingSlot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RingSlot.swift; sourceTree = "<group>"; };
-		85D240E3AC5F9B16473FD699 /* CreateChoreSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateChoreSheet.swift; sourceTree = "<group>"; };
 		884FF6B5F62978460594E705 /* AuthStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthStore.swift; sourceTree = "<group>"; };
 		933F92F6D50007BE186E3E3D /* GraveyardStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraveyardStore.swift; sourceTree = "<group>"; };
 		94CA390E0E7B6C997F58DEA3 /* ClaimDateSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaimDateSheet.swift; sourceTree = "<group>"; };
@@ -187,7 +185,6 @@
 				1C70EAE477AF5DC62C8A6501 /* ChoreRowModel.swift */,
 				94CA390E0E7B6C997F58DEA3 /* ClaimDateSheet.swift */,
 				600AB893185DEB8491B86D64 /* ContentView.swift */,
-				85D240E3AC5F9B16473FD699 /* CreateChoreSheet.swift */,
 				11C180916D2AF79C4264A84B /* FABButton.swift */,
 				CA0F6F1D91121A5F78B4495B /* Font+Hearth.swift */,
 				EF57DDC6D708A5FD93792419 /* GraveyardRow.swift */,
@@ -387,7 +384,6 @@
 				9E744842A7184E1575A9B59C /* ChoreRowModel.swift in Sources */,
 				982C229C52DFBED61CFEE397 /* ClaimDateSheet.swift in Sources */,
 				F57C81DB3282DC8FFE5FA42F /* ContentView.swift in Sources */,
-				751535B8D945AFAE4D88FD0D /* CreateChoreSheet.swift in Sources */,
 				9511D2465057C4684E1EDAB2 /* FABButton.swift in Sources */,
 				1E7EF10B15C78240238829E2 /* Font+Hearth.swift in Sources */,
 				4BA48CC5182128B05284B219 /* GraveyardRow.swift in Sources */,
