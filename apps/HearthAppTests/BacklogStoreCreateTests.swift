@@ -134,6 +134,46 @@ struct BacklogStoreCreateTests {
 
         #expect(store.chores.first?.claimedBy == "me")
     }
+
+    @Test("successful create resets phase to loaded after a prior failure")
+    func create_resetsPhaseToLoadedAfterFailure() async {
+        let recorder = CreateRecorder()
+        await recorder.setErrorToThrow(TestError.simulated)
+        let store = makeStore(recorder: recorder)
+
+        await store.create(title: "x", notes: nil)
+        if case .failed = store.phase { } else {
+            Issue.record("expected .failed after first create, got \(store.phase)")
+        }
+
+        let recorder2 = CreateRecorder()
+        let returned = Self.chore(id: "ok", title: "y")
+        store.replaceCreateCommitForTesting { _, title, notes, claim in
+            try await recorder2.record(title: title, notes: notes, claim: claim)
+            return HearthChore(
+                id: returned.id,
+                listId: returned.listId,
+                creatorId: returned.creatorId,
+                title: title,
+                notes: notes,
+                state: returned.state,
+                claimedBy: returned.claimedBy,
+                claimedAt: returned.claimedAt,
+                willCompleteBy: returned.willCompleteBy,
+                completedBy: returned.completedBy,
+                completedAt: returned.completedAt,
+                createdAt: returned.createdAt,
+                updatedAt: returned.updatedAt,
+                overdue: returned.overdue
+            )
+        }
+
+        await store.create(title: "y", notes: nil)
+
+        if case .loaded = store.phase { } else {
+            Issue.record("expected .loaded after successful create, got \(store.phase)")
+        }
+    }
 }
 
 actor CreateRecorder {

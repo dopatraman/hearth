@@ -24,7 +24,7 @@ final class BacklogStore {
     private let session: () -> String?
     let completionDelay: Duration
     private let completionCommit: @Sendable (_ token: String, _ choreID: String) async throws -> HearthChore
-    private let createCommit: @Sendable (_ token: String, _ title: String, _ notes: String?, _ claim: Bool) async throws -> HearthChore
+    private var createCommit: @Sendable (_ token: String, _ title: String, _ notes: String?, _ claim: Bool) async throws -> HearthChore
 
     init(
         api: HearthAPI = HearthAPI(),
@@ -140,6 +140,7 @@ final class BacklogStore {
                 claim
             )
             chores.insert(chore, at: 0)
+            phase = .loaded
         } catch {
             phase = .failed(error.localizedDescription)
         }
@@ -233,6 +234,14 @@ extension BacklogStore {
     func setChoresForTesting(_ chores: [HearthChore]) {
         self.chores = chores
         self.phase = .loaded
+    }
+
+    /// Test-only: swap the create commit closure after init so a single
+    /// store can exercise both success and failure branches in one run.
+    func replaceCreateCommitForTesting(
+        _ commit: @escaping @Sendable (_ token: String, _ title: String, _ notes: String?, _ claim: Bool) async throws -> HearthChore
+    ) {
+        self.createCommit = commit
     }
 }
 #endif
