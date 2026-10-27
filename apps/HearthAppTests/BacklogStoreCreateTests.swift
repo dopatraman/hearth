@@ -13,8 +13,8 @@ struct BacklogStoreCreateTests {
         let returned = result ?? Self.chore(id: "new", title: "x")
         return BacklogStore(
             session: { "token" },
-            createCommit: { _, title, notes in
-                try await recorder.record(title: title, notes: notes)
+            createCommit: { _, title, notes, claim in
+                try await recorder.record(title: title, notes: notes, claim: claim)
                 return HearthChore(
                     id: returned.id,
                     listId: returned.listId,
@@ -22,8 +22,8 @@ struct BacklogStoreCreateTests {
                     title: title,
                     notes: notes,
                     state: returned.state,
-                    claimedBy: returned.claimedBy,
-                    claimedAt: returned.claimedAt,
+                    claimedBy: claim ? returned.creatorId : returned.claimedBy,
+                    claimedAt: claim ? "2026-10-26T20:00:00.000Z" : returned.claimedAt,
                     willCompleteBy: returned.willCompleteBy,
                     completedBy: returned.completedBy,
                     completedAt: returned.completedAt,
@@ -103,12 +103,44 @@ struct BacklogStoreCreateTests {
         }
         #expect(store.chores.isEmpty)
     }
+
+    @Test("create defaults claim to false")
+    func create_defaultClaimFalse() async {
+        let recorder = CreateRecorder()
+        let store = makeStore(recorder: recorder)
+
+        await store.create(title: "x", notes: nil)
+
+        let calls = await recorder.calls
+        #expect(calls.first?.claim == false)
+    }
+
+    @Test("create with claim passes claim through")
+    func create_withClaim_passesClaimThrough() async {
+        let recorder = CreateRecorder()
+        let store = makeStore(recorder: recorder)
+
+        await store.create(title: "x", notes: nil, claim: true)
+
+        let calls = await recorder.calls
+        #expect(calls.first?.claim == true)
+    }
+
+    @Test("create with claim surfaces claimed chore")
+    func create_withClaim_surfacesClaimedChore() async {
+        let store = makeStore(result: Self.chore(id: "cnew", title: "fresh"))
+
+        await store.create(title: "fresh", notes: nil, claim: true)
+
+        #expect(store.chores.first?.claimedBy == "me")
+    }
 }
 
 actor CreateRecorder {
     struct Call: Equatable {
         let title: String
         let notes: String?
+        let claim: Bool
     }
 
     private(set) var calls: [Call] = []
@@ -118,8 +150,8 @@ actor CreateRecorder {
         self.errorToThrow = error
     }
 
-    func record(title: String, notes: String?) throws {
+    func record(title: String, notes: String?, claim: Bool) throws {
         if let errorToThrow { throw errorToThrow }
-        calls.append(Call(title: title, notes: notes))
+        calls.append(Call(title: title, notes: notes, claim: claim))
     }
 }

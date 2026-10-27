@@ -24,14 +24,14 @@ final class BacklogStore {
     private let session: () -> String?
     let completionDelay: Duration
     private let completionCommit: @Sendable (_ token: String, _ choreID: String) async throws -> HearthChore
-    private let createCommit: @Sendable (_ token: String, _ title: String, _ notes: String?) async throws -> HearthChore
+    private let createCommit: @Sendable (_ token: String, _ title: String, _ notes: String?, _ claim: Bool) async throws -> HearthChore
 
     init(
         api: HearthAPI = HearthAPI(),
         session: @escaping () -> String?,
         completionDelay: Duration = .seconds(3),
         completionCommit: (@Sendable (_ token: String, _ choreID: String) async throws -> HearthChore)? = nil,
-        createCommit: (@Sendable (_ token: String, _ title: String, _ notes: String?) async throws -> HearthChore)? = nil
+        createCommit: (@Sendable (_ token: String, _ title: String, _ notes: String?, _ claim: Bool) async throws -> HearthChore)? = nil
     ) {
         self.api = api
         self.session = session
@@ -39,8 +39,8 @@ final class BacklogStore {
         self.completionCommit = completionCommit ?? { token, id in
             try await api.completeChore(sessionToken: token, choreID: id)
         }
-        self.createCommit = createCommit ?? { token, title, notes in
-            try await api.createChore(sessionToken: token, title: title, notes: notes)
+        self.createCommit = createCommit ?? { token, title, notes, claim in
+            try await api.createChore(sessionToken: token, title: title, notes: notes, claim: claim)
         }
     }
 
@@ -122,8 +122,10 @@ final class BacklogStore {
         }
     }
 
-    /// Create a new chore and optimistically prepend it on success.
-    func create(title: String, notes: String?) async {
+    /// Create a new chore and optimistically prepend it on success. Pass
+    /// `claim: true` to atomically self-claim it in the same request so the
+    /// row never shows up unclaimed to other household members.
+    func create(title: String, notes: String?, claim: Bool = false) async {
         guard let token = session() else {
             phase = .failed("Not signed in")
             return
@@ -134,7 +136,8 @@ final class BacklogStore {
             let chore = try await createCommit(
                 token,
                 title.trimmingCharacters(in: .whitespacesAndNewlines),
-                notes?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
+                notes?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+                claim
             )
             chores.insert(chore, at: 0)
         } catch {

@@ -68,8 +68,10 @@ func isOverdue(c db.Chore) bool {
 }
 
 type createChoreRequest struct {
-	Title string  `json:"title"`
-	Notes *string `json:"notes,omitempty"`
+	Title          string  `json:"title"`
+	Notes          *string `json:"notes,omitempty"`
+	Claim          bool    `json:"claim,omitempty"`
+	WillCompleteBy *string `json:"will_complete_by,omitempty"`
 }
 
 type backlogResponse struct {
@@ -98,7 +100,7 @@ func (s *Server) handleCreateChore(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			return err
 		}
-		created, err = chores.NewService(q).Create(r.Context(), listID, u.ID, req.Title, req.Notes)
+		created, err = chores.NewService(q).Create(r.Context(), listID, u.ID, req.Title, req.Notes, req.Claim, req.WillCompleteBy)
 		return err
 	})
 	if err != nil {

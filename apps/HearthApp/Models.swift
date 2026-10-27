@@ -82,6 +82,7 @@ struct HearthChore: Codable, Equatable, Identifiable {
 struct CreateChoreRequest: Codable {
     let title: String
     let notes: String?
+    let claim: Bool
 }
 
 struct BacklogResponse: Codable, Equatable {

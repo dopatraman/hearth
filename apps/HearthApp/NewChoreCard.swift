@@ -6,6 +6,7 @@ import UIKit
 final class NewChoreCardModel {
     var title: String = ""
     var note: String = ""
+    var claimForSelf: Bool = false
 
     var trimmedTitle: String {
         title.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -23,19 +24,20 @@ final class NewChoreCardModel {
     func reset() {
         title = ""
         note = ""
+        claimForSelf = false
     }
 }
 
 struct NewChoreCard: View {
     @Binding var isOpen: Bool
-    let onSubmit: (String, String?) async -> Void
+    let onSubmit: (String, String?, Bool) async -> Void
 
     @State private var model = NewChoreCardModel()
     @FocusState private var titleFocused: Bool
 
     private let shutSize: CGFloat = 62
     private let openWidth: CGFloat = 358
-    private let openHeight: CGFloat = 280
+    private let openHeight: CGFloat = 326
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -113,6 +115,8 @@ struct NewChoreCard: View {
                     .onSubmit(submit)
             }
 
+            claimToggleRow
+
             Button(action: submit) {
                 Text("Add to backlog")
                     .font(.hearthBody(size: 16, weight: .semibold))
@@ -128,15 +132,52 @@ struct NewChoreCard: View {
         .padding(22)
     }
 
+    private var claimToggleRow: some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            withAnimation(.timingCurve(0.3, 1.5, 0.5, 1, duration: 0.35)) {
+                model.claimForSelf.toggle()
+            }
+        } label: {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("I'll take it")
+                        .font(.hearthBody(size: 15, weight: .medium))
+                        .foregroundStyle(Color.hearthTextPrimary)
+                    Text("Claim it as soon as it's added")
+                        .font(.hearthBody(size: 13))
+                        .foregroundStyle(Color.hearthTextSecondary)
+                }
+                Spacer()
+                ZStack(alignment: model.claimForSelf ? .trailing : .leading) {
+                    Capsule()
+                        .fill(model.claimForSelf ? Color.hearthRingMineStroke : Color.hearthScheduledTrack)
+                        .frame(width: 48, height: 28)
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: 22, height: 22)
+                        .shadow(color: Color.black.opacity(0.2), radius: 1, y: 1)
+                        .padding(.horizontal, 3)
+                }
+            }
+            .frame(height: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("I'll take it")
+        .accessibilityValue(model.claimForSelf ? "On" : "Off")
+    }
+
     private func submit() {
         guard model.canSubmit else { return }
         let title = model.trimmedTitle
         let notes = model.trimmedNote
+        let claim = model.claimForSelf
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         isOpen = false
         titleFocused = false
         model.reset()
-        Task { await onSubmit(title, notes) }
+        Task { await onSubmit(title, notes, claim) }
     }
 
     private func close() {
@@ -146,12 +187,25 @@ struct NewChoreCard: View {
     }
 }
 
+private extension Color {
+    static let hearthScheduledTrack = Color(
+        light: Color(red: 0xDC / 255, green: 0xD9 / 255, blue: 0xE5 / 255),
+        dark: Color(red: 0x4A / 255, green: 0x47 / 255, blue: 0x54 / 255)
+    )
+
+    init(light: Color, dark: Color) {
+        self.init(uiColor: UIColor { trait in
+            trait.userInterfaceStyle == .dark ? UIColor(dark) : UIColor(light)
+        })
+    }
+}
+
 #if DEBUG
 #Preview {
     @Previewable @State var open = false
     return ZStack {
         Color.hearthBackground.ignoresSafeArea()
-        NewChoreCard(isOpen: $open, onSubmit: { _, _ in })
+        NewChoreCard(isOpen: $open, onSubmit: { _, _, _ in })
             .padding(.trailing, 16)
             .padding(.bottom, 24)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
