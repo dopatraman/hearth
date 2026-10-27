@@ -65,7 +65,7 @@ struct BacklogView: View {
             }
             .scaleEffect(isComposing ? 0.96 : 1)
             .blur(radius: isComposing ? 2 : 0)
-            .animation(.easeInOut(duration: 0.4), value: isComposing)
+            .animation(.timingCurve(0.2, 0.8, 0.2, 1, duration: 0.5), value: isComposing)
             .toolbar(.hidden, for: .navigationBar)
             .background(Color.hearthBackground)
             .scrollContentBackground(.hidden)

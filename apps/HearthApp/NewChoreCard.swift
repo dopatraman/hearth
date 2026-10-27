@@ -63,7 +63,7 @@ struct NewChoreCard: View {
             radius: isOpen ? 30 : 20,
             y: isOpen ? 24 : 8
         )
-        .animation(.spring(response: 0.55, dampingFraction: 0.82), value: isOpen)
+        .animation(.timingCurve(0.32, 1.18, 0.42, 1, duration: 0.55), value: isOpen)
     }
 
     private var plusContent: some View {
