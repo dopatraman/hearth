@@ -38,6 +38,9 @@
 		889D1C833DC318E868409959 /* SignInScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3EB1A8B05EDE6E9F9D12C8B /* SignInScreen.swift */; };
 		8E28A5D2385717D1349A3428 /* SegmentedPillTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00775C0BE6B93B0333D929CD /* SegmentedPillTests.swift */; };
 		9511D2465057C4684E1EDAB2 /* FABButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11C180916D2AF79C4264A84B /* FABButton.swift */; };
+		A101010101010101010101AA /* NewChoreCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B101010101010101010101BB /* NewChoreCard.swift */; };
+		A202020202020202020202AA /* NewChoreCardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B202020202020202020202BB /* NewChoreCardTests.swift */; };
+		A303030303030303030303AA /* BacklogStoreCreateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B303030303030303030303BB /* BacklogStoreCreateTests.swift */; };
 		982C229C52DFBED61CFEE397 /* ClaimDateSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94CA390E0E7B6C997F58DEA3 /* ClaimDateSheet.swift */; };
 		9E744842A7184E1575A9B59C /* ChoreRowModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C70EAE477AF5DC62C8A6501 /* ChoreRowModel.swift */; };
 		C2CAE7F05711E53B13A039A2 /* Keychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = F182F34FD96686F757ADDB8E /* Keychain.swift */; };
@@ -77,6 +80,9 @@
 		0D5E4935D50B1AF325E834C2 /* SinceLineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SinceLineTests.swift; sourceTree = "<group>"; };
 		0D61F9280CA2185FD1200A3D /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		11C180916D2AF79C4264A84B /* FABButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FABButton.swift; sourceTree = "<group>"; };
+		B101010101010101010101BB /* NewChoreCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewChoreCard.swift; sourceTree = "<group>"; };
+		B202020202020202020202BB /* NewChoreCardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewChoreCardTests.swift; sourceTree = "<group>"; };
+		B303030303030303030303BB /* BacklogStoreCreateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BacklogStoreCreateTests.swift; sourceTree = "<group>"; };
 		1945B64FC16BDFE702F27691 /* HearthAppTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HearthAppTests.swift; sourceTree = "<group>"; };
 		1C70EAE477AF5DC62C8A6501 /* ChoreRowModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChoreRowModel.swift; sourceTree = "<group>"; };
 		1D9F39230AA010A947C3BF99 /* Geist-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Geist-SemiBold.ttf"; sourceTree = "<group>"; };
@@ -191,6 +197,7 @@
 				F182F34FD96686F757ADDB8E /* Keychain.swift */,
 				B51959D2EBC486A3386D8198 /* MembersStore.swift */,
 				F62BD183CF0CFCF909DBCF97 /* Models.swift */,
+				B101010101010101010101BB /* NewChoreCard.swift */,
 				EBE592C777C4D1BBE58F29EE /* Palette.swift */,
 				467FDEB39220E792FEE2620D /* PushRegistration.swift */,
 				831581FFF70B679E7BF2F353 /* RingSlot.swift */,
@@ -229,10 +236,12 @@
 			children = (
 				D26C9C8C06D47CFC35AC5473 /* BacklogSectionsTests.swift */,
 				EE9FDA5ED427DC6F6B93D6F3 /* BacklogStoreCompletionTests.swift */,
+				B303030303030303030303BB /* BacklogStoreCreateTests.swift */,
 				2158D209613581A52909B32C /* BacklogSummaryTests.swift */,
 				789B7FB0B4BEBBA7C2235763 /* ChoreRowModelTests.swift */,
 				1945B64FC16BDFE702F27691 /* HearthAppTests.swift */,
 				342BA74BF16171DB9236407C /* MembersStoreTests.swift */,
+				B202020202020202020202BB /* NewChoreCardTests.swift */,
 				00775C0BE6B93B0333D929CD /* SegmentedPillTests.swift */,
 				0D5E4935D50B1AF325E834C2 /* SinceLineTests.swift */,
 			);
@@ -384,6 +393,7 @@
 				C2CAE7F05711E53B13A039A2 /* Keychain.swift in Sources */,
 				58960FF05A951C0BF6A144C8 /* MembersStore.swift in Sources */,
 				78FF81C2795EE43A43A060A9 /* Models.swift in Sources */,
+				A101010101010101010101AA /* NewChoreCard.swift in Sources */,
 				E56DE053E87C233B6196CBC9 /* Palette.swift in Sources */,
 				C9AF6D2D54DAE16A6CC9047F /* PushRegistration.swift in Sources */,
 				E9D198FE22A17A41E31A34DD /* RingSlot.swift in Sources */,
@@ -403,10 +413,12 @@
 			files = (
 				FFF89558DF97A807ADB3C34B /* BacklogSectionsTests.swift in Sources */,
 				0B96CA4D0FF730A6BEA5229E /* BacklogStoreCompletionTests.swift in Sources */,
+				A303030303030303030303AA /* BacklogStoreCreateTests.swift in Sources */,
 				555E830F67A21ACECBD628D5 /* BacklogSummaryTests.swift in Sources */,
 				E91265AC63F4EA9DD5C36D20 /* ChoreRowModelTests.swift in Sources */,
 				65A3ACB6340FB76FBDA27FF5 /* HearthAppTests.swift in Sources */,
 				5B17A7DC167BCAFDF5FC3AF5 /* MembersStoreTests.swift in Sources */,
+				A202020202020202020202AA /* NewChoreCardTests.swift in Sources */,
 				8E28A5D2385717D1349A3428 /* SegmentedPillTests.swift in Sources */,
 				E86A293D578B66DDF2C502D6 /* SinceLineTests.swift in Sources */,
 			);

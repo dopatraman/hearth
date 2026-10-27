@@ -1,27 +1,34 @@
 import SwiftUI
 
+enum ToastKind: Equatable {
+    case success
+    case creation
+}
+
 struct ToastModel: Equatable, Identifiable {
     let id = UUID()
     let text: String
     let undoLabel: String?
+    let kind: ToastKind
+
+    init(text: String, undoLabel: String? = nil, kind: ToastKind = .success) {
+        self.text = text
+        self.undoLabel = undoLabel
+        self.kind = kind
+    }
 
     static func == (lhs: ToastModel, rhs: ToastModel) -> Bool {
-        lhs.id == rhs.id && lhs.text == rhs.text && lhs.undoLabel == rhs.undoLabel
+        lhs.id == rhs.id && lhs.text == rhs.text && lhs.undoLabel == rhs.undoLabel && lhs.kind == rhs.kind
     }
 }
 
-/// Dark glass pill toast that rises from above the tab bar. Carries a text
-/// label and an optional Undo button. Auto-dismisses after 3.2s via the
-/// `.task` modifier bound to the toast's id.
 struct ToastView: View {
     let toast: ToastModel
     let onUndo: (() -> Void)?
 
     var body: some View {
         HStack(spacing: 10) {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(Color.hearthMint)
+            leadingIcon
 
             Text(toast.text)
                 .font(.hearthBody(size: 14, weight: .medium))
@@ -47,13 +54,32 @@ struct ToastView: View {
         )
         .shadow(color: .black.opacity(0.25), radius: 20, y: 10)
     }
+
+    @ViewBuilder
+    private var leadingIcon: some View {
+        switch toast.kind {
+        case .success:
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(Color.hearthMint)
+        case .creation:
+            ZStack {
+                Circle().fill(Color.hearthLavender)
+                Image(systemName: "plus")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(Color.hearthLavenderInk)
+            }
+            .frame(width: 22, height: 22)
+        }
+    }
 }
 
 #if DEBUG
 #Preview {
     VStack(spacing: 20) {
         ToastView(toast: ToastModel(text: "Moved to Done", undoLabel: "Undo"), onUndo: {})
-        ToastView(toast: ToastModel(text: "Yours. Due tomorrow?", undoLabel: nil), onUndo: nil)
+        ToastView(toast: ToastModel(text: "Yours. Due tomorrow?"), onUndo: nil)
+        ToastView(toast: ToastModel(text: "Added. Up for grabs", kind: .creation), onUndo: nil)
     }
     .padding()
     .background(Color.hearthBackground)
