@@ -16,7 +16,8 @@ ORDER BY created_at DESC;
 -- name: BacklogForUser :many
 SELECT c.id, c.list_id, c.creator_id, c.title, c.notes, c.state,
        c.claimed_by, c.claimed_at, c.will_complete_by,
-       c.completed_by, c.completed_at, c.created_at, c.updated_at
+       c.completed_by, c.completed_at, c.created_at, c.updated_at,
+       s.snoozed_until
 FROM chores c
 JOIN list_memberships m ON m.list_id = c.list_id
 LEFT JOIN snoozes s
@@ -25,7 +26,6 @@ LEFT JOIN snoozes s
       AND s.snoozed_until > strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
 WHERE m.user_id = sqlc.arg(user_id)
   AND c.state = 'open'
-  AND s.chore_id IS NULL
 ORDER BY c.created_at DESC;
 
 -- name: GetChoreByID :one

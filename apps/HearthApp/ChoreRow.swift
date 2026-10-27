@@ -15,6 +15,37 @@ struct ChoreRow: View {
     let onSetDate: () -> Void
     let onSnooze: () -> Void
     let onRelease: () -> Void
+    let onWake: () -> Void
+
+    init(
+        chore: HearthChore,
+        currentUserID: String?,
+        members: [HearthMember],
+        isOpen: Bool,
+        onToggle: @escaping () -> Void,
+        onComplete: @escaping () -> Void,
+        onClaim: @escaping () -> Void,
+        onSetDate: @escaping () -> Void,
+        onSnooze: @escaping () -> Void,
+        onRelease: @escaping () -> Void,
+        onWake: @escaping () -> Void = {}
+    ) {
+        self.chore = chore
+        self.currentUserID = currentUserID
+        self.members = members
+        self.isOpen = isOpen
+        self.onToggle = onToggle
+        self.onComplete = onComplete
+        self.onClaim = onClaim
+        self.onSetDate = onSetDate
+        self.onSnooze = onSnooze
+        self.onRelease = onRelease
+        self.onWake = onWake
+    }
+
+    private var isSnoozed: Bool {
+        chore.snoozedUntil != nil
+    }
 
     private var roleValue: ChoreRole {
         role(for: chore, me: currentUserID)
@@ -47,6 +78,7 @@ struct ChoreRow: View {
                 .shadow(color: .black.opacity(0.04), radius: 2, y: 1)
                 .shadow(color: .black.opacity(0.04), radius: 18, y: 6)
         )
+        .opacity(isSnoozed && !isOpen ? 0.55 : 1)
         .animation(.spring(response: 0.4, dampingFraction: 0.82), value: isOpen)
     }
 
@@ -143,6 +175,9 @@ struct ChoreRow: View {
     }
 
     private var actionPills: [(label: String, action: () -> Void)] {
+        if isSnoozed {
+            return [("Wake", onWake)]
+        }
         switch roleValue {
         case .mine:
             return [

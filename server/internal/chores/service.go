@@ -143,10 +143,24 @@ func (s *Service) Backlog(ctx context.Context, listID string) ([]db.Chore, error
 }
 
 // BacklogForUser returns the union of open chores across every list the user
-// is a member of, newest first. Preferred over Backlog(listID) when the user
-// may belong to multiple lists (invite flow).
-func (s *Service) BacklogForUser(ctx context.Context, userID string) ([]db.Chore, error) {
+// is a member of, newest first. Snoozed chores are included and carry a
+// non-nil SnoozedUntil for the caller — the UI uses that to render them in a
+// dedicated Snoozed section instead of hiding them outright.
+func (s *Service) BacklogForUser(ctx context.Context, userID string) ([]db.BacklogForUserRow, error) {
 	return s.q.BacklogForUser(ctx, userID)
+}
+
+// Wake removes the caller's snooze on a chore so it returns to its normal
+// backlog section on the next read. Idempotent: a DELETE on a non-existent
+// snooze row does not error. No event is emitted — the events.type CHECK
+// does not include an "unsnoozed" value and extending it needs a SQLite
+// table rewrite we're deferring; the original "snoozed" event remains the
+// audit record of the user's intent at that moment.
+func (s *Service) Wake(ctx context.Context, choreID, userID string) error {
+	return s.q.DeleteSnooze(ctx, db.DeleteSnoozeParams{
+		UserID:  userID,
+		ChoreID: choreID,
+	})
 }
 
 // Claim atomically sets claimed_by to userID iff the chore is open and

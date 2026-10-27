@@ -100,6 +100,10 @@ struct HearthAPI {
         try await postNoContent("/chores/\(choreID)/snooze", bearerToken: sessionToken)
     }
 
+    func wakeChore(sessionToken: String, choreID: String) async throws {
+        try await deleteNoContent("/chores/\(choreID)/snooze", bearerToken: sessionToken)
+    }
+
     // MARK: - Devices + Notifications
 
     func registerDevice(sessionToken: String, token: String, platform: String) async throws {
@@ -266,6 +270,18 @@ struct HearthAPI {
             req.setValue("Bearer \(bearerToken)", forHTTPHeaderField: "Authorization")
         }
         return try await perform(req)
+    }
+
+    private func deleteNoContent(
+        _ path: String,
+        bearerToken: String? = nil
+    ) async throws {
+        var req = URLRequest(url: baseURL.appendingPathComponent(path))
+        req.httpMethod = "DELETE"
+        if let bearerToken {
+            req.setValue("Bearer \(bearerToken)", forHTTPHeaderField: "Authorization")
+        }
+        try await performNoContent(req)
     }
 
     private func patch<RequestBody: Encodable, ResponseBody: Decodable>(

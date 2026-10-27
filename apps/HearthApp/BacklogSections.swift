@@ -3,6 +3,7 @@ import SwiftUI
 enum BacklogSectionKind: Hashable {
     case claimed
     case upForGrabs
+    case snoozed
 }
 
 struct BacklogSection: Identifiable, Equatable {
@@ -28,12 +29,15 @@ func groupedSections(
     currentUserID: String?,
     filter: BacklogFilter
 ) -> [BacklogSection] {
+    let active = chores.filter { $0.snoozedUntil == nil }
+    let snoozedPool = chores.filter { $0.snoozedUntil != nil }
+
     let claimedPool: [HearthChore]
     switch filter {
     case .all:
-        claimedPool = chores.filter { $0.claimedBy != nil }
+        claimedPool = active.filter { $0.claimedBy != nil }
     case .member(let memberID):
-        claimedPool = chores.filter { $0.claimedBy == memberID }
+        claimedPool = active.filter { $0.claimedBy == memberID }
     }
     let claimed = claimedPool.sorted(by: claimedOrder)
 
@@ -50,7 +54,7 @@ func groupedSections(
     }
 
     if filter == .all {
-        let upForGrabs = chores
+        let upForGrabs = active
             .filter { $0.claimedBy == nil }
             .sorted { $0.createdAt < $1.createdAt }
         if !upForGrabs.isEmpty {
@@ -63,6 +67,25 @@ func groupedSections(
                 )
             )
         }
+    }
+
+    let snoozed: [HearthChore]
+    switch filter {
+    case .all:
+        snoozed = snoozedPool
+    case .member(let memberID):
+        snoozed = snoozedPool.filter { $0.claimedBy == memberID }
+    }
+    if !snoozed.isEmpty {
+        let ordered = snoozed.sorted { $0.createdAt < $1.createdAt }
+        sections.append(
+            BacklogSection(
+                kind: .snoozed,
+                label: "Snoozed",
+                dotColor: .hearthSectionDotMuted,
+                items: ordered
+            )
+        )
     }
 
     return sections

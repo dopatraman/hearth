@@ -276,13 +276,22 @@ struct BacklogView: View {
             },
             onSnooze: {
                 UIImpactFeedbackGenerator(style: .soft).impactOccurred()
-                openID = nil
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.82)) {
+                    openID = nil
+                }
                 Task { await store.snooze(choreID: chore.id) }
             },
             onRelease: {
                 UIImpactFeedbackGenerator(style: .soft).impactOccurred()
                 openID = nil
                 Task { await store.release(choreID: chore.id) }
+            },
+            onWake: {
+                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.82)) {
+                    openID = nil
+                }
+                Task { await store.wake(choreID: chore.id) }
             }
         )
     }

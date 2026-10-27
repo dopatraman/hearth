@@ -12,7 +12,8 @@ struct BacklogSectionsTests {
         claimedBy: String? = nil,
         overdue: Bool = false,
         willCompleteBy: String? = nil,
-        createdAt: String = "2026-10-20T10:00:00.000Z"
+        createdAt: String = "2026-10-20T10:00:00.000Z",
+        snoozedUntil: String? = nil
     ) -> HearthChore {
         HearthChore(
             id: id,
@@ -28,7 +29,8 @@ struct BacklogSectionsTests {
             completedAt: nil,
             createdAt: createdAt,
             updatedAt: createdAt,
-            overdue: overdue
+            overdue: overdue,
+            snoozedUntil: snoozedUntil
         )
     }
 
@@ -130,5 +132,39 @@ struct BacklogSectionsTests {
         ]
         let sections = groupedSections(chores: chores, currentUserID: me, filter: .all)
         #expect(sections.first?.items.map(\.id) == ["dated", "no-date"])
+    }
+
+    @Test("snoozed chore goes to Snoozed section, not Claimed or UpForGrabs")
+    func groupedSections_snoozedChore_goesToSnoozedSection() {
+        let chores = [
+            chore(id: "awake", claimedBy: me),
+            chore(id: "asleep", claimedBy: me, snoozedUntil: "2026-10-28T00:00:00.000Z"),
+        ]
+        let sections = groupedSections(chores: chores, currentUserID: me, filter: .all)
+        #expect(sections.map(\.kind) == [.claimed, .snoozed])
+        #expect(sections.first?.items.map(\.id) == ["awake"])
+        #expect(sections.last?.items.map(\.id) == ["asleep"])
+    }
+
+    @Test("Snoozed section goes at the bottom under .all")
+    func groupedSections_snoozedSection_lastInOrder() {
+        let chores = [
+            chore(id: "claimed", claimedBy: me),
+            chore(id: "unclaimed", claimedBy: nil),
+            chore(id: "snoozed", claimedBy: nil, snoozedUntil: "2026-10-28T00:00:00.000Z"),
+        ]
+        let sections = groupedSections(chores: chores, currentUserID: me, filter: .all)
+        #expect(sections.map(\.kind) == [.claimed, .upForGrabs, .snoozed])
+    }
+
+    @Test("Snoozed unclaimed hidden when filtering to a member")
+    func groupedSections_memberFilter_hidesSnoozedUnclaimed() {
+        let chores = [
+            chore(id: "mine-asleep", claimedBy: me, snoozedUntil: "2026-10-28T00:00:00.000Z"),
+            chore(id: "unclaimed-asleep", claimedBy: nil, snoozedUntil: "2026-10-28T00:00:00.000Z"),
+        ]
+        let sections = groupedSections(chores: chores, currentUserID: me, filter: .member(me))
+        #expect(sections.map(\.kind) == [.snoozed])
+        #expect(sections.first?.items.map(\.id) == ["mine-asleep"])
     }
 }
