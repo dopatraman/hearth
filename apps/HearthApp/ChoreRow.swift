@@ -136,7 +136,7 @@ struct ChoreRow: View {
                 }
             }
         }
-        .padding(.leading, 48)
+        .padding(.leading, 58)
         .padding(.trailing, 12)
         .padding(.top, 2)
         .padding(.bottom, 10)
@@ -177,8 +177,9 @@ private struct ActionPill: View {
     }
 }
 
-/// Minimal flow layout: wraps children to the next row when they overflow.
-/// Used for action pills so they wrap gracefully on narrow screens.
+/// Minimal pill row: lays action pills out left to right with a trailing
+/// Spacer so a single pill still snaps to the leading edge (matching the
+/// title above) instead of expanding to fill its row.
 private struct FlowRow<Content: View>: View {
     let spacing: CGFloat
     @ViewBuilder let content: Content
@@ -186,6 +187,7 @@ private struct FlowRow<Content: View>: View {
     var body: some View {
         HStack(spacing: spacing) {
             content
+            Spacer(minLength: 0)
         }
     }
 }

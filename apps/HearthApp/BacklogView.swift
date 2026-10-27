@@ -256,7 +256,9 @@ struct BacklogView: View {
             members: members.members,
             isOpen: openID == chore.id,
             onToggle: {
-                openID = openID == chore.id ? nil : chore.id
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.82)) {
+                    openID = openID == chore.id ? nil : chore.id
+                }
             },
             onComplete: {
                 beginCompletion(choreID: chore.id)
