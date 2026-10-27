@@ -49,14 +49,22 @@ struct NewChoreCardTests {
         #expect(model.trimmedNote == "front porch")
     }
 
-    @Test("reset clears title and note")
+    @Test("reset clears title, note, and claim toggle")
     func reset_clearsFields() {
         let model = NewChoreCardModel()
         model.title = "x"
         model.note = "y"
+        model.claimForSelf = true
         model.reset()
         #expect(model.title == "")
         #expect(model.note == "")
+        #expect(model.claimForSelf == false)
         #expect(model.canSubmit == false)
+    }
+
+    @Test("claimForSelf defaults to false")
+    func claimForSelf_defaultsFalse() {
+        let model = NewChoreCardModel()
+        #expect(model.claimForSelf == false)
     }
 }

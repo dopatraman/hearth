@@ -34,7 +34,7 @@ func TestChores_Create_WritesChoreAndEvent(t *testing.T) {
 		userID, listID := setupUserInList(t, ctx, q, "sub-chore-A")
 
 		notes := "take out both bins"
-		chore, err := chores.NewService(q).Create(ctx, listID, userID, "trash", &notes)
+		chore, err := chores.NewService(q).Create(ctx, listID, userID, "trash", &notes, false, nil)
 		if err != nil {
 			t.Fatalf("create: %v", err)
 		}
@@ -76,9 +76,81 @@ func TestChores_Create_RejectsEmptyTitle(t *testing.T) {
 		q := db.New(tx)
 		userID, listID := setupUserInList(t, ctx, q, "sub-chore-B")
 
-		_, err := chores.NewService(q).Create(ctx, listID, userID, "", nil)
+		_, err := chores.NewService(q).Create(ctx, listID, userID, "", nil, false, nil)
 		if !errors.Is(err, chores.ErrEmptyTitle) {
 			t.Fatalf("want ErrEmptyTitle, got %v", err)
+		}
+	})
+}
+
+func TestChores_Create_WithClaim_SetsClaimedBy(t *testing.T) {
+	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
+		q := db.New(tx)
+		userID, listID := setupUserInList(t, ctx, q, "sub-create-claim")
+
+		chore, err := chores.NewService(q).Create(ctx, listID, userID, "trash", nil, true, nil)
+		if err != nil {
+			t.Fatalf("create+claim: %v", err)
+		}
+		if chore.ClaimedBy == nil || *chore.ClaimedBy != userID {
+			t.Errorf("claimed_by: got %v want %q", chore.ClaimedBy, userID)
+		}
+		if chore.ClaimedAt == nil {
+			t.Error("claimed_at: nil")
+		}
+	})
+}
+
+func TestChores_Create_WithClaim_EmitsCreatedThenClaimedEvents(t *testing.T) {
+	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
+		q := db.New(tx)
+		userID, listID := setupUserInList(t, ctx, q, "sub-create-claim-events")
+
+		chore, err := chores.NewService(q).Create(ctx, listID, userID, "trash", nil, true, nil)
+		if err != nil {
+			t.Fatalf("create+claim: %v", err)
+		}
+
+		events, err := q.EventsForChore(ctx, chore.ID)
+		if err != nil {
+			t.Fatalf("events: %v", err)
+		}
+		if len(events) != 2 {
+			t.Fatalf("want 2 events, got %d: %+v", len(events), events)
+		}
+		if events[0].Type != "created" {
+			t.Errorf("event[0] type: got %q want created", events[0].Type)
+		}
+		if events[1].Type != "claimed" {
+			t.Errorf("event[1] type: got %q want claimed", events[1].Type)
+		}
+		for i, e := range events {
+			if e.ActorID != userID {
+				t.Errorf("event[%d] actor: got %q want %q", i, e.ActorID, userID)
+			}
+		}
+	})
+}
+
+func TestChores_Create_WithoutClaim_LeavesClaimedByNull(t *testing.T) {
+	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
+		q := db.New(tx)
+		userID, listID := setupUserInList(t, ctx, q, "sub-create-no-claim")
+
+		chore, err := chores.NewService(q).Create(ctx, listID, userID, "trash", nil, false, nil)
+		if err != nil {
+			t.Fatalf("create: %v", err)
+		}
+		if chore.ClaimedBy != nil {
+			t.Errorf("claimed_by: got %v want nil", chore.ClaimedBy)
+		}
+
+		events, err := q.EventsForChore(ctx, chore.ID)
+		if err != nil {
+			t.Fatalf("events: %v", err)
+		}
+		if len(events) != 1 || events[0].Type != "created" {
+			t.Errorf("want single created event, got %+v", events)
 		}
 	})
 }
@@ -90,7 +162,7 @@ func TestChores_Backlog_ReturnsOpenChoresNewestFirst(t *testing.T) {
 		svc := chores.NewService(q)
 
 		for _, title := range []string{"first", "second", "third"} {
-			if _, err := svc.Create(ctx, listID, userID, title, nil); err != nil {
+			if _, err := svc.Create(ctx, listID, userID, title, nil, false, nil); err != nil {
 				t.Fatalf("create %q: %v", title, err)
 			}
 		}
@@ -122,7 +194,7 @@ func TestChores_Claim_SetsClaimedBy(t *testing.T) {
 		userID, listID := setupUserInList(t, ctx, q, "sub-claim-A")
 
 		svc := chores.NewService(q)
-		created, err := svc.Create(ctx, listID, userID, "trash", nil)
+		created, err := svc.Create(ctx, listID, userID, "trash", nil, false, nil)
 		if err != nil {
 			t.Fatalf("create: %v", err)
 		}
@@ -147,7 +219,7 @@ func TestChores_Claim_SecondClaimReturnsErrNotClaimable(t *testing.T) {
 		bobID, _ := setupUserInList(t, ctx, q, "sub-claim-race-B")
 
 		svc := chores.NewService(q)
-		chore, err := svc.Create(ctx, listID, aliceID, "trash", nil)
+		chore, err := svc.Create(ctx, listID, aliceID, "trash", nil, false, nil)
 		if err != nil {
 			t.Fatalf("create: %v", err)
 		}
@@ -169,7 +241,7 @@ func TestChores_Claim_WritesClaimedEvent(t *testing.T) {
 		userID, listID := setupUserInList(t, ctx, q, "sub-claim-event")
 
 		svc := chores.NewService(q)
-		chore, err := svc.Create(ctx, listID, userID, "trash", nil)
+		chore, err := svc.Create(ctx, listID, userID, "trash", nil, false, nil)
 		if err != nil {
 			t.Fatalf("create: %v", err)
 		}
@@ -203,7 +275,7 @@ func TestChores_Complete_SetsStateAndCompletedBy(t *testing.T) {
 		userID, listID := setupUserInList(t, ctx, q, "sub-complete-A")
 		svc := chores.NewService(q)
 
-		chore, err := svc.Create(ctx, listID, userID, "trash", nil)
+		chore, err := svc.Create(ctx, listID, userID, "trash", nil, false, nil)
 		if err != nil {
 			t.Fatalf("create: %v", err)
 		}
@@ -231,7 +303,7 @@ func TestChores_Complete_RejectsNonClaimant(t *testing.T) {
 		bobID, _ := setupUserInList(t, ctx, q, "sub-complete-bob")
 		svc := chores.NewService(q)
 
-		chore, err := svc.Create(ctx, listID, aliceID, "trash", nil)
+		chore, err := svc.Create(ctx, listID, aliceID, "trash", nil, false, nil)
 		if err != nil {
 			t.Fatalf("create: %v", err)
 		}
@@ -253,7 +325,7 @@ func TestChores_Complete_UnclaimedChoreReturnsErrNotCompletable(t *testing.T) {
 		userID, listID := setupUserInList(t, ctx, q, "sub-complete-unclaimed")
 		svc := chores.NewService(q)
 
-		chore, err := svc.Create(ctx, listID, userID, "trash", nil)
+		chore, err := svc.Create(ctx, listID, userID, "trash", nil, false, nil)
 		if err != nil {
 			t.Fatalf("create: %v", err)
 		}
@@ -275,7 +347,7 @@ func TestChores_Graveyard_ListsCompletedChoresNewestFirst(t *testing.T) {
 		svc := chores.NewService(q)
 
 		for _, title := range []string{"trash", "dishes", "mop"} {
-			c, err := svc.Create(ctx, listID, userID, title, nil)
+			c, err := svc.Create(ctx, listID, userID, title, nil, false, nil)
 			if err != nil {
 				t.Fatalf("create %q: %v", title, err)
 			}
@@ -304,7 +376,7 @@ func TestChores_SearchGraveyard_MatchesSubstringCaseInsensitive(t *testing.T) {
 		svc := chores.NewService(q)
 
 		for _, title := range []string{"Take out trash", "Dishes", "Mop"} {
-			c, _ := svc.Create(ctx, listID, userID, title, nil)
+			c, _ := svc.Create(ctx, listID, userID, title, nil, false, nil)
 			_, _ = svc.Claim(ctx, c.ID, userID)
 			_, _ = svc.Complete(ctx, c.ID, userID)
 		}
@@ -330,10 +402,10 @@ func TestChores_Backlog_IsScopedToList(t *testing.T) {
 		}
 
 		svc := chores.NewService(q)
-		if _, err := svc.Create(ctx, aliceList, aliceID, "alice-only", nil); err != nil {
+		if _, err := svc.Create(ctx, aliceList, aliceID, "alice-only", nil, false, nil); err != nil {
 			t.Fatalf("alice create: %v", err)
 		}
-		if _, err := svc.Create(ctx, bobList, bobID, "bob-only", nil); err != nil {
+		if _, err := svc.Create(ctx, bobList, bobID, "bob-only", nil, false, nil); err != nil {
 			t.Fatalf("bob create: %v", err)
 		}
 

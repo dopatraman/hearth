@@ -27,10 +27,21 @@ var (
 	ErrNotReleasable  = errors.New("chores: cannot release (not found, not claimed by you, or already completed)")
 )
 
-// Create inserts a new chore + a corresponding 'created' event. Pass tx-bound
-// Queries (UoW.InTx) so the two writes are atomic — a client that sees a
-// chore exists should also see its creation event.
-func (s *Service) Create(ctx context.Context, listID, creatorID, title string, notes *string) (db.Chore, error) {
+// Create inserts a new chore + a 'created' event, and optionally claims it
+// for the creator and sets a will_complete_by date, all in the caller's
+// transaction. Pass tx-bound Queries (UoW.InTx) so every step either lands
+// together or not at all — a household member reading between steps should
+// never see a half-formed row.
+//
+// `willCompleteBy` is currently a slot for Slice 11; this slice ignores it.
+func (s *Service) Create(
+	ctx context.Context,
+	listID, creatorID, title string,
+	notes *string,
+	claim bool,
+	willCompleteBy *string,
+) (db.Chore, error) {
+	_ = willCompleteBy
 	if title == "" {
 		return db.Chore{}, ErrEmptyTitle
 	}
@@ -64,7 +75,34 @@ func (s *Service) Create(ctx context.Context, listID, creatorID, title string, n
 		return db.Chore{}, err
 	}
 
-	return chore, nil
+	if !claim {
+		return chore, nil
+	}
+
+	actor := creatorID
+	claimed, err := s.q.ClaimChore(ctx, db.ClaimChoreParams{
+		ClaimedBy: &actor,
+		ID:        chore.ID,
+	})
+	if err != nil {
+		return db.Chore{}, err
+	}
+
+	claimEventID, err := uuid.NewV7()
+	if err != nil {
+		return db.Chore{}, err
+	}
+	if err := s.q.InsertEvent(ctx, db.InsertEventParams{
+		ID:      claimEventID.String(),
+		ListID:  listID,
+		ChoreID: chore.ID,
+		ActorID: creatorID,
+		Type:    "claimed",
+	}); err != nil {
+		return db.Chore{}, err
+	}
+
+	return claimed, nil
 }
 
 // Backlog returns open chores in the given list, newest first.
