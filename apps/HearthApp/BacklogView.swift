@@ -5,7 +5,7 @@ struct BacklogView: View {
     @Environment(AuthStore.self) private var auth
     @State private var store: BacklogStore
     private let members: MembersStore
-    @State private var presentingCreate: Bool = false
+    @State private var isComposing: Bool = false
     @State private var presentingSettings: Bool = false
     @State private var filter: Filter = .all
     @State private var dateSheetFor: HearthChore?
@@ -63,6 +63,9 @@ struct BacklogView: View {
 
                 content
             }
+            .scaleEffect(isComposing ? 0.96 : 1)
+            .blur(radius: isComposing ? 2 : 0)
+            .animation(.easeInOut(duration: 0.4), value: isComposing)
             .toolbar(.hidden, for: .navigationBar)
             .background(Color.hearthBackground)
             .scrollContentBackground(.hidden)
@@ -79,11 +82,6 @@ struct BacklogView: View {
                 }
                 withAnimation { didLoad = true }
             }
-            .sheet(isPresented: $presentingCreate) {
-                CreateChoreSheet(onSave: { title, notes in
-                    await store.create(title: title, notes: notes)
-                })
-            }
             .sheet(isPresented: $presentingSettings) {
                 SettingsSheet()
             }
@@ -94,12 +92,22 @@ struct BacklogView: View {
                     }
                 }
             }
-            .overlay(alignment: .bottomTrailing) {
-                FABButton {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    presentingCreate = true
+            .overlay {
+                if isComposing {
+                    Color.black.opacity(0.22)
+                        .ignoresSafeArea()
+                        .onTapGesture { isComposing = false }
+                        .transition(.opacity)
                 }
-                .padding(24)
+            }
+            .animation(.easeInOut(duration: 0.4), value: isComposing)
+            .overlay(alignment: .bottomTrailing) {
+                NewChoreCard(isOpen: $isComposing) { title, notes in
+                    await store.create(title: title, notes: notes)
+                    showCreationToast()
+                }
+                .padding(.trailing, isComposing ? 16 : 20)
+                .padding(.bottom, isComposing ? 24 : 30)
             }
             .overlay(alignment: .bottom) {
                 if let toast {
@@ -150,6 +158,13 @@ struct BacklogView: View {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         withAnimation(.spring(response: 0.4, dampingFraction: 0.78)) {
             toast = ToastModel(text: "Yours.", undoLabel: nil)
+        }
+    }
+
+    private func showCreationToast() {
+        if case .failed = store.phase { return }
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.78)) {
+            toast = ToastModel(text: "Added. Up for grabs", kind: .creation)
         }
     }
 

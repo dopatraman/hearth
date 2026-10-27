@@ -24,18 +24,23 @@ final class BacklogStore {
     private let session: () -> String?
     let completionDelay: Duration
     private let completionCommit: @Sendable (_ token: String, _ choreID: String) async throws -> HearthChore
+    private let createCommit: @Sendable (_ token: String, _ title: String, _ notes: String?) async throws -> HearthChore
 
     init(
         api: HearthAPI = HearthAPI(),
         session: @escaping () -> String?,
         completionDelay: Duration = .seconds(3),
-        completionCommit: (@Sendable (_ token: String, _ choreID: String) async throws -> HearthChore)? = nil
+        completionCommit: (@Sendable (_ token: String, _ choreID: String) async throws -> HearthChore)? = nil,
+        createCommit: (@Sendable (_ token: String, _ title: String, _ notes: String?) async throws -> HearthChore)? = nil
     ) {
         self.api = api
         self.session = session
         self.completionDelay = completionDelay
         self.completionCommit = completionCommit ?? { token, id in
             try await api.completeChore(sessionToken: token, choreID: id)
+        }
+        self.createCommit = createCommit ?? { token, title, notes in
+            try await api.createChore(sessionToken: token, title: title, notes: notes)
         }
     }
 
@@ -126,10 +131,10 @@ final class BacklogStore {
         isCreating = true
         defer { isCreating = false }
         do {
-            let chore = try await api.createChore(
-                sessionToken: token,
-                title: title.trimmingCharacters(in: .whitespacesAndNewlines),
-                notes: notes?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
+            let chore = try await createCommit(
+                token,
+                title.trimmingCharacters(in: .whitespacesAndNewlines),
+                notes?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
             )
             chores.insert(chore, at: 0)
         } catch {
