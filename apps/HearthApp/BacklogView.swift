@@ -101,14 +101,12 @@ struct BacklogView: View {
                 }
             }
             .animation(.easeInOut(duration: 0.4), value: isComposing)
-            .overlay(alignment: .bottomTrailing) {
+            .overlay(alignment: .bottom) {
                 NewChoreCard(isOpen: $isComposing) { title, notes, claim, bucket in
                     let iso = bucket?.resolve(now: Date()).map { WhenishBucket.iso8601(from: $0) }
                     await store.create(title: title, notes: notes, claim: claim, willCompleteBy: iso)
                     showCreationToast(claimed: claim, bucket: bucket)
                 }
-                .padding(.trailing, 20)
-                .padding(.bottom, 30)
             }
             .overlay(alignment: .bottom) {
                 if let toast {

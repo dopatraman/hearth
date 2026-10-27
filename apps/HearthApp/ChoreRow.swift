@@ -43,7 +43,7 @@ struct ChoreRow: View {
         }
         .background(
             RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(Color.hearthCardBackground)
+                .fill(Color.hearthSurface)
                 .shadow(color: .black.opacity(0.04), radius: 2, y: 1)
                 .shadow(color: .black.opacity(0.04), radius: 18, y: 6)
         )
@@ -168,10 +168,10 @@ private struct ActionPill: View {
         Button(action: action) {
             Text(label)
                 .font(.hearthBody(size: 13, weight: .semibold))
-                .foregroundStyle(Color.hearthActionPillInk)
+                .foregroundStyle(Color.hearthInsetInk)
                 .frame(height: 36)
                 .padding(.horizontal, 14)
-                .background(Color.hearthActionPillBg, in: Capsule())
+                .background(Color.hearthInsetFill, in: Capsule())
         }
         .buttonStyle(.plain)
     }
@@ -187,41 +187,6 @@ private struct FlowRow<Content: View>: View {
         HStack(spacing: spacing) {
             content
         }
-    }
-}
-
-// MARK: - Palette additions
-
-extension Color {
-    /// White card background — pure white in light, warm-dark in dark.
-    static let hearthCardBackground = Color(
-        light: .white,
-        dark: Color(red: 0x2A / 255, green: 0x27 / 255, blue: 0x24 / 255)
-    )
-
-    /// Muted chevron tint.
-    static let hearthChevron = Color(
-        light: Color(red: 0x9E / 255, green: 0x9A / 255, blue: 0xAF / 255),
-        dark: Color(red: 0x7E / 255, green: 0x7A / 255, blue: 0x8F / 255)
-    )
-
-    /// Action pill background inside the row drawer.
-    static let hearthActionPillBg = Color(
-        light: Color(red: 0xF4 / 255, green: 0xF3 / 255, blue: 0xF8 / 255),
-        dark: Color(red: 0x3A / 255, green: 0x37 / 255, blue: 0x44 / 255)
-    )
-
-    static let hearthActionPillInk = Color(
-        light: Color(red: 0x3A / 255, green: 0x36 / 255, blue: 0x48 / 255),
-        dark: Color(red: 0xC9 / 255, green: 0xC4 / 255, blue: 0xD6 / 255)
-    )
-}
-
-private extension Color {
-    init(light: Color, dark: Color) {
-        self.init(uiColor: UIColor { trait in
-            trait.userInterfaceStyle == .dark ? UIColor(dark) : UIColor(light)
-        })
     }
 }
 

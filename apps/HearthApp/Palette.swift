@@ -79,6 +79,38 @@ extension Color {
         light: Color(red: 0x1F / 255, green: 0x5A / 255, blue: 0x8F / 255),
         dark: Color(red: 0xB4 / 255, green: 0xD1 / 255, blue: 0xEF / 255)
     )
+
+    /// Card/sheet surface. White in light, warm near-black in dark. Used by
+    /// chore row cards and the New Chore composer.
+    static let hearthSurface = Color(
+        light: .white,
+        dark: Color(red: 0x2A / 255, green: 0x27 / 255, blue: 0x24 / 255)
+    )
+
+    /// Muted chevron / small-icon tint used inside rows.
+    static let hearthChevron = Color(
+        light: Color(red: 0x9E / 255, green: 0x9A / 255, blue: 0xAF / 255),
+        dark: Color(red: 0x7E / 255, green: 0x7A / 255, blue: 0x8F / 255)
+    )
+
+    /// Soft inset button background that reads against a `hearthSurface` card
+    /// in both themes — used for action pills, chip-rest state, and the X-close.
+    static let hearthInsetFill = Color(
+        light: Color(red: 0xF4 / 255, green: 0xF3 / 255, blue: 0xF8 / 255),
+        dark: Color(red: 0x3A / 255, green: 0x37 / 255, blue: 0x44 / 255)
+    )
+
+    /// Ink color for text drawn on `hearthInsetFill` buttons.
+    static let hearthInsetInk = Color(
+        light: Color(red: 0x3A / 255, green: 0x36 / 255, blue: 0x48 / 255),
+        dark: Color(red: 0xC9 / 255, green: 0xC4 / 255, blue: 0xD6 / 255)
+    )
+
+    /// Switch track background in the off state (New Chore toggle).
+    static let hearthSwitchTrackOff = Color(
+        light: Color(red: 0xDC / 255, green: 0xD9 / 255, blue: 0xE5 / 255),
+        dark: Color(red: 0x4A / 255, green: 0x47 / 255, blue: 0x54 / 255)
+    )
 }
 
 private extension Color {
