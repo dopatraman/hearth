@@ -106,8 +106,8 @@ struct BacklogView: View {
                     await store.create(title: title, notes: notes)
                     showCreationToast()
                 }
-                .padding(.trailing, isComposing ? 16 : 20)
-                .padding(.bottom, isComposing ? 24 : 30)
+                .padding(.trailing, 20)
+                .padding(.bottom, 30)
             }
             .overlay(alignment: .bottom) {
                 if let toast {

@@ -35,23 +35,38 @@ struct NewChoreCard: View {
 
     private let shutSize: CGFloat = 62
     private let openWidth: CGFloat = 358
-    private let openRadius: CGFloat = 30
-    private let shutRadius: CGFloat = 31
+    private let openHeight: CGFloat = 280
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
-            if isOpen {
-                openCard
-                    .transition(.identity)
-            } else {
-                shutButton
-                    .transition(.identity)
-            }
+            formContent
+                .frame(width: openWidth, height: openHeight, alignment: .topLeading)
+                .opacity(isOpen ? 1 : 0)
+                .allowsHitTesting(isOpen)
+
+            plusContent
+                .opacity(isOpen ? 0 : 1)
+                .allowsHitTesting(!isOpen)
         }
-        .animation(.spring(response: 0.5, dampingFraction: 0.82), value: isOpen)
+        .frame(
+            width: isOpen ? openWidth : shutSize,
+            height: isOpen ? openHeight : shutSize,
+            alignment: .bottomTrailing
+        )
+        .background(
+            RoundedRectangle(cornerRadius: isOpen ? 30 : 31, style: .continuous)
+                .fill(isOpen ? Color.white : Color.hearthLavender)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: isOpen ? 30 : 31, style: .continuous))
+        .shadow(
+            color: isOpen ? Color.black.opacity(0.22) : Color.hearthLavender.opacity(0.38),
+            radius: isOpen ? 30 : 20,
+            y: isOpen ? 24 : 8
+        )
+        .animation(.spring(response: 0.55, dampingFraction: 0.82), value: isOpen)
     }
 
-    private var shutButton: some View {
+    private var plusContent: some View {
         Button {
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
             isOpen = true
@@ -61,26 +76,20 @@ struct NewChoreCard: View {
                 .font(.system(size: 24, weight: .semibold))
                 .foregroundStyle(Color.hearthLavenderInk)
                 .frame(width: shutSize, height: shutSize)
-                .glassEffect(
-                    .regular.tint(Color.hearthLavender).interactive(),
-                    in: Circle()
-                )
-                .shadow(color: Color.hearthLavender.opacity(0.38), radius: 20, y: 8)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel("New chore")
     }
 
-    private var openCard: some View {
+    private var formContent: some View {
         VStack(alignment: .leading, spacing: 20) {
             HStack {
                 Text("New chore")
                     .font(.hearthBody(size: 13, weight: .semibold))
                     .foregroundStyle(Color.hearthTextSecondary)
                 Spacer()
-                Button {
-                    close()
-                } label: {
+                Button(action: close) {
                     Image(systemName: "xmark")
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(Color.hearthTextSecondary)
@@ -117,12 +126,6 @@ struct NewChoreCard: View {
             .disabled(!model.canSubmit)
         }
         .padding(22)
-        .frame(width: openWidth, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: openRadius, style: .continuous)
-                .fill(Color.white)
-                .shadow(color: Color.black.opacity(0.22), radius: 30, y: 24)
-        )
     }
 
     private func submit() {
