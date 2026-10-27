@@ -8,19 +8,25 @@ struct BacklogHeader: View {
     let currentUserID: String?
     let now: Date
     let onSettings: () -> Void
+    let selectedMemberID: String?
+    let onTapMember: ((HearthMember) -> Void)?
 
     init(
         chores: [HearthChore],
         members: [HearthMember],
         currentUserID: String?,
         now: Date = Date(),
-        onSettings: @escaping () -> Void
+        onSettings: @escaping () -> Void,
+        selectedMemberID: String? = nil,
+        onTapMember: ((HearthMember) -> Void)? = nil
     ) {
         self.chores = chores
         self.members = members
         self.currentUserID = currentUserID
         self.now = now
         self.onSettings = onSettings
+        self.selectedMemberID = selectedMemberID
+        self.onTapMember = onTapMember
     }
 
     private var dateLine: String {
@@ -44,7 +50,12 @@ struct BacklogHeader: View {
                 Spacer(minLength: 0)
 
                 HStack(spacing: 6) {
-                    AvatarStack(members: members, currentUserID: currentUserID)
+                    AvatarStack(
+                        members: members,
+                        currentUserID: currentUserID,
+                        selectedMemberID: selectedMemberID,
+                        onTapMember: onTapMember
+                    )
 
                     Button(action: onSettings) {
                         Image(systemName: "gearshape")

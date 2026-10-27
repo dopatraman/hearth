@@ -16,8 +16,8 @@ struct BacklogSection: Identifiable, Equatable {
 
 /// Groups the current chore list into the two sections the mockup shows:
 /// **Claimed** (anyone's active claims, late items sorted on top) and
-/// **Up for grabs** (unclaimed). Under the `.mine` filter, Claimed is
-/// narrowed to the current user and Up for grabs is omitted entirely.
+/// **Up for grabs** (unclaimed). Under a `.member(id)` filter, Claimed is
+/// narrowed to that household member and Up for grabs is omitted entirely.
 ///
 /// Pure function — sections with no items are omitted so the view can
 /// `ForEach` without extra guards.
@@ -26,15 +26,14 @@ struct BacklogSection: Identifiable, Equatable {
 func groupedSections(
     chores: [HearthChore],
     currentUserID: String?,
-    filter: BacklogView.Filter
+    filter: BacklogFilter
 ) -> [BacklogSection] {
     let claimedPool: [HearthChore]
     switch filter {
     case .all:
         claimedPool = chores.filter { $0.claimedBy != nil }
-    case .mine:
-        guard let me = currentUserID else { return [] }
-        claimedPool = chores.filter { $0.claimedBy == me }
+    case .member(let memberID):
+        claimedPool = chores.filter { $0.claimedBy == memberID }
     }
     let claimed = claimedPool.sorted(by: claimedOrder)
 

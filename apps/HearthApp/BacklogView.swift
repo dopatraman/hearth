@@ -7,7 +7,7 @@ struct BacklogView: View {
     private let members: MembersStore
     @State private var isComposing: Bool = false
     @State private var presentingSettings: Bool = false
-    @State private var filter: Filter = .all
+    @State private var filter: BacklogFilter = .all
     @State private var dateSheetFor: HearthChore?
     @State private var didLoad: Bool = false
     @State private var openID: String?
@@ -16,11 +16,6 @@ struct BacklogView: View {
     init(initialStore: BacklogStore? = nil, members: MembersStore? = nil) {
         _store = State(initialValue: initialStore ?? BacklogStore(session: { nil }))
         self.members = members ?? MembersStore(session: { nil })
-    }
-
-    enum Filter: Hashable {
-        case all
-        case mine
     }
 
     private var currentUserID: String? {
@@ -32,9 +27,8 @@ struct BacklogView: View {
         switch filter {
         case .all:
             return store.chores
-        case .mine:
-            guard let me = currentUserID else { return [] }
-            return store.chores.filter { $0.claimedBy == me }
+        case .member(let id):
+            return store.chores.filter { $0.claimedBy == id }
         }
     }
 
@@ -49,17 +43,19 @@ struct BacklogView: View {
                     chores: store.chores,
                     members: members.members,
                     currentUserID: currentUserID,
-                    onSettings: { presentingSettings = true }
+                    onSettings: { presentingSettings = true },
+                    selectedMemberID: filter.selectedMemberID,
+                    onTapMember: { member in
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.82)) {
+                            if filter.selectedMemberID == member.id {
+                                filter = .all
+                            } else {
+                                filter = .member(member.id)
+                            }
+                        }
+                    }
                 )
-
-                SegmentedPill(
-                    selection: $filter,
-                    options: [(Filter.all, "All"), (Filter.mine, "Mine")]
-                )
-                .padding(.horizontal, 20)
-                .padding(.top, 4)
-                .padding(.bottom, 22)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.bottom, 10)
 
                 content
             }
@@ -292,11 +288,23 @@ struct BacklogView: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: 8) {
-            Text(filter == .mine ? "No chores claimed." : "No chores yet.")
+        let filteringToMe = filter.selectedMemberID == currentUserID && currentUserID != nil
+        let filteringToOther = filter.selectedMemberID != nil && !filteringToMe
+        let title: String = {
+            if filteringToMe { return "No chores claimed." }
+            if filteringToOther { return "Nothing here." }
+            return "No chores yet."
+        }()
+        let subtitle: String = {
+            if filteringToMe { return "Swipe right on a chore to claim it." }
+            if filteringToOther { return "Tap again to clear the filter." }
+            return "Tap + to add one."
+        }()
+        return VStack(spacing: 8) {
+            Text(title)
                 .font(.title3)
                 .foregroundStyle(Color.hearthTextPrimary)
-            Text(filter == .mine ? "Swipe right on a chore to claim it." : "Tap + to add one.")
+            Text(subtitle)
                 .font(.footnote)
                 .foregroundStyle(Color.hearthTextSecondary)
         }

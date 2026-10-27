@@ -42,6 +42,7 @@
 		A303030303030303030303AA /* BacklogStoreCreateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B303030303030303030303BB /* BacklogStoreCreateTests.swift */; };
 		A404040404040404040404AA /* WhenishBucket.swift in Sources */ = {isa = PBXBuildFile; fileRef = B404040404040404040404BB /* WhenishBucket.swift */; };
 		A505050505050505050505AA /* WhenishBucketTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B505050505050505050505BB /* WhenishBucketTests.swift */; };
+		A606060606060606060606AA /* BacklogFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B606060606060606060606BB /* BacklogFilter.swift */; };
 		982C229C52DFBED61CFEE397 /* ClaimDateSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94CA390E0E7B6C997F58DEA3 /* ClaimDateSheet.swift */; };
 		9E744842A7184E1575A9B59C /* ChoreRowModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C70EAE477AF5DC62C8A6501 /* ChoreRowModel.swift */; };
 		C2CAE7F05711E53B13A039A2 /* Keychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = F182F34FD96686F757ADDB8E /* Keychain.swift */; };
@@ -86,6 +87,7 @@
 		B303030303030303030303BB /* BacklogStoreCreateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BacklogStoreCreateTests.swift; sourceTree = "<group>"; };
 		B404040404040404040404BB /* WhenishBucket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhenishBucket.swift; sourceTree = "<group>"; };
 		B505050505050505050505BB /* WhenishBucketTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhenishBucketTests.swift; sourceTree = "<group>"; };
+		B606060606060606060606BB /* BacklogFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BacklogFilter.swift; sourceTree = "<group>"; };
 		1945B64FC16BDFE702F27691 /* HearthAppTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HearthAppTests.swift; sourceTree = "<group>"; };
 		1C70EAE477AF5DC62C8A6501 /* ChoreRowModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChoreRowModel.swift; sourceTree = "<group>"; };
 		1D9F39230AA010A947C3BF99 /* Geist-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Geist-SemiBold.ttf"; sourceTree = "<group>"; };
@@ -175,6 +177,7 @@
 				B2B4F2AE4AF93C22AFF4BC99 /* Assets.xcassets */,
 				884FF6B5F62978460594E705 /* AuthStore.swift */,
 				7B517E2393CCDF26A1394726 /* AvatarStack.swift */,
+				B606060606060606060606BB /* BacklogFilter.swift */,
 				6B0ECE7A8A6634CE8F37208C /* BacklogHeader.swift */,
 				C3D705583A57B64B7893D99B /* BacklogSections.swift */,
 				E329EBE61038AFD92A0AB182 /* BacklogStore.swift */,
@@ -374,6 +377,7 @@
 				5DD43C2BD93E0BE2E22C07FA /* AppDelegate.swift in Sources */,
 				FFF5256A6DA0672956534A51 /* AuthStore.swift in Sources */,
 				553AD3065B0E0F9BBAA780DA /* AvatarStack.swift in Sources */,
+				A606060606060606060606AA /* BacklogFilter.swift in Sources */,
 				1D8F209B8BC359F4BE9DF152 /* BacklogHeader.swift in Sources */,
 				59DDF4D72682D0A0D3C255CC /* BacklogSections.swift in Sources */,
 				246B03DCFE5192417F1D3E2B /* BacklogStore.swift in Sources */,

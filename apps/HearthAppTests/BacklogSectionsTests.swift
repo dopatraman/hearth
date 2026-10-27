@@ -42,25 +42,32 @@ struct BacklogSectionsTests {
         #expect(sections.map(\.kind) == [.claimed, .upForGrabs])
     }
 
-    @Test("mine filter → up-for-grabs hidden")
-    func groupedSections_mineFilter_hidesUpForGrabs() {
+    @Test("member filter → up-for-grabs hidden")
+    func groupedSections_memberFilter_hidesUpForGrabs() {
         let chores = [
             chore(id: "c1", claimedBy: me),
             chore(id: "c2", claimedBy: nil),
         ]
-        let sections = groupedSections(chores: chores, currentUserID: me, filter: .mine)
+        let sections = groupedSections(chores: chores, currentUserID: me, filter: .member(me))
         #expect(sections.map(\.kind) == [.claimed])
     }
 
-    @Test("mine filter → claimed includes only mine")
-    func groupedSections_mineFilter_claimedIncludesOnlyMine() {
+    @Test("member filter → claimed includes only that member's chores")
+    func groupedSections_memberFilter_claimedIncludesOnlyThatMember() {
         let chores = [
             chore(id: "c1", claimedBy: me),
             chore(id: "c2", claimedBy: partner),
             chore(id: "c3", claimedBy: nil),
         ]
-        let sections = groupedSections(chores: chores, currentUserID: me, filter: .mine)
-        #expect(sections.first?.items.map(\.id) == ["c1"])
+        let sections = groupedSections(chores: chores, currentUserID: me, filter: .member(partner))
+        #expect(sections.first?.items.map(\.id) == ["c2"])
+    }
+
+    @Test("member filter with no matches → empty sections")
+    func groupedSections_memberFilterNoMatches_returnsEmpty() {
+        let chores = [chore(id: "c1", claimedBy: nil)]
+        let sections = groupedSections(chores: chores, currentUserID: me, filter: .member(partner))
+        #expect(sections.isEmpty)
     }
 
     @Test("claimed section → late sorts above on-time")
