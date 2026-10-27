@@ -84,6 +84,53 @@ func TestChores_Create_WithClaim_ReturnsClaimedChore(t *testing.T) {
 	})
 }
 
+func TestChores_Create_WithClaimAndWhen_ReturnsScheduledChore(t *testing.T) {
+	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
+		srv := buildServer(t, tx, auth.AppleIdentity{Sub: "sub-chores-when"})
+		token, userID := signInHelper(t, srv)
+
+		req := httptest.NewRequest(http.MethodPost, "/chores",
+			strings.NewReader(`{"title":"vacuum","claim":true,"will_complete_by":"2026-10-28T23:59:59.999Z"}`))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+token)
+		w := httptest.NewRecorder()
+		srv.Router().ServeHTTP(w, req)
+
+		if w.Code != http.StatusCreated {
+			t.Fatalf("status: got %d body=%s", w.Code, w.Body.String())
+		}
+
+		var chore map[string]any
+		if err := json.NewDecoder(w.Body).Decode(&chore); err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		if chore["claimed_by"] != userID {
+			t.Errorf("claimed_by: got %v want %q", chore["claimed_by"], userID)
+		}
+		if chore["will_complete_by"] != "2026-10-28T23:59:59.999Z" {
+			t.Errorf("will_complete_by: got %v", chore["will_complete_by"])
+		}
+	})
+}
+
+func TestChores_Create_WhenWithoutClaim_Returns400(t *testing.T) {
+	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
+		srv := buildServer(t, tx, auth.AppleIdentity{Sub: "sub-chores-when-no-claim"})
+		token, _ := signInHelper(t, srv)
+
+		req := httptest.NewRequest(http.MethodPost, "/chores",
+			strings.NewReader(`{"title":"vacuum","will_complete_by":"2026-10-28T23:59:59.999Z"}`))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+token)
+		w := httptest.NewRecorder()
+		srv.Router().ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("want 400, got %d body=%s", w.Code, w.Body.String())
+		}
+	})
+}
+
 func TestChores_Create_WithoutClaim_ReturnsUnclaimedChore(t *testing.T) {
 	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
 		srv := buildServer(t, tx, auth.AppleIdentity{Sub: "sub-chores-create-no-claim"})

@@ -108,6 +108,10 @@ func (s *Server) handleCreateChore(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusBadRequest, "title is required")
 			return
 		}
+		if errors.Is(err, chores.ErrWillCompleteByRequiresClaim) {
+			writeError(w, http.StatusBadRequest, "will_complete_by requires claim")
+			return
+		}
 		slog.ErrorContext(r.Context(), "create chore", "err", err)
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return

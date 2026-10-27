@@ -13,8 +13,8 @@ struct BacklogStoreCreateTests {
         let returned = result ?? Self.chore(id: "new", title: "x")
         return BacklogStore(
             session: { "token" },
-            createCommit: { _, title, notes, claim in
-                try await recorder.record(title: title, notes: notes, claim: claim)
+            createCommit: { _, title, notes, claim, willCompleteBy in
+                try await recorder.record(title: title, notes: notes, claim: claim, willCompleteBy: willCompleteBy)
                 return HearthChore(
                     id: returned.id,
                     listId: returned.listId,
@@ -24,7 +24,7 @@ struct BacklogStoreCreateTests {
                     state: returned.state,
                     claimedBy: claim ? returned.creatorId : returned.claimedBy,
                     claimedAt: claim ? "2026-10-26T20:00:00.000Z" : returned.claimedAt,
-                    willCompleteBy: returned.willCompleteBy,
+                    willCompleteBy: willCompleteBy,
                     completedBy: returned.completedBy,
                     completedAt: returned.completedAt,
                     createdAt: returned.createdAt,
@@ -135,6 +135,30 @@ struct BacklogStoreCreateTests {
         #expect(store.chores.first?.claimedBy == "me")
     }
 
+    @Test("create defaults willCompleteBy to nil")
+    func create_defaultWillCompleteByNil() async {
+        let recorder = CreateRecorder()
+        let store = makeStore(recorder: recorder)
+
+        await store.create(title: "x", notes: nil, claim: true)
+
+        let calls = await recorder.calls
+        #expect(calls.first?.willCompleteBy == nil)
+    }
+
+    @Test("create with claim and willCompleteBy threads both through")
+    func create_withClaimAndWhen_threadsBoth() async {
+        let recorder = CreateRecorder()
+        let store = makeStore(recorder: recorder)
+        let when = "2026-10-28T23:59:59.999Z"
+
+        await store.create(title: "x", notes: nil, claim: true, willCompleteBy: when)
+
+        let calls = await recorder.calls
+        #expect(calls.first?.claim == true)
+        #expect(calls.first?.willCompleteBy == when)
+    }
+
     @Test("successful create resets phase to loaded after a prior failure")
     func create_resetsPhaseToLoadedAfterFailure() async {
         let recorder = CreateRecorder()
@@ -148,8 +172,8 @@ struct BacklogStoreCreateTests {
 
         let recorder2 = CreateRecorder()
         let returned = Self.chore(id: "ok", title: "y")
-        store.replaceCreateCommitForTesting { _, title, notes, claim in
-            try await recorder2.record(title: title, notes: notes, claim: claim)
+        store.replaceCreateCommitForTesting { _, title, notes, claim, willCompleteBy in
+            try await recorder2.record(title: title, notes: notes, claim: claim, willCompleteBy: willCompleteBy)
             return HearthChore(
                 id: returned.id,
                 listId: returned.listId,
@@ -159,7 +183,7 @@ struct BacklogStoreCreateTests {
                 state: returned.state,
                 claimedBy: returned.claimedBy,
                 claimedAt: returned.claimedAt,
-                willCompleteBy: returned.willCompleteBy,
+                willCompleteBy: willCompleteBy,
                 completedBy: returned.completedBy,
                 completedAt: returned.completedAt,
                 createdAt: returned.createdAt,
@@ -181,6 +205,7 @@ actor CreateRecorder {
         let title: String
         let notes: String?
         let claim: Bool
+        let willCompleteBy: String?
     }
 
     private(set) var calls: [Call] = []
@@ -190,8 +215,8 @@ actor CreateRecorder {
         self.errorToThrow = error
     }
 
-    func record(title: String, notes: String?, claim: Bool) throws {
+    func record(title: String, notes: String?, claim: Bool, willCompleteBy: String?) throws {
         if let errorToThrow { throw errorToThrow }
-        calls.append(Call(title: title, notes: notes, claim: claim))
+        calls.append(Call(title: title, notes: notes, claim: claim, willCompleteBy: willCompleteBy))
     }
 }
