@@ -7,6 +7,7 @@ final class NewChoreCardModel {
     var title: String = ""
     var note: String = ""
     var claimForSelf: Bool = false
+    var selectedBucket: WhenishBucket?
 
     var trimmedTitle: String {
         title.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -25,19 +26,25 @@ final class NewChoreCardModel {
         title = ""
         note = ""
         claimForSelf = false
+        selectedBucket = nil
     }
 }
 
 struct NewChoreCard: View {
     @Binding var isOpen: Bool
-    let onSubmit: (String, String?, Bool) async -> Void
+    let onSubmit: (String, String?, Bool, WhenishBucket?) async -> Void
 
     @State private var model = NewChoreCardModel()
     @FocusState private var titleFocused: Bool
 
     private let shutSize: CGFloat = 62
     private let openWidth: CGFloat = 358
-    private let openHeight: CGFloat = 326
+    private let openHeightCollapsed: CGFloat = 326
+    private let openHeightExpanded: CGFloat = 460
+
+    private var openHeight: CGFloat {
+        model.claimForSelf ? openHeightExpanded : openHeightCollapsed
+    }
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -115,7 +122,18 @@ struct NewChoreCard: View {
                     .onSubmit(submit)
             }
 
-            claimToggleRow
+            VStack(alignment: .leading, spacing: 14) {
+                claimToggleRow
+                if model.claimForSelf {
+                    whenishRow
+                        .transition(
+                            .asymmetric(
+                                insertion: .opacity.combined(with: .move(edge: .top)),
+                                removal: .opacity.combined(with: .move(edge: .top))
+                            )
+                        )
+                }
+            }
 
             Button(action: submit) {
                 Text("Add to backlog")
@@ -135,8 +153,11 @@ struct NewChoreCard: View {
     private var claimToggleRow: some View {
         Button {
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            withAnimation(.timingCurve(0.3, 1.5, 0.5, 1, duration: 0.35)) {
+            withAnimation(.timingCurve(0.2, 0.8, 0.2, 1, duration: 0.4)) {
                 model.claimForSelf.toggle()
+                if !model.claimForSelf {
+                    model.selectedBucket = nil
+                }
             }
         } label: {
             HStack {
@@ -168,22 +189,103 @@ struct NewChoreCard: View {
         .accessibilityValue(model.claimForSelf ? "On" : "Off")
     }
 
+    private var whenishRow: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("By when?")
+                .font(.hearthBody(size: 13, weight: .semibold))
+                .foregroundStyle(Color.hearthTextSecondary)
+            WrappingHStack(spacing: 8, rowSpacing: 8) {
+                ForEach(WhenishBucket.allCases) { bucket in
+                    whenishChip(bucket)
+                }
+            }
+        }
+    }
+
+    private func whenishChip(_ bucket: WhenishBucket) -> some View {
+        let selected = model.selectedBucket == bucket
+        return Button {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            withAnimation(.timingCurve(0.2, 1.6, 0.4, 1, duration: 0.25)) {
+                model.selectedBucket = selected ? nil : bucket
+            }
+        } label: {
+            Text(bucket.label)
+                .font(.hearthBody(size: 14, weight: .semibold))
+                .foregroundStyle(selected ? Color.hearthLavenderInk : Color.hearthTextSecondary)
+                .fixedSize(horizontal: true, vertical: false)
+                .padding(.horizontal, 14)
+                .frame(height: 36)
+                .background(
+                    Capsule().fill(selected ? Color.hearthLavender : Color.hearthBackground)
+                )
+                .scaleEffect(selected ? 1.04 : 1)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(bucket.label)
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+
     private func submit() {
         guard model.canSubmit else { return }
         let title = model.trimmedTitle
         let notes = model.trimmedNote
         let claim = model.claimForSelf
+        let bucket = claim ? model.selectedBucket : nil
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         isOpen = false
         titleFocused = false
         model.reset()
-        Task { await onSubmit(title, notes, claim) }
+        Task { await onSubmit(title, notes, claim, bucket) }
     }
 
     private func close() {
         isOpen = false
         titleFocused = false
         model.reset()
+    }
+}
+
+private struct WrappingHStack: Layout {
+    var spacing: CGFloat = 8
+    var rowSpacing: CGFloat = 8
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let maxWidth = proposal.width ?? .infinity
+        var x: CGFloat = 0
+        var y: CGFloat = 0
+        var rowHeight: CGFloat = 0
+
+        for sub in subviews {
+            let size = sub.sizeThatFits(.unspecified)
+            if x + size.width > maxWidth && x > 0 {
+                x = 0
+                y += rowHeight + rowSpacing
+                rowHeight = 0
+            }
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+        }
+        return CGSize(width: maxWidth, height: y + rowHeight)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let maxWidth = bounds.width
+        var x: CGFloat = bounds.minX
+        var y: CGFloat = bounds.minY
+        var rowHeight: CGFloat = 0
+
+        for sub in subviews {
+            let size = sub.sizeThatFits(.unspecified)
+            if x + size.width > bounds.minX + maxWidth && x > bounds.minX {
+                x = bounds.minX
+                y += rowHeight + rowSpacing
+                rowHeight = 0
+            }
+            sub.place(at: CGPoint(x: x, y: y), anchor: .topLeading, proposal: ProposedViewSize(size))
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+        }
     }
 }
 
@@ -205,7 +307,7 @@ private extension Color {
     @Previewable @State var open = false
     return ZStack {
         Color.hearthBackground.ignoresSafeArea()
-        NewChoreCard(isOpen: $open, onSubmit: { _, _, _ in })
+        NewChoreCard(isOpen: $open, onSubmit: { _, _, _, _ in })
             .padding(.trailing, 16)
             .padding(.bottom, 24)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)

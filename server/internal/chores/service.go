@@ -25,6 +25,7 @@ var (
 	ErrNotCompletable = errors.New("chores: cannot complete (not found, not claimed by you, or already completed)")
 	ErrNotModifiable  = errors.New("chores: cannot modify (not found, not claimed by you, or already completed)")
 	ErrNotReleasable  = errors.New("chores: cannot release (not found, not claimed by you, or already completed)")
+	ErrWillCompleteByRequiresClaim = errors.New("chores: will_complete_by requires claim")
 )
 
 // Create inserts a new chore + a 'created' event, and optionally claims it
@@ -33,7 +34,9 @@ var (
 // together or not at all — a household member reading between steps should
 // never see a half-formed row.
 //
-// `willCompleteBy` is currently a slot for Slice 11; this slice ignores it.
+// `willCompleteBy` is only honored when `claim` is true; passing a date
+// without claiming returns ErrWillCompleteByRequiresClaim (nothing is
+// written).
 func (s *Service) Create(
 	ctx context.Context,
 	listID, creatorID, title string,
@@ -41,9 +44,11 @@ func (s *Service) Create(
 	claim bool,
 	willCompleteBy *string,
 ) (db.Chore, error) {
-	_ = willCompleteBy
 	if title == "" {
 		return db.Chore{}, ErrEmptyTitle
+	}
+	if willCompleteBy != nil && !claim {
+		return db.Chore{}, ErrWillCompleteByRequiresClaim
 	}
 
 	choreID, err := uuid.NewV7()
@@ -102,7 +107,34 @@ func (s *Service) Create(
 		return db.Chore{}, err
 	}
 
-	return claimed, nil
+	if willCompleteBy == nil {
+		return claimed, nil
+	}
+
+	scheduled, err := s.q.SetWillCompleteBy(ctx, db.SetWillCompleteByParams{
+		WillCompleteBy: willCompleteBy,
+		ID:             chore.ID,
+		ClaimedBy:      &actor,
+	})
+	if err != nil {
+		return db.Chore{}, err
+	}
+
+	scheduleEventID, err := uuid.NewV7()
+	if err != nil {
+		return db.Chore{}, err
+	}
+	if err := s.q.InsertEvent(ctx, db.InsertEventParams{
+		ID:      scheduleEventID.String(),
+		ListID:  listID,
+		ChoreID: chore.ID,
+		ActorID: creatorID,
+		Type:    "will_complete_by_set",
+	}); err != nil {
+		return db.Chore{}, err
+	}
+
+	return scheduled, nil
 }
 
 // Backlog returns open chores in the given list, newest first.

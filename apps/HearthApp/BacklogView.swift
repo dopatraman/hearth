@@ -102,9 +102,10 @@ struct BacklogView: View {
             }
             .animation(.easeInOut(duration: 0.4), value: isComposing)
             .overlay(alignment: .bottomTrailing) {
-                NewChoreCard(isOpen: $isComposing) { title, notes, claim in
-                    await store.create(title: title, notes: notes, claim: claim)
-                    showCreationToast(claimed: claim)
+                NewChoreCard(isOpen: $isComposing) { title, notes, claim, bucket in
+                    let iso = bucket?.resolve(now: Date()).map { WhenishBucket.iso8601(from: $0) }
+                    await store.create(title: title, notes: notes, claim: claim, willCompleteBy: iso)
+                    showCreationToast(claimed: claim, bucket: bucket)
                 }
                 .padding(.trailing, 20)
                 .padding(.bottom, 30)
@@ -161,9 +162,14 @@ struct BacklogView: View {
         }
     }
 
-    private func showCreationToast(claimed: Bool) {
+    private func showCreationToast(claimed: Bool, bucket: WhenishBucket?) {
         if case .failed = store.phase { return }
-        let text = claimed ? "Added. Yours" : "Added. Up for grabs"
+        let text: String
+        if claimed {
+            text = "Added. Yours" + (bucket?.toastSuffix ?? "")
+        } else {
+            text = "Added. Up for grabs"
+        }
         withAnimation(.spring(response: 0.4, dampingFraction: 0.78)) {
             toast = ToastModel(text: text, kind: .creation)
         }

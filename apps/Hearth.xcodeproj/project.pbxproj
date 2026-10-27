@@ -41,6 +41,8 @@
 		A101010101010101010101AA /* NewChoreCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B101010101010101010101BB /* NewChoreCard.swift */; };
 		A202020202020202020202AA /* NewChoreCardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B202020202020202020202BB /* NewChoreCardTests.swift */; };
 		A303030303030303030303AA /* BacklogStoreCreateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B303030303030303030303BB /* BacklogStoreCreateTests.swift */; };
+		A404040404040404040404AA /* WhenishBucket.swift in Sources */ = {isa = PBXBuildFile; fileRef = B404040404040404040404BB /* WhenishBucket.swift */; };
+		A505050505050505050505AA /* WhenishBucketTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B505050505050505050505BB /* WhenishBucketTests.swift */; };
 		982C229C52DFBED61CFEE397 /* ClaimDateSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94CA390E0E7B6C997F58DEA3 /* ClaimDateSheet.swift */; };
 		9E744842A7184E1575A9B59C /* ChoreRowModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C70EAE477AF5DC62C8A6501 /* ChoreRowModel.swift */; };
 		C2CAE7F05711E53B13A039A2 /* Keychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = F182F34FD96686F757ADDB8E /* Keychain.swift */; };
@@ -83,6 +85,8 @@
 		B101010101010101010101BB /* NewChoreCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewChoreCard.swift; sourceTree = "<group>"; };
 		B202020202020202020202BB /* NewChoreCardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewChoreCardTests.swift; sourceTree = "<group>"; };
 		B303030303030303030303BB /* BacklogStoreCreateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BacklogStoreCreateTests.swift; sourceTree = "<group>"; };
+		B404040404040404040404BB /* WhenishBucket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhenishBucket.swift; sourceTree = "<group>"; };
+		B505050505050505050505BB /* WhenishBucketTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhenishBucketTests.swift; sourceTree = "<group>"; };
 		1945B64FC16BDFE702F27691 /* HearthAppTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HearthAppTests.swift; sourceTree = "<group>"; };
 		1C70EAE477AF5DC62C8A6501 /* ChoreRowModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChoreRowModel.swift; sourceTree = "<group>"; };
 		1D9F39230AA010A947C3BF99 /* Geist-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Geist-SemiBold.ttf"; sourceTree = "<group>"; };
@@ -199,6 +203,7 @@
 				F62BD183CF0CFCF909DBCF97 /* Models.swift */,
 				B101010101010101010101BB /* NewChoreCard.swift */,
 				EBE592C777C4D1BBE58F29EE /* Palette.swift */,
+				B404040404040404040404BB /* WhenishBucket.swift */,
 				467FDEB39220E792FEE2620D /* PushRegistration.swift */,
 				831581FFF70B679E7BF2F353 /* RingSlot.swift */,
 				5AA7FC09F71178A52047BDFF /* RootTabView.swift */,
@@ -244,6 +249,7 @@
 				B202020202020202020202BB /* NewChoreCardTests.swift */,
 				00775C0BE6B93B0333D929CD /* SegmentedPillTests.swift */,
 				0D5E4935D50B1AF325E834C2 /* SinceLineTests.swift */,
+				B505050505050505050505BB /* WhenishBucketTests.swift */,
 			);
 			path = HearthAppTests;
 			sourceTree = "<group>";
@@ -395,6 +401,7 @@
 				78FF81C2795EE43A43A060A9 /* Models.swift in Sources */,
 				A101010101010101010101AA /* NewChoreCard.swift in Sources */,
 				E56DE053E87C233B6196CBC9 /* Palette.swift in Sources */,
+				A404040404040404040404AA /* WhenishBucket.swift in Sources */,
 				C9AF6D2D54DAE16A6CC9047F /* PushRegistration.swift in Sources */,
 				E9D198FE22A17A41E31A34DD /* RingSlot.swift in Sources */,
 				7B9B1C1FA7DD9B3C7F7403BE /* RootTabView.swift in Sources */,
@@ -421,6 +428,7 @@
 				A202020202020202020202AA /* NewChoreCardTests.swift in Sources */,
 				8E28A5D2385717D1349A3428 /* SegmentedPillTests.swift in Sources */,
 				E86A293D578B66DDF2C502D6 /* SinceLineTests.swift in Sources */,
+				A505050505050505050505AA /* WhenishBucketTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

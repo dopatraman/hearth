@@ -67,8 +67,14 @@ struct HearthAPI {
         return resp.chores
     }
 
-    func createChore(sessionToken: String, title: String, notes: String?, claim: Bool = false) async throws -> HearthChore {
-        let body = CreateChoreRequest(title: title, notes: notes, claim: claim)
+    func createChore(
+        sessionToken: String,
+        title: String,
+        notes: String?,
+        claim: Bool = false,
+        willCompleteBy: String? = nil
+    ) async throws -> HearthChore {
+        let body = CreateChoreRequest(title: title, notes: notes, claim: claim, willCompleteBy: willCompleteBy)
         return try await post("/chores", body: body, bearerToken: sessionToken)
     }
 

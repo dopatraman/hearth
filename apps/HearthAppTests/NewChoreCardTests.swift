@@ -67,4 +67,18 @@ struct NewChoreCardTests {
         let model = NewChoreCardModel()
         #expect(model.claimForSelf == false)
     }
+
+    @Test("selectedBucket defaults to nil")
+    func selectedBucket_defaultsNil() {
+        let model = NewChoreCardModel()
+        #expect(model.selectedBucket == nil)
+    }
+
+    @Test("reset clears selectedBucket")
+    func reset_clearsBucket() {
+        let model = NewChoreCardModel()
+        model.selectedBucket = .weekend
+        model.reset()
+        #expect(model.selectedBucket == nil)
+    }
 }

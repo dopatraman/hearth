@@ -83,6 +83,14 @@ struct CreateChoreRequest: Codable {
     let title: String
     let notes: String?
     let claim: Bool
+    let willCompleteBy: String?
+
+    enum CodingKeys: String, CodingKey {
+        case title
+        case notes
+        case claim
+        case willCompleteBy = "will_complete_by"
+    }
 }
 
 struct BacklogResponse: Codable, Equatable {

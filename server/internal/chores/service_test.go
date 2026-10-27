@@ -132,6 +132,52 @@ func TestChores_Create_WithClaim_EmitsCreatedThenClaimedEvents(t *testing.T) {
 	})
 }
 
+func TestChores_Create_WithClaimAndWillCompleteBy_PersistsDateAndEmitsAllEvents(t *testing.T) {
+	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
+		q := db.New(tx)
+		userID, listID := setupUserInList(t, ctx, q, "sub-create-when")
+
+		when := "2026-10-28T23:59:59.999Z"
+		chore, err := chores.NewService(q).Create(ctx, listID, userID, "trash", nil, true, &when)
+		if err != nil {
+			t.Fatalf("create+claim+when: %v", err)
+		}
+		if chore.WillCompleteBy == nil || *chore.WillCompleteBy != when {
+			t.Errorf("will_complete_by: got %v want %q", chore.WillCompleteBy, when)
+		}
+		if chore.ClaimedBy == nil || *chore.ClaimedBy != userID {
+			t.Errorf("claimed_by: got %v want %q", chore.ClaimedBy, userID)
+		}
+
+		events, err := q.EventsForChore(ctx, chore.ID)
+		if err != nil {
+			t.Fatalf("events: %v", err)
+		}
+		if len(events) != 3 {
+			t.Fatalf("want 3 events, got %d: %+v", len(events), events)
+		}
+		want := []string{"created", "claimed", "will_complete_by_set"}
+		for i, w := range want {
+			if events[i].Type != w {
+				t.Errorf("event[%d] type: got %q want %q", i, events[i].Type, w)
+			}
+		}
+	})
+}
+
+func TestChores_Create_WillCompleteByWithoutClaim_IsRejected(t *testing.T) {
+	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
+		q := db.New(tx)
+		userID, listID := setupUserInList(t, ctx, q, "sub-create-when-no-claim")
+
+		when := "2026-10-28T23:59:59.999Z"
+		_, err := chores.NewService(q).Create(ctx, listID, userID, "trash", nil, false, &when)
+		if !errors.Is(err, chores.ErrWillCompleteByRequiresClaim) {
+			t.Fatalf("want ErrWillCompleteByRequiresClaim, got %v", err)
+		}
+	})
+}
+
 func TestChores_Create_WithoutClaim_LeavesClaimedByNull(t *testing.T) {
 	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
 		q := db.New(tx)

@@ -24,14 +24,14 @@ final class BacklogStore {
     private let session: () -> String?
     let completionDelay: Duration
     private let completionCommit: @Sendable (_ token: String, _ choreID: String) async throws -> HearthChore
-    private var createCommit: @Sendable (_ token: String, _ title: String, _ notes: String?, _ claim: Bool) async throws -> HearthChore
+    private var createCommit: @Sendable (_ token: String, _ title: String, _ notes: String?, _ claim: Bool, _ willCompleteBy: String?) async throws -> HearthChore
 
     init(
         api: HearthAPI = HearthAPI(),
         session: @escaping () -> String?,
         completionDelay: Duration = .seconds(3),
         completionCommit: (@Sendable (_ token: String, _ choreID: String) async throws -> HearthChore)? = nil,
-        createCommit: (@Sendable (_ token: String, _ title: String, _ notes: String?, _ claim: Bool) async throws -> HearthChore)? = nil
+        createCommit: (@Sendable (_ token: String, _ title: String, _ notes: String?, _ claim: Bool, _ willCompleteBy: String?) async throws -> HearthChore)? = nil
     ) {
         self.api = api
         self.session = session
@@ -39,8 +39,14 @@ final class BacklogStore {
         self.completionCommit = completionCommit ?? { token, id in
             try await api.completeChore(sessionToken: token, choreID: id)
         }
-        self.createCommit = createCommit ?? { token, title, notes, claim in
-            try await api.createChore(sessionToken: token, title: title, notes: notes, claim: claim)
+        self.createCommit = createCommit ?? { token, title, notes, claim, willCompleteBy in
+            try await api.createChore(
+                sessionToken: token,
+                title: title,
+                notes: notes,
+                claim: claim,
+                willCompleteBy: willCompleteBy
+            )
         }
     }
 
@@ -123,9 +129,15 @@ final class BacklogStore {
     }
 
     /// Create a new chore and optimistically prepend it on success. Pass
-    /// `claim: true` to atomically self-claim it in the same request so the
-    /// row never shows up unclaimed to other household members.
-    func create(title: String, notes: String?, claim: Bool = false) async {
+    /// `claim: true` to atomically self-claim it in the same request; pass
+    /// `willCompleteBy` (ISO-8601) alongside to stamp a commit date. The
+    /// server rejects `willCompleteBy` without `claim`.
+    func create(
+        title: String,
+        notes: String?,
+        claim: Bool = false,
+        willCompleteBy: String? = nil
+    ) async {
         guard let token = session() else {
             phase = .failed("Not signed in")
             return
@@ -137,7 +149,8 @@ final class BacklogStore {
                 token,
                 title.trimmingCharacters(in: .whitespacesAndNewlines),
                 notes?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
-                claim
+                claim,
+                willCompleteBy
             )
             chores.insert(chore, at: 0)
             phase = .loaded
@@ -239,7 +252,7 @@ extension BacklogStore {
     /// Test-only: swap the create commit closure after init so a single
     /// store can exercise both success and failure branches in one run.
     func replaceCreateCommitForTesting(
-        _ commit: @escaping @Sendable (_ token: String, _ title: String, _ notes: String?, _ claim: Bool) async throws -> HearthChore
+        _ commit: @escaping @Sendable (_ token: String, _ title: String, _ notes: String?, _ claim: Bool, _ willCompleteBy: String?) async throws -> HearthChore
     ) {
         self.createCommit = commit
     }
