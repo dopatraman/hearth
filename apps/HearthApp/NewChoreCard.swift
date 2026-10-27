@@ -40,7 +40,7 @@ struct NewChoreCard: View {
     private let shutSize: CGFloat = 62
     private let openWidth: CGFloat = 358
     private let openHeightCollapsed: CGFloat = 326
-    private let openHeightExpanded: CGFloat = 420
+    private let openHeightExpanded: CGFloat = 460
 
     private var openHeight: CGFloat {
         model.claimForSelf ? openHeightExpanded : openHeightCollapsed
@@ -194,7 +194,7 @@ struct NewChoreCard: View {
             Text("By when?")
                 .font(.hearthBody(size: 13, weight: .semibold))
                 .foregroundStyle(Color.hearthTextSecondary)
-            HStack(spacing: 8) {
+            WrappingHStack(spacing: 8, rowSpacing: 8) {
                 ForEach(WhenishBucket.allCases) { bucket in
                     whenishChip(bucket)
                 }
@@ -211,10 +211,11 @@ struct NewChoreCard: View {
             }
         } label: {
             Text(bucket.label)
-                .font(.hearthBody(size: 13, weight: .semibold))
+                .font(.hearthBody(size: 14, weight: .semibold))
                 .foregroundStyle(selected ? Color.hearthLavenderInk : Color.hearthTextSecondary)
-                .padding(.horizontal, 12)
-                .frame(height: 32)
+                .fixedSize(horizontal: true, vertical: false)
+                .padding(.horizontal, 14)
+                .frame(height: 36)
                 .background(
                     Capsule().fill(selected ? Color.hearthLavender : Color.hearthBackground)
                 )
@@ -242,6 +243,49 @@ struct NewChoreCard: View {
         isOpen = false
         titleFocused = false
         model.reset()
+    }
+}
+
+private struct WrappingHStack: Layout {
+    var spacing: CGFloat = 8
+    var rowSpacing: CGFloat = 8
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let maxWidth = proposal.width ?? .infinity
+        var x: CGFloat = 0
+        var y: CGFloat = 0
+        var rowHeight: CGFloat = 0
+
+        for sub in subviews {
+            let size = sub.sizeThatFits(.unspecified)
+            if x + size.width > maxWidth && x > 0 {
+                x = 0
+                y += rowHeight + rowSpacing
+                rowHeight = 0
+            }
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+        }
+        return CGSize(width: maxWidth, height: y + rowHeight)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let maxWidth = bounds.width
+        var x: CGFloat = bounds.minX
+        var y: CGFloat = bounds.minY
+        var rowHeight: CGFloat = 0
+
+        for sub in subviews {
+            let size = sub.sizeThatFits(.unspecified)
+            if x + size.width > bounds.minX + maxWidth && x > bounds.minX {
+                x = bounds.minX
+                y += rowHeight + rowSpacing
+                rowHeight = 0
+            }
+            sub.place(at: CGPoint(x: x, y: y), anchor: .topLeading, proposal: ProposedViewSize(size))
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+        }
     }
 }
 
