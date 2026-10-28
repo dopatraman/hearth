@@ -82,7 +82,7 @@ struct BacklogView: View {
                 SettingsSheet()
             }
             .sheet(item: $dateSheetFor) { chore in
-                ClaimDateSheet(choreTitle: chore.title) { date in
+                ClaimWhenSheet(choreTitle: chore.title) { date in
                     if let date {
                         await store.setWillCompleteBy(choreID: chore.id, when: date)
                     }
