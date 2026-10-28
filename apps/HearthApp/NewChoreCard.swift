@@ -75,7 +75,7 @@ struct NewChoreCard: View {
         .frame(maxWidth: .infinity, alignment: isOpen ? .center : .trailing)
         .padding(.trailing, isOpen ? 0 : 20)
         .padding(.bottom, isOpen ? 24 : 30)
-        .animation(isOpen ? .bouncy(duration: 0.55, extraBounce: 0.22) : .smooth(duration: 0.35), value: isOpen)
+        .animation(isOpen ? .bouncy(duration: 0.4, extraBounce: 0.1) : .smooth(duration: 0.3), value: isOpen)
     }
 
     private var plusContent: some View {
