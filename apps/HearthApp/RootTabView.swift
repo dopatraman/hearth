@@ -32,7 +32,6 @@ struct RootTabView: View {
                 .tag(Tab.graveyard)
         }
         .tint(Color.hearthLavenderInk)
-        .tabBarMinimizeBehavior(.onScrollDown)
         .onChange(of: selection) { _, newTab in
             // Reload graveyard when the user taps into it so it's fresh.
             if newTab == .graveyard {
