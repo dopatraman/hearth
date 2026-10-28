@@ -7,9 +7,9 @@ struct RootTabView: View {
     @State private var backlog: BacklogStore
     @State private var graveyard: GraveyardStore
     @State private var members: MembersStore
-    @State private var selection: Tab = .backlog
+    @State private var selection: TabID = .backlog
 
-    enum Tab: Hashable { case backlog, graveyard }
+    enum TabID: Hashable { case backlog, graveyard }
 
     init(sessionProvider: @escaping () -> String?) {
         _backlog = State(initialValue: BacklogStore(session: sessionProvider))
@@ -19,21 +19,20 @@ struct RootTabView: View {
 
     var body: some View {
         TabView(selection: $selection) {
-            BacklogView(initialStore: backlog, members: members)
-                .tabItem {
-                    Label("Backlog", systemImage: "tray.full")
-                }
-                .tag(Tab.backlog)
+            Tab("Backlog", systemImage: "tray.full", value: TabID.backlog) {
+                BacklogView(initialStore: backlog, members: members)
+                    .toolbar(.visible, for: .tabBar)
+                    .toolbarBackground(.visible, for: .tabBar)
+            }
 
-            GraveyardView(initialStore: graveyard)
-                .tabItem {
-                    Label("Done", systemImage: "checkmark.circle")
-                }
-                .tag(Tab.graveyard)
+            Tab("Done", systemImage: "checkmark.circle", value: TabID.graveyard) {
+                GraveyardView(initialStore: graveyard)
+                    .toolbar(.visible, for: .tabBar)
+                    .toolbarBackground(.visible, for: .tabBar)
+            }
         }
         .tint(Color.hearthLavenderInk)
         .onChange(of: selection) { _, newTab in
-            // Reload graveyard when the user taps into it so it's fresh.
             if newTab == .graveyard {
                 Task { await graveyard.reload() }
             }
