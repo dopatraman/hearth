@@ -107,16 +107,34 @@ struct ChoreRow: View {
             .buttonStyle(.plain)
             .accessibilityHint(isOpen ? "Collapse" : "Expand")
 
+            trailingAffordance
+        }
+        .padding(.leading, 6)
+        .padding(.trailing, 12)
+        .padding(.vertical, 8)
+        .frame(minHeight: 56)
+    }
+
+    @ViewBuilder
+    private var trailingAffordance: some View {
+        if roleValue == .open && !isSnoozed {
+            Button(action: onClaim) {
+                Text("Claim")
+                    .font(.hearthBody(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.hearthLavenderInk)
+                    .padding(.horizontal, 14)
+                    .frame(height: 32)
+                    .background(Color.hearthLavender, in: Capsule())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Claim")
+        } else {
             Image(systemName: "chevron.down")
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(Color.hearthChevron)
                 .rotationEffect(.degrees(isOpen ? 180 : 0))
                 .frame(width: 24)
         }
-        .padding(.leading, 6)
-        .padding(.trailing, 12)
-        .padding(.vertical, 8)
-        .frame(minHeight: 56)
     }
 
     @ViewBuilder
@@ -168,6 +186,7 @@ struct ChoreRow: View {
                 }
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.leading, 58)
         .padding(.trailing, 12)
         .padding(.top, 2)
@@ -185,9 +204,7 @@ struct ChoreRow: View {
                 ("Snooze", onSnooze),
                 ("Release", onRelease),
             ]
-        case .open:
-            return [("Claim & pick a day", onClaim)]
-        case .other:
+        case .open, .other:
             return []
         }
     }
