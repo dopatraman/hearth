@@ -60,6 +60,41 @@ struct HearthChore: Codable, Equatable, Identifiable {
     let createdAt: String
     let updatedAt: String
     let overdue: Bool
+    let snoozedUntil: String?
+
+    init(
+        id: String,
+        listId: String,
+        creatorId: String,
+        title: String,
+        notes: String?,
+        state: String,
+        claimedBy: String?,
+        claimedAt: String?,
+        willCompleteBy: String?,
+        completedBy: String?,
+        completedAt: String?,
+        createdAt: String,
+        updatedAt: String,
+        overdue: Bool,
+        snoozedUntil: String? = nil
+    ) {
+        self.id = id
+        self.listId = listId
+        self.creatorId = creatorId
+        self.title = title
+        self.notes = notes
+        self.state = state
+        self.claimedBy = claimedBy
+        self.claimedAt = claimedAt
+        self.willCompleteBy = willCompleteBy
+        self.completedBy = completedBy
+        self.completedAt = completedAt
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+        self.overdue = overdue
+        self.snoozedUntil = snoozedUntil
+    }
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -76,6 +111,29 @@ struct HearthChore: Codable, Equatable, Identifiable {
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case overdue
+        case snoozedUntil = "snoozed_until"
+    }
+}
+
+extension HearthChore {
+    func with(snoozedUntil: String?) -> HearthChore {
+        HearthChore(
+            id: id,
+            listId: listId,
+            creatorId: creatorId,
+            title: title,
+            notes: notes,
+            state: state,
+            claimedBy: claimedBy,
+            claimedAt: claimedAt,
+            willCompleteBy: willCompleteBy,
+            completedBy: completedBy,
+            completedAt: completedAt,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            overdue: overdue,
+            snoozedUntil: snoozedUntil
+        )
     }
 }
 

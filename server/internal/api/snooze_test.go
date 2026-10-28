@@ -12,9 +12,9 @@ import (
 	"github.com/dopatraman/hearth/server/internal/dbtest"
 )
 
-func TestSnooze_HidesFromBacklog(t *testing.T) {
+func TestSnooze_MarksChoreSnoozedInBacklog(t *testing.T) {
 	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
-		srv := buildServer(t, tx, auth.AppleIdentity{Sub: "sub-snooze-hide"})
+		srv := buildServer(t, tx, auth.AppleIdentity{Sub: "sub-snooze-marks"})
 		token, _ := signInHelper(t, srv)
 		id := createChore(t, srv, token, "trash")
 
@@ -26,8 +26,12 @@ func TestSnooze_HidesFromBacklog(t *testing.T) {
 			t.Fatalf("snooze: %d body=%s", w.Code, w.Body.String())
 		}
 
-		if titles := listChoreTitles(t, srv, token); len(titles) != 0 {
-			t.Errorf("backlog should be empty after snooze, got %v", titles)
+		rows := listChores(t, srv, token)
+		if len(rows) != 1 || rows[0].Title != "trash" {
+			t.Fatalf("backlog: want [trash], got %+v", rows)
+		}
+		if rows[0].SnoozedUntil == nil {
+			t.Error("snoozed_until: nil, want non-nil for the snoozing user")
 		}
 	})
 }
@@ -58,12 +62,61 @@ func TestSnooze_IsPerUser(t *testing.T) {
 			t.Fatalf("alice snooze: %d", w.Code)
 		}
 
-		// Alice's backlog is empty, Bob's still shows the chore.
-		if titles := listChoreTitles(t, aliceSrv, aliceToken); len(titles) != 0 {
-			t.Errorf("alice backlog: want empty, got %v", titles)
+		// Alice sees the chore with snoozed_until; Bob sees it without.
+		aliceRows := listChores(t, aliceSrv, aliceToken)
+		if len(aliceRows) != 1 || aliceRows[0].SnoozedUntil == nil {
+			t.Errorf("alice backlog: want 1 chore with snoozed_until, got %+v", aliceRows)
 		}
-		if titles := listChoreTitles(t, bobSrv, bobToken); len(titles) != 1 || titles[0] != "trash" {
-			t.Errorf("bob backlog: want [trash], got %v", titles)
+		bobRows := listChores(t, bobSrv, bobToken)
+		if len(bobRows) != 1 || bobRows[0].SnoozedUntil != nil {
+			t.Errorf("bob backlog: want 1 chore with snoozed_until=nil, got %+v", bobRows)
+		}
+	})
+}
+
+func TestWake_RemovesSnooze(t *testing.T) {
+	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
+		srv := buildServer(t, tx, auth.AppleIdentity{Sub: "sub-wake"})
+		token, _ := signInHelper(t, srv)
+		id := createChore(t, srv, token, "trash")
+
+		// Snooze then wake.
+		req := httptest.NewRequest(http.MethodPost, "/chores/"+id+"/snooze", nil)
+		req.Header.Set("Authorization", "Bearer "+token)
+		w := httptest.NewRecorder()
+		srv.Router().ServeHTTP(w, req)
+		if w.Code != http.StatusNoContent {
+			t.Fatalf("snooze: %d", w.Code)
+		}
+
+		req = httptest.NewRequest(http.MethodDelete, "/chores/"+id+"/snooze", nil)
+		req.Header.Set("Authorization", "Bearer "+token)
+		w = httptest.NewRecorder()
+		srv.Router().ServeHTTP(w, req)
+		if w.Code != http.StatusNoContent {
+			t.Fatalf("wake: %d body=%s", w.Code, w.Body.String())
+		}
+
+		rows := listChores(t, srv, token)
+		if len(rows) != 1 || rows[0].SnoozedUntil != nil {
+			t.Errorf("after wake: want snoozed_until=nil, got %+v", rows)
+		}
+	})
+}
+
+func TestWake_IsIdempotent(t *testing.T) {
+	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
+		srv := buildServer(t, tx, auth.AppleIdentity{Sub: "sub-wake-idem"})
+		token, _ := signInHelper(t, srv)
+		id := createChore(t, srv, token, "trash")
+
+		// Wake with no prior snooze — still 204.
+		req := httptest.NewRequest(http.MethodDelete, "/chores/"+id+"/snooze", nil)
+		req.Header.Set("Authorization", "Bearer "+token)
+		w := httptest.NewRecorder()
+		srv.Router().ServeHTTP(w, req)
+		if w.Code != http.StatusNoContent {
+			t.Fatalf("wake on non-snoozed: %d body=%s", w.Code, w.Body.String())
 		}
 	})
 }
@@ -98,9 +151,10 @@ func TestSnooze_UpsertReplaces(t *testing.T) {
 	})
 }
 
-func TestSnooze_ExpiredReappears(t *testing.T) {
-	// Simulate an expired snooze by writing one directly with a past
-	// timestamp — the backlog query filters by snoozed_until > now().
+func TestSnooze_ExpiredSurfacesWithNilSnoozedUntil(t *testing.T) {
+	// An expired snooze row doesn't surface as a snooze on the backlog —
+	// the LEFT JOIN's `s.snoozed_until > now()` clause fails to match, so
+	// the returned row's SnoozedUntil is NULL.
 	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
 		srv := buildServer(t, tx, auth.AppleIdentity{Sub: "sub-snooze-expired"})
 		token, userID := signInHelper(t, srv)
@@ -114,8 +168,12 @@ func TestSnooze_ExpiredReappears(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if titles := listChoreTitles(t, srv, token); len(titles) != 1 || titles[0] != "trash" {
-			t.Errorf("want [trash], got %v", titles)
+		rows := listChores(t, srv, token)
+		if len(rows) != 1 || rows[0].Title != "trash" {
+			t.Fatalf("want [trash], got %+v", rows)
+		}
+		if rows[0].SnoozedUntil != nil {
+			t.Errorf("snoozed_until: want nil for expired snooze, got %v", *rows[0].SnoozedUntil)
 		}
 	})
 }

@@ -3,6 +3,7 @@ import SwiftUI
 enum BacklogSectionKind: Hashable {
     case claimed
     case upForGrabs
+    case snoozed
 }
 
 struct BacklogSection: Identifiable, Equatable {
@@ -16,8 +17,8 @@ struct BacklogSection: Identifiable, Equatable {
 
 /// Groups the current chore list into the two sections the mockup shows:
 /// **Claimed** (anyone's active claims, late items sorted on top) and
-/// **Up for grabs** (unclaimed). Under the `.mine` filter, Claimed is
-/// narrowed to the current user and Up for grabs is omitted entirely.
+/// **Up for grabs** (unclaimed). Under a `.member(id)` filter, Claimed is
+/// narrowed to that household member and Up for grabs is omitted entirely.
 ///
 /// Pure function — sections with no items are omitted so the view can
 /// `ForEach` without extra guards.
@@ -26,15 +27,17 @@ struct BacklogSection: Identifiable, Equatable {
 func groupedSections(
     chores: [HearthChore],
     currentUserID: String?,
-    filter: BacklogView.Filter
+    filter: BacklogFilter
 ) -> [BacklogSection] {
+    let active = chores.filter { $0.snoozedUntil == nil }
+    let snoozedPool = chores.filter { $0.snoozedUntil != nil }
+
     let claimedPool: [HearthChore]
     switch filter {
     case .all:
-        claimedPool = chores.filter { $0.claimedBy != nil }
-    case .mine:
-        guard let me = currentUserID else { return [] }
-        claimedPool = chores.filter { $0.claimedBy == me }
+        claimedPool = active.filter { $0.claimedBy != nil }
+    case .member(let memberID):
+        claimedPool = active.filter { $0.claimedBy == memberID }
     }
     let claimed = claimedPool.sorted(by: claimedOrder)
 
@@ -51,7 +54,7 @@ func groupedSections(
     }
 
     if filter == .all {
-        let upForGrabs = chores
+        let upForGrabs = active
             .filter { $0.claimedBy == nil }
             .sorted { $0.createdAt < $1.createdAt }
         if !upForGrabs.isEmpty {
@@ -64,6 +67,25 @@ func groupedSections(
                 )
             )
         }
+    }
+
+    let snoozed: [HearthChore]
+    switch filter {
+    case .all:
+        snoozed = snoozedPool
+    case .member(let memberID):
+        snoozed = snoozedPool.filter { $0.claimedBy == memberID }
+    }
+    if !snoozed.isEmpty {
+        let ordered = snoozed.sorted { $0.createdAt < $1.createdAt }
+        sections.append(
+            BacklogSection(
+                kind: .snoozed,
+                label: "Snoozed",
+                dotColor: .hearthSectionDotMuted,
+                items: ordered
+            )
+        )
     }
 
     return sections

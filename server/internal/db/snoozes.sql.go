@@ -9,6 +9,20 @@ import (
 	"context"
 )
 
+const deleteSnooze = `-- name: DeleteSnooze :exec
+DELETE FROM snoozes WHERE user_id = ? AND chore_id = ?
+`
+
+type DeleteSnoozeParams struct {
+	UserID  string
+	ChoreID string
+}
+
+func (q *Queries) DeleteSnooze(ctx context.Context, arg DeleteSnoozeParams) error {
+	_, err := q.db.ExecContext(ctx, deleteSnooze, arg.UserID, arg.ChoreID)
+	return err
+}
+
 const upsertSnooze = `-- name: UpsertSnooze :exec
 INSERT INTO snoozes (user_id, chore_id, snoozed_until)
 VALUES (?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '+8 hours'))

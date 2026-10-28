@@ -58,7 +58,8 @@ func (q *Queries) BacklogForList(ctx context.Context, listID string) ([]Chore, e
 const backlogForUser = `-- name: BacklogForUser :many
 SELECT c.id, c.list_id, c.creator_id, c.title, c.notes, c.state,
        c.claimed_by, c.claimed_at, c.will_complete_by,
-       c.completed_by, c.completed_at, c.created_at, c.updated_at
+       c.completed_by, c.completed_at, c.created_at, c.updated_at,
+       s.snoozed_until
 FROM chores c
 JOIN list_memberships m ON m.list_id = c.list_id
 LEFT JOIN snoozes s
@@ -67,19 +68,35 @@ LEFT JOIN snoozes s
       AND s.snoozed_until > strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
 WHERE m.user_id = ?1
   AND c.state = 'open'
-  AND s.chore_id IS NULL
 ORDER BY c.created_at DESC
 `
 
-func (q *Queries) BacklogForUser(ctx context.Context, userID string) ([]Chore, error) {
+type BacklogForUserRow struct {
+	ID             string
+	ListID         string
+	CreatorID      string
+	Title          string
+	Notes          *string
+	State          string
+	ClaimedBy      *string
+	ClaimedAt      *string
+	WillCompleteBy *string
+	CompletedBy    *string
+	CompletedAt    *string
+	CreatedAt      string
+	UpdatedAt      string
+	SnoozedUntil   *string
+}
+
+func (q *Queries) BacklogForUser(ctx context.Context, userID string) ([]BacklogForUserRow, error) {
 	rows, err := q.db.QueryContext(ctx, backlogForUser, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []Chore{}
+	items := []BacklogForUserRow{}
 	for rows.Next() {
-		var i Chore
+		var i BacklogForUserRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.ListID,
@@ -94,6 +111,7 @@ func (q *Queries) BacklogForUser(ctx context.Context, userID string) ([]Chore, e
 			&i.CompletedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.SnoozedUntil,
 		); err != nil {
 			return nil, err
 		}

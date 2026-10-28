@@ -81,11 +81,13 @@ private extension Color {
 }
 
 #if DEBUG
+private enum PreviewOption: Hashable { case a, b }
+
 #Preview("All selected") {
-    @Previewable @State var selection: BacklogView.Filter = .all
+    @Previewable @State var selection: PreviewOption = .a
     return SegmentedPill(
         selection: $selection,
-        options: [(BacklogView.Filter.all, "All"), (BacklogView.Filter.mine, "Mine")]
+        options: [(PreviewOption.a, "All"), (PreviewOption.b, "Mine")]
     )
     .padding()
     .background(Color.hearthBackground)

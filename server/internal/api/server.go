@@ -46,6 +46,7 @@ func (s *Server) Router() *chi.Mux {
 		r.Delete("/chores/{id}/claim", s.handleReleaseClaim)
 		r.Post("/chores/{id}/complete", s.handleCompleteChore)
 		r.Post("/chores/{id}/snooze", s.handleSnoozeChore)
+		r.Delete("/chores/{id}/snooze", s.handleWakeChore)
 		r.Patch("/chores/{id}/will-complete-by", s.handleSetWillCompleteBy)
 		r.Get("/chores/graveyard", s.handleGraveyard)
 

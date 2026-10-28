@@ -15,6 +15,37 @@ struct ChoreRow: View {
     let onSetDate: () -> Void
     let onSnooze: () -> Void
     let onRelease: () -> Void
+    let onWake: () -> Void
+
+    init(
+        chore: HearthChore,
+        currentUserID: String?,
+        members: [HearthMember],
+        isOpen: Bool,
+        onToggle: @escaping () -> Void,
+        onComplete: @escaping () -> Void,
+        onClaim: @escaping () -> Void,
+        onSetDate: @escaping () -> Void,
+        onSnooze: @escaping () -> Void,
+        onRelease: @escaping () -> Void,
+        onWake: @escaping () -> Void = {}
+    ) {
+        self.chore = chore
+        self.currentUserID = currentUserID
+        self.members = members
+        self.isOpen = isOpen
+        self.onToggle = onToggle
+        self.onComplete = onComplete
+        self.onClaim = onClaim
+        self.onSetDate = onSetDate
+        self.onSnooze = onSnooze
+        self.onRelease = onRelease
+        self.onWake = onWake
+    }
+
+    private var isSnoozed: Bool {
+        chore.snoozedUntil != nil
+    }
 
     private var roleValue: ChoreRole {
         role(for: chore, me: currentUserID)
@@ -43,10 +74,11 @@ struct ChoreRow: View {
         }
         .background(
             RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(Color.hearthCardBackground)
+                .fill(Color.hearthSurface)
                 .shadow(color: .black.opacity(0.04), radius: 2, y: 1)
                 .shadow(color: .black.opacity(0.04), radius: 18, y: 6)
         )
+        .opacity(isSnoozed && !isOpen ? 0.55 : 1)
         .animation(.spring(response: 0.4, dampingFraction: 0.82), value: isOpen)
     }
 
@@ -136,13 +168,16 @@ struct ChoreRow: View {
                 }
             }
         }
-        .padding(.leading, 48)
+        .padding(.leading, 58)
         .padding(.trailing, 12)
         .padding(.top, 2)
         .padding(.bottom, 10)
     }
 
     private var actionPills: [(label: String, action: () -> Void)] {
+        if isSnoozed {
+            return [("Wake", onWake)]
+        }
         switch roleValue {
         case .mine:
             return [
@@ -168,17 +203,18 @@ private struct ActionPill: View {
         Button(action: action) {
             Text(label)
                 .font(.hearthBody(size: 13, weight: .semibold))
-                .foregroundStyle(Color.hearthActionPillInk)
+                .foregroundStyle(Color.hearthInsetInk)
                 .frame(height: 36)
                 .padding(.horizontal, 14)
-                .background(Color.hearthActionPillBg, in: Capsule())
+                .background(Color.hearthInsetFill, in: Capsule())
         }
         .buttonStyle(.plain)
     }
 }
 
-/// Minimal flow layout: wraps children to the next row when they overflow.
-/// Used for action pills so they wrap gracefully on narrow screens.
+/// Minimal pill row: lays action pills out left to right with a trailing
+/// Spacer so a single pill still snaps to the leading edge (matching the
+/// title above) instead of expanding to fill its row.
 private struct FlowRow<Content: View>: View {
     let spacing: CGFloat
     @ViewBuilder let content: Content
@@ -186,42 +222,8 @@ private struct FlowRow<Content: View>: View {
     var body: some View {
         HStack(spacing: spacing) {
             content
+            Spacer(minLength: 0)
         }
-    }
-}
-
-// MARK: - Palette additions
-
-extension Color {
-    /// White card background — pure white in light, warm-dark in dark.
-    static let hearthCardBackground = Color(
-        light: .white,
-        dark: Color(red: 0x2A / 255, green: 0x27 / 255, blue: 0x24 / 255)
-    )
-
-    /// Muted chevron tint.
-    static let hearthChevron = Color(
-        light: Color(red: 0x9E / 255, green: 0x9A / 255, blue: 0xAF / 255),
-        dark: Color(red: 0x7E / 255, green: 0x7A / 255, blue: 0x8F / 255)
-    )
-
-    /// Action pill background inside the row drawer.
-    static let hearthActionPillBg = Color(
-        light: Color(red: 0xF4 / 255, green: 0xF3 / 255, blue: 0xF8 / 255),
-        dark: Color(red: 0x3A / 255, green: 0x37 / 255, blue: 0x44 / 255)
-    )
-
-    static let hearthActionPillInk = Color(
-        light: Color(red: 0x3A / 255, green: 0x36 / 255, blue: 0x48 / 255),
-        dark: Color(red: 0xC9 / 255, green: 0xC4 / 255, blue: 0xD6 / 255)
-    )
-}
-
-private extension Color {
-    init(light: Color, dark: Color) {
-        self.init(uiColor: UIColor { trait in
-            trait.userInterfaceStyle == .dark ? UIColor(dark) : UIColor(light)
-        })
     }
 }
 

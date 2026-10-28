@@ -29,6 +29,7 @@ type choreDTO struct {
 	CreatedAt      string  `json:"created_at"`
 	UpdatedAt      string  `json:"updated_at"`
 	Overdue        bool    `json:"overdue"`
+	SnoozedUntil   *string `json:"snoozed_until"`
 }
 
 func toChoreDTO(c db.Chore) choreDTO {
@@ -48,6 +49,27 @@ func toChoreDTO(c db.Chore) choreDTO {
 		UpdatedAt:      c.UpdatedAt,
 		Overdue:        isOverdue(c),
 	}
+}
+
+func rowToChoreDTO(r db.BacklogForUserRow) choreDTO {
+	c := db.Chore{
+		ID:             r.ID,
+		ListID:         r.ListID,
+		CreatorID:      r.CreatorID,
+		Title:          r.Title,
+		Notes:          r.Notes,
+		State:          r.State,
+		ClaimedBy:      r.ClaimedBy,
+		ClaimedAt:      r.ClaimedAt,
+		WillCompleteBy: r.WillCompleteBy,
+		CompletedBy:    r.CompletedBy,
+		CompletedAt:    r.CompletedAt,
+		CreatedAt:      r.CreatedAt,
+		UpdatedAt:      r.UpdatedAt,
+	}
+	dto := toChoreDTO(c)
+	dto.SnoozedUntil = r.SnoozedUntil
+	return dto
 }
 
 // isOverdue — pure derivation from (state, will_complete_by, now). Chore is
@@ -140,10 +162,35 @@ func (s *Server) handleListChores(w http.ResponseWriter, r *http.Request) {
 	}
 
 	out := backlogResponse{Chores: make([]choreDTO, 0, len(backlog))}
-	for _, c := range backlog {
-		out.Chores = append(out.Chores, toChoreDTO(c))
+	for _, r := range backlog {
+		out.Chores = append(out.Chores, rowToChoreDTO(r))
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+// DELETE /chores/{id}/snooze — removes the caller's snooze. 204 on success.
+// Idempotent (deleting a non-existent snooze row does not error).
+func (s *Server) handleWakeChore(w http.ResponseWriter, r *http.Request) {
+	u, ok := userFromContext(r.Context())
+	if !ok {
+		writeError(w, http.StatusInternalServerError, "no user in context")
+		return
+	}
+	choreID := chi.URLParam(r, "id")
+	if choreID == "" {
+		writeError(w, http.StatusBadRequest, "chore id is required")
+		return
+	}
+
+	err := s.UoW.InTx(r.Context(), func(q *db.Queries) error {
+		return chores.NewService(q).Wake(r.Context(), choreID, u.ID)
+	})
+	if err != nil {
+		slog.ErrorContext(r.Context(), "wake chore", "err", err)
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // PATCH /chores/{id}/claim — atomic claim-if-unclaimed.

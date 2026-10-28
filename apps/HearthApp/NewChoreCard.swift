@@ -64,7 +64,7 @@ struct NewChoreCard: View {
         )
         .background(
             RoundedRectangle(cornerRadius: isOpen ? 30 : 31, style: .continuous)
-                .fill(isOpen ? Color.white : Color.hearthLavender)
+                .fill(isOpen ? Color.hearthSurface : Color.hearthLavender)
         )
         .clipShape(RoundedRectangle(cornerRadius: isOpen ? 30 : 31, style: .continuous))
         .shadow(
@@ -72,6 +72,9 @@ struct NewChoreCard: View {
             radius: isOpen ? 30 : 20,
             y: isOpen ? 24 : 8
         )
+        .frame(maxWidth: .infinity, alignment: isOpen ? .center : .trailing)
+        .padding(.trailing, isOpen ? 0 : 20)
+        .padding(.bottom, isOpen ? 24 : 30)
         .animation(.timingCurve(0.32, 1.18, 0.42, 1, duration: 0.55), value: isOpen)
     }
 
@@ -103,7 +106,7 @@ struct NewChoreCard: View {
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(Color.hearthTextSecondary)
                         .frame(width: 36, height: 36)
-                        .background(Color.hearthBackground, in: Circle())
+                        .background(Color.hearthInsetFill, in: Circle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Close")
@@ -172,7 +175,7 @@ struct NewChoreCard: View {
                 Spacer()
                 ZStack(alignment: model.claimForSelf ? .trailing : .leading) {
                     Capsule()
-                        .fill(model.claimForSelf ? Color.hearthRingMineStroke : Color.hearthScheduledTrack)
+                        .fill(model.claimForSelf ? Color.hearthRingMineStroke : Color.hearthSwitchTrackOff)
                         .frame(width: 48, height: 28)
                     Circle()
                         .fill(Color.white)
@@ -217,7 +220,7 @@ struct NewChoreCard: View {
                 .padding(.horizontal, 14)
                 .frame(height: 36)
                 .background(
-                    Capsule().fill(selected ? Color.hearthLavender : Color.hearthBackground)
+                    Capsule().fill(selected ? Color.hearthLavender : Color.hearthInsetFill)
                 )
                 .scaleEffect(selected ? 1.04 : 1)
         }
@@ -286,19 +289,6 @@ private struct WrappingHStack: Layout {
             x += size.width + spacing
             rowHeight = max(rowHeight, size.height)
         }
-    }
-}
-
-private extension Color {
-    static let hearthScheduledTrack = Color(
-        light: Color(red: 0xDC / 255, green: 0xD9 / 255, blue: 0xE5 / 255),
-        dark: Color(red: 0x4A / 255, green: 0x47 / 255, blue: 0x54 / 255)
-    )
-
-    init(light: Color, dark: Color) {
-        self.init(uiColor: UIColor { trait in
-            trait.userInterfaceStyle == .dark ? UIColor(dark) : UIColor(light)
-        })
     }
 }
 

@@ -173,17 +173,43 @@ final class BacklogStore {
         }
     }
 
-    /// Snooze a chore for the caller for 8 hours. Removes it from the local
-    /// backlog immediately; next reload won't see it either (server filters
-    /// snoozed chores for this user).
+    /// Snooze a chore for the caller for 8 hours. Keeps the chore in the
+    /// local backlog but stamps `snoozedUntil` on it so the Snoozed section
+    /// grouping picks it up. The server replies 204 — we approximate the
+    /// stamp locally (next reload refreshes with the real value).
     func snooze(choreID: String) async {
         guard let token = session() else { return }
         do {
             try await api.snoozeChore(sessionToken: token, choreID: choreID)
-            chores.removeAll { $0.id == choreID }
+            if let idx = chores.firstIndex(where: { $0.id == choreID }) {
+                chores[idx] = chores[idx].with(snoozedUntil: Self.approximateSnoozeStamp())
+            }
+            phase = .loaded
         } catch {
             phase = .failed(error.localizedDescription)
         }
+    }
+
+    /// Wake a snoozed chore so it returns to its normal section on the next
+    /// read. Idempotent on the server. Clears `snoozedUntil` locally.
+    func wake(choreID: String) async {
+        guard let token = session() else { return }
+        do {
+            try await api.wakeChore(sessionToken: token, choreID: choreID)
+            if let idx = chores.firstIndex(where: { $0.id == choreID }) {
+                chores[idx] = chores[idx].with(snoozedUntil: nil)
+            }
+            phase = .loaded
+        } catch {
+            phase = .failed(error.localizedDescription)
+        }
+    }
+
+    private static func approximateSnoozeStamp() -> String {
+        let eightHours = Date().addingTimeInterval(8 * 60 * 60)
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f.string(from: eightHours)
     }
 
     /// Release the caller's claim on a chore. Server clears claimed_by,

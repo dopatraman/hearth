@@ -32,26 +32,36 @@ func createInvite(t *testing.T, srv *api.Server, token string) string {
 // listChoreTitles GETs /chores and returns the titles in order.
 func listChoreTitles(t *testing.T, srv *api.Server, token string) []string {
 	t.Helper()
+	rows := listChores(t, srv, token)
+	titles := make([]string, 0, len(rows))
+	for _, c := range rows {
+		titles = append(titles, c.Title)
+	}
+	return titles
+}
+
+type backlogRow struct {
+	Title        string  `json:"title"`
+	SnoozedUntil *string `json:"snoozed_until"`
+}
+
+// listChores GETs /chores and returns the title + snoozed_until for each row.
+func listChores(t *testing.T, srv *api.Server, token string) []backlogRow {
+	t.Helper()
 	req := httptest.NewRequest(http.MethodGet, "/chores", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
 	w := httptest.NewRecorder()
 	srv.Router().ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
-		t.Fatalf("listChoreTitles: %d body=%s", w.Code, w.Body.String())
+		t.Fatalf("listChores: %d body=%s", w.Code, w.Body.String())
 	}
 	var resp struct {
-		Chores []struct {
-			Title string `json:"title"`
-		} `json:"chores"`
+		Chores []backlogRow `json:"chores"`
 	}
 	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
-		t.Fatalf("listChoreTitles decode: %v", err)
+		t.Fatalf("listChores decode: %v", err)
 	}
-	titles := make([]string, 0, len(resp.Chores))
-	for _, c := range resp.Chores {
-		titles = append(titles, c.Title)
-	}
-	return titles
+	return resp.Chores
 }
 
 // signInHelper POSTs /auth/apple with the stub-recognized token and returns
