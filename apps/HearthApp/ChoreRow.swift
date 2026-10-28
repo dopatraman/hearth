@@ -168,6 +168,7 @@ struct ChoreRow: View {
                 }
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.leading, 58)
         .padding(.trailing, 12)
         .padding(.top, 2)
