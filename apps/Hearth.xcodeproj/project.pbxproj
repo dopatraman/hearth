@@ -46,6 +46,8 @@
 		A707070707070707070707AA /* WrappingHStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = B707070707070707070707BB /* WrappingHStack.swift */; };
 		A808080808080808080808AA /* ClaimWhenSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B808080808080808080808BB /* ClaimWhenSheet.swift */; };
 		A909090909090909090909AA /* ClaimWhenChoiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B909090909090909090909BB /* ClaimWhenChoiceTests.swift */; };
+		AA0A0A0A0A0A0A0A0A0A0AAA /* GraveyardSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA0A0A0A0A0A0A0A0A0A0ABB /* GraveyardSections.swift */; };
+		AA0B0B0B0B0B0B0B0B0B0BAA /* GraveyardSectionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA0B0B0B0B0B0B0B0B0B0BBB /* GraveyardSectionsTests.swift */; };
 		9E744842A7184E1575A9B59C /* ChoreRowModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C70EAE477AF5DC62C8A6501 /* ChoreRowModel.swift */; };
 		C2CAE7F05711E53B13A039A2 /* Keychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = F182F34FD96686F757ADDB8E /* Keychain.swift */; };
 		C794DDA4730623BFEAA0A756 /* SinceLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39BE884C477F368551B4F960 /* SinceLine.swift */; };
@@ -118,6 +120,8 @@
 		B707070707070707070707BB /* WrappingHStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WrappingHStack.swift; sourceTree = "<group>"; };
 		B808080808080808080808BB /* ClaimWhenSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaimWhenSheet.swift; sourceTree = "<group>"; };
 		B909090909090909090909BB /* ClaimWhenChoiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaimWhenChoiceTests.swift; sourceTree = "<group>"; };
+		BA0A0A0A0A0A0A0A0A0A0ABB /* GraveyardSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraveyardSections.swift; sourceTree = "<group>"; };
+		BA0B0B0B0B0B0B0B0B0B0BBB /* GraveyardSectionsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraveyardSectionsTests.swift; sourceTree = "<group>"; };
 		9AD17F5C357092D1D9E96659 /* Geist-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Geist-Medium.ttf"; sourceTree = "<group>"; };
 		9E5A6F32C7146A850EDC99AA /* HearthApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = HearthApp.entitlements; sourceTree = "<group>"; };
 		A63E0C30ED6F695A9D87C206 /* SectionHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SectionHeader.swift; sourceTree = "<group>"; };
@@ -196,6 +200,7 @@
 				11C180916D2AF79C4264A84B /* FABButton.swift */,
 				CA0F6F1D91121A5F78B4495B /* Font+Hearth.swift */,
 				EF57DDC6D708A5FD93792419 /* GraveyardRow.swift */,
+				BA0A0A0A0A0A0A0A0A0A0ABB /* GraveyardSections.swift */,
 				933F92F6D50007BE186E3E3D /* GraveyardStore.swift */,
 				0759AD20FF49573C41872ABB /* GraveyardView.swift */,
 				DEB5F2AAC13B09F521E40FFE /* HearthAPI.swift */,
@@ -250,6 +255,7 @@
 				2158D209613581A52909B32C /* BacklogSummaryTests.swift */,
 				789B7FB0B4BEBBA7C2235763 /* ChoreRowModelTests.swift */,
 				B909090909090909090909BB /* ClaimWhenChoiceTests.swift */,
+				BA0B0B0B0B0B0B0B0B0B0BBB /* GraveyardSectionsTests.swift */,
 				1945B64FC16BDFE702F27691 /* HearthAppTests.swift */,
 				342BA74BF16171DB9236407C /* MembersStoreTests.swift */,
 				B202020202020202020202BB /* NewChoreCardTests.swift */,
@@ -398,6 +404,7 @@
 				9511D2465057C4684E1EDAB2 /* FABButton.swift in Sources */,
 				1E7EF10B15C78240238829E2 /* Font+Hearth.swift in Sources */,
 				4BA48CC5182128B05284B219 /* GraveyardRow.swift in Sources */,
+				AA0A0A0A0A0A0A0A0A0A0AAA /* GraveyardSections.swift in Sources */,
 				4E7527809BAC469BC03DFB9F /* GraveyardStore.swift in Sources */,
 				7FDEC7F54260FE1A9BA1C98A /* GraveyardView.swift in Sources */,
 				D895165661854A0484F9B76F /* HearthAPI.swift in Sources */,
@@ -431,6 +438,7 @@
 				555E830F67A21ACECBD628D5 /* BacklogSummaryTests.swift in Sources */,
 				E91265AC63F4EA9DD5C36D20 /* ChoreRowModelTests.swift in Sources */,
 				A909090909090909090909AA /* ClaimWhenChoiceTests.swift in Sources */,
+				AA0B0B0B0B0B0B0B0B0B0BAA /* GraveyardSectionsTests.swift in Sources */,
 				65A3ACB6340FB76FBDA27FF5 /* HearthAppTests.swift in Sources */,
 				5B17A7DC167BCAFDF5FC3AF5 /* MembersStoreTests.swift in Sources */,
 				A202020202020202020202AA /* NewChoreCardTests.swift in Sources */,

@@ -25,7 +25,7 @@ struct RootTabView: View {
                 }
                 .tag(Tab.backlog)
 
-            GraveyardView(initialStore: graveyard)
+            GraveyardView(initialStore: graveyard, members: members)
                 .tabItem {
                     Label("Done", systemImage: "checkmark.circle")
                 }
