@@ -20,17 +20,24 @@ struct RingSlot: View {
                         .frame(width: 26, height: 26)
                         .opacity(isCompleting ? 0 : 1)
                         .scaleEffect(isCompleting ? 0.85 : 1)
-                    ZStack {
-                        Circle().fill(Color.hearthMint)
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundStyle(Color.hearthMintInk)
-                    }
-                    .frame(width: 26, height: 26)
-                    .opacity(isCompleting ? 1 : 0)
-                    .scaleEffect(isCompleting ? 1 : 0.6)
+                        .animation(.spring(response: 0.3, dampingFraction: 0.72), value: isCompleting)
+
+                    Circle()
+                        .fill(Color.hearthMint)
+                        .frame(width: 26, height: 26)
+                        .opacity(isCompleting ? 1 : 0)
+                        .scaleEffect(isCompleting ? 1 : 0.6)
+                        .animation(.spring(response: 0.3, dampingFraction: 0.72), value: isCompleting)
+
+                    CheckmarkPath()
+                        .trim(from: 0, to: isCompleting ? 1 : 0)
+                        .stroke(
+                            Color.hearthMintInk,
+                            style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round)
+                        )
+                        .frame(width: 14, height: 14)
+                        .animation(.easeOut(duration: 0.28).delay(0.12), value: isCompleting)
                 }
-                .animation(.spring(response: 0.3, dampingFraction: 0.72), value: isCompleting)
             case .open:
                 Circle()
                     .strokeBorder(
@@ -48,6 +55,21 @@ struct RingSlot: View {
             }
         }
         .frame(width: 44, height: 44)
+    }
+}
+
+/// Two-stroke checkmark path drawn inside the completing-ring circle.
+/// The `.trim(from:to:)` modifier animates the strokes drawing in — the
+/// SF Symbol glyph can't do this because its path isn't exposed.
+private struct CheckmarkPath: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let w = rect.width
+        let h = rect.height
+        path.move(to: CGPoint(x: w * 0.18, y: h * 0.54))
+        path.addLine(to: CGPoint(x: w * 0.42, y: h * 0.76))
+        path.addLine(to: CGPoint(x: w * 0.82, y: h * 0.30))
+        return path
     }
 }
 
