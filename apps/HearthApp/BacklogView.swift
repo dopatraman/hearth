@@ -12,6 +12,7 @@ struct BacklogView: View {
     @State private var didLoad: Bool = false
     @State private var openID: String?
     @State private var toast: ToastModel?
+    @State private var completingID: String?
 
     init(initialStore: BacklogStore? = nil, members: MembersStore? = nil) {
         _store = State(initialValue: initialStore ?? BacklogStore(session: { nil }))
@@ -140,12 +141,20 @@ struct BacklogView: View {
     }
 
     private func beginCompletion(choreID: String) {
+        guard completingID == nil else { return }
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         lastCompletedChoreID = choreID
         openID = nil
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.78)) {
-            store.startCompletion(choreID: choreID)
-            toast = ToastModel(text: "Moved to Done", undoLabel: "Undo")
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.72)) {
+            completingID = choreID
+        }
+        Task {
+            try? await Task.sleep(for: .milliseconds(450))
+            withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
+                completingID = nil
+                store.startCompletion(choreID: choreID)
+                toast = ToastModel(text: "Moved to Done", undoLabel: "Undo")
+            }
         }
     }
 
@@ -215,7 +224,7 @@ struct BacklogView: View {
             .padding(.top, 6)
             .padding(.bottom, 150)
         }
-        .animation(.easeInOut(duration: 0.25), value: sections.map(\.id))
+        .animation(.spring(response: 0.45, dampingFraction: 0.82), value: sections)
     }
 
     private func sectionView(_ section: BacklogSection, index: Int) -> some View {
@@ -292,7 +301,8 @@ struct BacklogView: View {
                     openID = nil
                 }
                 Task { await store.wake(choreID: chore.id) }
-            }
+            },
+            isCompleting: completingID == chore.id
         )
     }
 
