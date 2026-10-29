@@ -16,6 +16,7 @@ struct ChoreRow: View {
     let onSnooze: () -> Void
     let onRelease: () -> Void
     let onWake: () -> Void
+    let isCompleting: Bool
 
     init(
         chore: HearthChore,
@@ -28,7 +29,8 @@ struct ChoreRow: View {
         onSetDate: @escaping () -> Void,
         onSnooze: @escaping () -> Void,
         onRelease: @escaping () -> Void,
-        onWake: @escaping () -> Void = {}
+        onWake: @escaping () -> Void = {},
+        isCompleting: Bool = false
     ) {
         self.chore = chore
         self.currentUserID = currentUserID
@@ -41,6 +43,7 @@ struct ChoreRow: View {
         self.onSnooze = onSnooze
         self.onRelease = onRelease
         self.onWake = onWake
+        self.isCompleting = isCompleting
     }
 
     private var isSnoozed: Bool {
@@ -141,10 +144,11 @@ struct ChoreRow: View {
     private var leftSlot: some View {
         if roleValue == .mine {
             Button(action: onComplete) {
-                RingSlot(role: roleValue, otherInitial: otherInitial)
+                RingSlot(role: roleValue, otherInitial: otherInitial, isCompleting: isCompleting)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Mark done")
+            .disabled(isCompleting)
         } else {
             RingSlot(role: roleValue, otherInitial: otherInitial)
                 .accessibilityHidden(roleValue == .open)

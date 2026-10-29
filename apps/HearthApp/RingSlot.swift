@@ -8,14 +8,29 @@ import SwiftUI
 struct RingSlot: View {
     let role: ChoreRole
     let otherInitial: String?
+    var isCompleting: Bool = false
 
     var body: some View {
         ZStack {
             switch role {
             case .mine:
-                Circle()
-                    .stroke(Color.hearthLavender, lineWidth: 2)
+                ZStack {
+                    Circle()
+                        .stroke(Color.hearthLavender, lineWidth: 2)
+                        .frame(width: 26, height: 26)
+                        .opacity(isCompleting ? 0 : 1)
+                        .scaleEffect(isCompleting ? 0.85 : 1)
+                    ZStack {
+                        Circle().fill(Color.hearthMint)
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(Color.hearthMintInk)
+                    }
                     .frame(width: 26, height: 26)
+                    .opacity(isCompleting ? 1 : 0)
+                    .scaleEffect(isCompleting ? 1 : 0.6)
+                }
+                .animation(.spring(response: 0.3, dampingFraction: 0.72), value: isCompleting)
             case .open:
                 Circle()
                     .strokeBorder(
