@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
@@ -139,7 +140,7 @@ func (s *Server) handleCreateChore(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.Dispatcher.Dispatch(r.Context(), created.ListID, u.ID, "New chore: "+created.Title)
+	s.Dispatcher.Dispatch(r.Context(), created.ListID, u.ID, "")
 	writeJSON(w, http.StatusCreated, toChoreDTO(created))
 }
 
@@ -222,7 +223,7 @@ func (s *Server) handleClaimChore(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	s.Dispatcher.Dispatch(r.Context(), claimed.ListID, u.ID, "Claimed: "+claimed.Title)
+	s.Dispatcher.Dispatch(r.Context(), claimed.ListID, u.ID, fmt.Sprintf("%s claimed %q", actorName(u), claimed.Title))
 	writeJSON(w, http.StatusOK, toChoreDTO(claimed))
 }
 
@@ -255,7 +256,7 @@ func (s *Server) handleCompleteChore(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	s.Dispatcher.Dispatch(r.Context(), completed.ListID, u.ID, "Done: "+completed.Title)
+	s.Dispatcher.Dispatch(r.Context(), completed.ListID, u.ID, fmt.Sprintf("%s completed %q", actorName(u), completed.Title))
 	writeJSON(w, http.StatusOK, toChoreDTO(completed))
 }
 
@@ -297,7 +298,7 @@ func (s *Server) handleSetWillCompleteBy(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	s.Dispatcher.Dispatch(r.Context(), updated.ListID, u.ID, "Scheduled: "+updated.Title)
+	s.Dispatcher.Dispatch(r.Context(), updated.ListID, u.ID, "")
 	writeJSON(w, http.StatusOK, toChoreDTO(updated))
 }
 
@@ -356,7 +357,7 @@ func (s *Server) handleReleaseClaim(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	s.Dispatcher.Dispatch(r.Context(), released.ListID, u.ID, "Released: "+released.Title)
+	s.Dispatcher.Dispatch(r.Context(), released.ListID, u.ID, "")
 	writeJSON(w, http.StatusOK, toChoreDTO(released))
 }
 
@@ -382,4 +383,11 @@ func (s *Server) handleGraveyard(w http.ResponseWriter, r *http.Request) {
 		out.Chores = append(out.Chores, toChoreDTO(c))
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+func actorName(u db.User) string {
+	if u.DisplayName != nil && *u.DisplayName != "" {
+		return *u.DisplayName
+	}
+	return "Someone"
 }

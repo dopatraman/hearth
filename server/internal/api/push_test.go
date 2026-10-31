@@ -154,8 +154,80 @@ func TestPush_CreateChoreNotifiesOtherListMembers(t *testing.T) {
 		if call.tokens[0].Token != "bob-ios-token" {
 			t.Errorf("recipient: got %q want bob-ios-token", call.tokens[0].Token)
 		}
-		if call.payload.Alert == "" {
-			t.Errorf("alert empty")
+		if call.payload.Alert != "" {
+			t.Errorf("create should be silent, got alert %q", call.payload.Alert)
+		}
+	})
+}
+
+func TestPush_ClaimAndCompleteAlertsNameActorAndChore(t *testing.T) {
+	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
+		pusher := newFakePusher()
+		aliceSrv := buildServerWithPusher(t, tx, auth.AppleIdentity{Sub: "sub-push-named-alice"}, pusher)
+		aliceToken, _ := signInHelper(t, aliceSrv)
+		code := createInvite(t, aliceSrv, aliceToken)
+
+		bobSrv := buildServerWithPusher(t, tx, auth.AppleIdentity{Sub: "sub-push-named-bob"}, pusher)
+		req := httptest.NewRequest(http.MethodPost, "/auth/apple",
+			strings.NewReader(`{"id_token":"valid-apple-token","display_name":"Bob"}`))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		bobSrv.Router().ServeHTTP(w, req)
+		if w.Code != http.StatusOK {
+			t.Fatalf("bob sign-in: %d", w.Code)
+		}
+		var signIn struct {
+			SessionToken string `json:"session_token"`
+		}
+		if err := json.NewDecoder(w.Body).Decode(&signIn); err != nil {
+			t.Fatalf("decode sign-in: %v", err)
+		}
+		bobToken := signIn.SessionToken
+
+		req = httptest.NewRequest(http.MethodPost, "/invites/"+code+"/accept", nil)
+		req.Header.Set("Authorization", "Bearer "+bobToken)
+		w = httptest.NewRecorder()
+		bobSrv.Router().ServeHTTP(w, req)
+		if w.Code != http.StatusOK {
+			t.Fatalf("accept: %d", w.Code)
+		}
+		registerDevice(t, aliceSrv, aliceToken, "ios", "alice-ios-token")
+
+		req = httptest.NewRequest(http.MethodPost, "/chores", strings.NewReader(`{"title":"Look at flights"}`))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+bobToken)
+		w = httptest.NewRecorder()
+		bobSrv.Router().ServeHTTP(w, req)
+		if w.Code != http.StatusCreated {
+			t.Fatalf("create: %d", w.Code)
+		}
+		var chore struct {
+			ID string `json:"id"`
+		}
+		if err := json.NewDecoder(w.Body).Decode(&chore); err != nil {
+			t.Fatalf("decode chore: %v", err)
+		}
+		if call := pusher.wait(t); call.payload.Alert != "" {
+			t.Errorf("create alert: got %q want silent", call.payload.Alert)
+		}
+
+		cases := []struct {
+			method, path, want string
+		}{
+			{http.MethodPatch, "/chores/" + chore.ID + "/claim", `Bob claimed "Look at flights"`},
+			{http.MethodPost, "/chores/" + chore.ID + "/complete", `Bob completed "Look at flights"`},
+		}
+		for _, c := range cases {
+			req = httptest.NewRequest(c.method, c.path, nil)
+			req.Header.Set("Authorization", "Bearer "+bobToken)
+			w = httptest.NewRecorder()
+			bobSrv.Router().ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("%s %s: %d", c.method, c.path, w.Code)
+			}
+			if call := pusher.wait(t); call.payload.Alert != c.want {
+				t.Errorf("%s alert: got %q want %q", c.path, call.payload.Alert, c.want)
+			}
 		}
 	})
 }

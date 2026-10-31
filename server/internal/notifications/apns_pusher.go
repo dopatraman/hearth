@@ -71,11 +71,13 @@ func (p *APNSPusher) Push(ctx context.Context, tokens []db.TokensForListRow, pl 
 	results := make([]PushResult, 0, len(tokens))
 	for _, t := range tokens {
 		body := payload.NewPayload().
-			AlertTitle("Hearth").
-			AlertBody(pl.Alert).
-			Sound("default").
 			ContentAvailable().
 			Custom("list_id", pl.ListID)
+		pushType, priority := apns2.PushTypeBackground, apns2.PriorityLow
+		if pl.Alert != "" {
+			body = body.AlertTitle("Hearth").AlertBody(pl.Alert).Sound("default")
+			pushType, priority = apns2.PushTypeAlert, apns2.PriorityHigh
+		}
 		if pl.LastEventID != "" {
 			body = body.Custom("last_event_id", pl.LastEventID)
 		}
@@ -88,6 +90,8 @@ func (p *APNSPusher) Push(ctx context.Context, tokens []db.TokensForListRow, pl 
 			DeviceToken: t.Token,
 			Topic:       p.bundleID,
 			Payload:     raw,
+			PushType:    pushType,
+			Priority:    priority,
 		}
 		resp, err := p.client.Push(n)
 		result := PushResult{Token: t.Token, Platform: t.Platform}
