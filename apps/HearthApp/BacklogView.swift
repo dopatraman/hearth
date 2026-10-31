@@ -67,8 +67,10 @@ struct BacklogView: View {
             .background(Color.hearthBackground)
             .scrollContentBackground(.hidden)
             .refreshable {
-                await store.reload()
-                await members.load()
+                await Task {
+                    await store.reload()
+                    await members.load()
+                }.value
             }
             .task {
                 if case .idle = store.phase {

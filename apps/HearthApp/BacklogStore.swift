@@ -119,7 +119,7 @@ final class BacklogStore {
             phase = .failed("Not signed in")
             return
         }
-        phase = .loading
+        if chores.isEmpty { phase = .loading }
         do {
             chores = try await api.backlog(sessionToken: token)
             phase = .loaded

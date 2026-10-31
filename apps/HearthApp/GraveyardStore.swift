@@ -30,7 +30,7 @@ final class GraveyardStore {
             phase = .failed("Not signed in")
             return
         }
-        phase = .loading
+        if chores.isEmpty { phase = .loading }
         do {
             let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
             chores = try await api.graveyard(sessionToken: token, query: q.isEmpty ? nil : q)

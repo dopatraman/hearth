@@ -35,7 +35,7 @@ struct GraveyardView: View {
             .onChange(of: store.query) { _, _ in
                 Task { await store.reload() }
             }
-            .refreshable { await store.reload() }
+            .refreshable { await Task { await store.reload() }.value }
             .task {
                 if case .idle = store.phase {
                     await store.reload()
