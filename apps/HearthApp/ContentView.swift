@@ -20,6 +20,7 @@ struct ContentView: View {
                 SignInScreen()
             case .signedIn:
                 RootTabView(sessionProvider: { Keychain().read() })
+                    .id(auth.membershipVersion)
             }
         }
         .animation(.easeInOut(duration: 0.3), value: auth.phase)
@@ -35,9 +36,9 @@ struct ContentView: View {
                 set: { if !$0 { auth.dismissPendingInvite() } }
             ),
             presenting: auth.pendingInviteCode
-        ) { _ in
+        ) { code in
             Button("Accept") {
-                Task { await auth.acceptPendingInvite() }
+                Task { await auth.acceptInvite(code: code) }
             }
             Button("Not now", role: .cancel) {
                 auth.dismissPendingInvite()

@@ -19,8 +19,10 @@ final class AuthStore {
 
     /// Set when a universal link like /invite/<code> opens the app. Consumed
     /// by ContentView, which prompts the user to accept and clears via
-    /// acceptPendingInvite() / dismissPendingInvite().
+    /// dismissPendingInvite() when the alert closes.
     var pendingInviteCode: String?
+
+    private(set) var membershipVersion = 0
 
     private let api: HearthAPI
     private let keychain: Keychain
@@ -98,17 +100,13 @@ final class AuthStore {
         phase = .signedOut
     }
 
-    /// Accepts the stashed invite code. Returns true on success. Clears
-    /// pendingInviteCode regardless of outcome so the alert dismisses.
+    /// Accepts the given invite code. Returns true on success.
     @discardableResult
-    func acceptPendingInvite() async -> Bool {
-        guard let code = pendingInviteCode, let token = keychain.read() else {
-            pendingInviteCode = nil
-            return false
-        }
-        pendingInviteCode = nil
+    func acceptInvite(code: String) async -> Bool {
+        guard let token = keychain.read() else { return false }
         do {
             _ = try await api.acceptInvite(sessionToken: token, code: code)
+            membershipVersion += 1
             return true
         } catch {
             lastError = error.localizedDescription
