@@ -8,6 +8,7 @@ struct RootTabView: View {
     @State private var graveyard: GraveyardStore
     @State private var members: MembersStore
     @State private var selection: Tab = .backlog
+    @Environment(\.scenePhase) private var scenePhase
 
     enum Tab: Hashable { case backlog, graveyard }
 
@@ -39,5 +40,19 @@ struct RootTabView: View {
                 Task { await graveyard.reload() }
             }
         }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                Task { await refresh() }
+            }
+        }
+        .onAppear {
+            PushRegistration.shared.onRefresh = { await refresh() }
+        }
+    }
+
+    private func refresh() async {
+        await backlog.reload()
+        await graveyard.reload()
+        await members.load()
     }
 }
