@@ -42,6 +42,8 @@ targets:
           - UIInterfaceOrientationPortraitUpsideDown
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
+        UIBackgroundModes:
+          - remote-notification
         UIAppFonts:
           - BricolageGrotesque-VariableFont.ttf
           - Geist-Regular.ttf

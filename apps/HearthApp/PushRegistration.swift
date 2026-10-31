@@ -8,6 +8,7 @@ final class PushRegistration: NSObject, UNUserNotificationCenterDelegate {
 
     private var pendingToken: String?
     private var sessionProvider: (() -> String?)?
+    var onRefresh: (() async -> Void)?
     private let api: HearthAPI
 
     private override init() {
@@ -40,6 +41,10 @@ final class PushRegistration: NSObject, UNUserNotificationCenterDelegate {
         Task { await sendPendingTokenIfPossible() }
     }
 
+    func refresh() async {
+        await onRefresh?()
+    }
+
     func didFailToRegister(_ error: Error) {
         // No-op for now; token will remain nil, server simply won't push.
     }
@@ -61,6 +66,16 @@ final class PushRegistration: NSObject, UNUserNotificationCenterDelegate {
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
+        Task { @MainActor in await PushRegistration.shared.refresh() }
         completionHandler([.banner, .sound])
+    }
+
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        Task { @MainActor in await PushRegistration.shared.refresh() }
+        completionHandler()
     }
 }
