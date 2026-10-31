@@ -169,7 +169,7 @@ func TestPush_ClaimAndCompleteAlertsNameActorAndChore(t *testing.T) {
 
 		bobSrv := buildServerWithPusher(t, tx, auth.AppleIdentity{Sub: "sub-push-named-bob"}, pusher)
 		req := httptest.NewRequest(http.MethodPost, "/auth/apple",
-			strings.NewReader(`{"id_token":"valid-apple-token","display_name":"Bob"}`))
+			strings.NewReader(`{"id_token":"valid-apple-token","display_name":"Bob Smith"}`))
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 		bobSrv.Router().ServeHTTP(w, req)

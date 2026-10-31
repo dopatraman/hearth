@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -386,8 +387,10 @@ func (s *Server) handleGraveyard(w http.ResponseWriter, r *http.Request) {
 }
 
 func actorName(u db.User) string {
-	if u.DisplayName != nil && *u.DisplayName != "" {
-		return *u.DisplayName
+	if u.DisplayName != nil {
+		if fields := strings.Fields(*u.DisplayName); len(fields) > 0 {
+			return fields[0]
+		}
 	}
 	return "Someone"
 }
