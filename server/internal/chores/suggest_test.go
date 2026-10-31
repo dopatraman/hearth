@@ -200,39 +200,52 @@ func TestChores_Suggest_RejectsNonexistentChore(t *testing.T) {
 	})
 }
 
-func TestChores_Claim_DeletesPendingSuggestion(t *testing.T) {
+func TestChores_Claim_ByRecipient_StampsAcceptedAt(t *testing.T) {
 	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
 		q := db.New(tx)
-		aliceID, bobID, listID := seedTwoMembers(t, ctx, q, "claim-deletes-sug")
+		aliceID, bobID, listID := seedTwoMembers(t, ctx, q, "claim-accepts")
 		svc := chores.NewService(q)
 		chore, err := svc.Create(ctx, listID, aliceID, "trash", nil, false, nil)
 		if err != nil {
 			t.Fatalf("create: %v", err)
 		}
-		if _, err := svc.Suggest(ctx, chore.ID, aliceID, bobID, nil); err != nil {
+		sug, err := svc.Suggest(ctx, chore.ID, aliceID, bobID, nil)
+		if err != nil {
 			t.Fatalf("suggest: %v", err)
 		}
 
-		// Bob (the recipient) claims via the existing flow.
+		// Bob (the recipient) claims.
 		if _, err := svc.Claim(ctx, chore.ID, bobID); err != nil {
 			t.Fatalf("claim: %v", err)
 		}
 
-		// Pending suggestion must be gone (one-pending guard checks via
-		// GetPendingSuggestionForChore returning sql.ErrNoRows).
-		_, err = q.GetPendingSuggestionForChore(ctx, chore.ID)
-		if !errors.Is(err, sql.ErrNoRows) {
-			t.Fatalf("pending suggestion still exists after claim: err=%v", err)
+		// Suggestion is no longer pending (dropped from the pending index).
+		if _, err := q.GetPendingSuggestionForChore(ctx, chore.ID); !errors.Is(err, sql.ErrNoRows) {
+			t.Fatalf("pending guard: want sql.ErrNoRows, got %v", err)
+		}
+
+		// Row still exists — accepted_at stamped, invalidated_at + declined_at still nil.
+		after, err := q.GetSuggestionByID(ctx, sug.ID)
+		if err != nil {
+			t.Fatalf("get suggestion: %v", err)
+		}
+		if after.AcceptedAt == nil {
+			t.Error("accepted_at: expected non-nil")
+		}
+		if after.InvalidatedAt != nil {
+			t.Errorf("invalidated_at: want nil, got %v", after.InvalidatedAt)
+		}
+		if after.DeclinedAt != nil {
+			t.Errorf("declined_at: want nil, got %v", after.DeclinedAt)
 		}
 	})
 }
 
-func TestChores_Claim_ByThirdParty_AlsoDeletesPendingSuggestion(t *testing.T) {
+func TestChores_Claim_ByThirdParty_StampsInvalidatedAt(t *testing.T) {
 	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
 		q := db.New(tx)
-		aliceID, bobID, listID := seedTwoMembers(t, ctx, q, "claim-3rd-party")
-		// Add a third member Charlie.
-		charlieID, _ := setupUserInList(t, ctx, q, "sub-claim-3rd-party-C")
+		aliceID, bobID, listID := seedTwoMembers(t, ctx, q, "claim-invalidates")
+		charlieID, _ := setupUserInList(t, ctx, q, "sub-claim-invalidates-C")
 		if err := q.AddMembership(ctx, db.AddMembershipParams{ListID: listID, UserID: charlieID}); err != nil {
 			t.Fatalf("add charlie: %v", err)
 		}
@@ -241,17 +254,80 @@ func TestChores_Claim_ByThirdParty_AlsoDeletesPendingSuggestion(t *testing.T) {
 		if err != nil {
 			t.Fatalf("create: %v", err)
 		}
-		// Alice suggests to Bob...
-		if _, err := svc.Suggest(ctx, chore.ID, aliceID, bobID, nil); err != nil {
+		sug, err := svc.Suggest(ctx, chore.ID, aliceID, bobID, nil)
+		if err != nil {
 			t.Fatalf("suggest: %v", err)
 		}
-		// ...but Charlie grabs it first. Pending suggestion still cleaned up.
+
+		// Charlie (not the recipient) grabs it first.
 		if _, err := svc.Claim(ctx, chore.ID, charlieID); err != nil {
 			t.Fatalf("claim: %v", err)
 		}
-		_, err = q.GetPendingSuggestionForChore(ctx, chore.ID)
-		if !errors.Is(err, sql.ErrNoRows) {
-			t.Fatalf("pending suggestion not deleted when third party claimed: err=%v", err)
+
+		if _, err := q.GetPendingSuggestionForChore(ctx, chore.ID); !errors.Is(err, sql.ErrNoRows) {
+			t.Fatalf("pending guard: want sql.ErrNoRows, got %v", err)
+		}
+
+		// Row still exists — invalidated_at stamped, accepted_at + declined_at still nil.
+		after, err := q.GetSuggestionByID(ctx, sug.ID)
+		if err != nil {
+			t.Fatalf("get suggestion: %v", err)
+		}
+		if after.InvalidatedAt == nil {
+			t.Error("invalidated_at: expected non-nil")
+		}
+		if after.AcceptedAt != nil {
+			t.Errorf("accepted_at: want nil, got %v", after.AcceptedAt)
+		}
+		if after.DeclinedAt != nil {
+			t.Errorf("declined_at: want nil, got %v", after.DeclinedAt)
+		}
+	})
+}
+
+func TestChores_Claim_WithNoPendingSuggestion_IsNoOp(t *testing.T) {
+	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
+		q := db.New(tx)
+		userID, listID := setupUserInList(t, ctx, q, "sub-claim-no-sug")
+		svc := chores.NewService(q)
+		chore, err := svc.Create(ctx, listID, userID, "trash", nil, false, nil)
+		if err != nil {
+			t.Fatalf("create: %v", err)
+		}
+		// No suggestion. Claim must still succeed.
+		if _, err := svc.Claim(ctx, chore.ID, userID); err != nil {
+			t.Fatalf("claim without suggestion failed: %v", err)
+		}
+	})
+}
+
+func TestChores_Suggest_AllowedAfterPriorInvalidation(t *testing.T) {
+	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
+		q := db.New(tx)
+		aliceID, bobID, listID := seedTwoMembers(t, ctx, q, "resuggest-after-invalid")
+		charlieID, _ := setupUserInList(t, ctx, q, "sub-resuggest-after-invalid-C")
+		if err := q.AddMembership(ctx, db.AddMembershipParams{ListID: listID, UserID: charlieID}); err != nil {
+			t.Fatalf("add charlie: %v", err)
+		}
+		svc := chores.NewService(q)
+		chore, err := svc.Create(ctx, listID, aliceID, "trash", nil, false, nil)
+		if err != nil {
+			t.Fatalf("create: %v", err)
+		}
+		if _, err := svc.Suggest(ctx, chore.ID, aliceID, bobID, nil); err != nil {
+			t.Fatalf("first suggest: %v", err)
+		}
+		// Charlie claims → prior suggestion invalidated.
+		if _, err := svc.Claim(ctx, chore.ID, charlieID); err != nil {
+			t.Fatalf("claim: %v", err)
+		}
+		// Charlie releases — now the chore is suggestable again.
+		if _, err := svc.Release(ctx, chore.ID, charlieID); err != nil {
+			t.Fatalf("release: %v", err)
+		}
+		// Alice can re-suggest; the invalidated row doesn't block it.
+		if _, err := svc.Suggest(ctx, chore.ID, aliceID, bobID, nil); err != nil {
+			t.Fatalf("re-suggest after invalidation: %v", err)
 		}
 	})
 }
