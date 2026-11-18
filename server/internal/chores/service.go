@@ -353,18 +353,53 @@ func (s *Service) Release(ctx context.Context, choreID, userID string) (db.Chore
 //
 // Returns the list_id affected so the caller can dispatch the silent push.
 func (s *Service) Reorder(ctx context.Context, userID string, order []string) (string, error) {
-	if len(order) == 0 {
-		return "", ErrReorderEmpty
+	seen, err := validateReorderShape(order)
+	if err != nil {
+		return "", err
 	}
-	seen := map[string]struct{}{}
+
+	listID, err := s.validateReorderTargets(ctx, order)
+	if err != nil {
+		return "", err
+	}
+
+	if err := s.requireListMembership(ctx, userID, listID); err != nil {
+		return "", err
+	}
+
+	if err := s.rewriteSubmittedRanks(ctx, order); err != nil {
+		return "", err
+	}
+	if err := s.appendOmittedClaims(ctx, listID, seen, int64(len(order)+1)); err != nil {
+		return "", err
+	}
+
+	return listID, nil
+}
+
+// validateReorderShape checks the request body's shape alone — no DB.
+// Returns the set of submitted ids so appendOmittedClaims can skip them
+// without rebuilding it.
+func validateReorderShape(order []string) (map[string]struct{}, error) {
+	if len(order) == 0 {
+		return nil, ErrReorderEmpty
+	}
+	seen := make(map[string]struct{}, len(order))
 	for _, id := range order {
 		if _, ok := seen[id]; ok {
-			return "", ErrReorderDuplicate
+			return nil, ErrReorderDuplicate
 		}
 		seen[id] = struct{}{}
 	}
+	return seen, nil
+}
 
-	var listID string
+// validateReorderTargets fetches each submitted chore, enforces the
+// open+claimed invariant, and derives the single list_id the request
+// applies to. The list_id is only returned after uniqueness is proven —
+// the caller never sees a value that might not be the final answer.
+func (s *Service) validateReorderTargets(ctx context.Context, order []string) (string, error) {
+	listIDs := map[string]struct{}{}
 	for _, id := range order {
 		c, err := s.q.GetChoreByID(ctx, id)
 		if err != nil {
@@ -379,43 +414,63 @@ func (s *Service) Reorder(ctx context.Context, userID string, order []string) (s
 		if c.ClaimedAt == nil {
 			return "", ErrReorderNotClaimed
 		}
-		if listID == "" {
-			listID = c.ListID
-		} else if c.ListID != listID {
+		listIDs[c.ListID] = struct{}{}
+		if len(listIDs) > 1 {
 			return "", ErrReorderMixedLists
 		}
 	}
+	for id := range listIDs {
+		return id, nil
+	}
+	return "", ErrReorderEmpty
+}
 
+// requireListMembership returns ErrReorderNotMember iff userID is not
+// a member of listID. One DB read + a scan over the user's memberships.
+func (s *Service) requireListMembership(ctx context.Context, userID, listID string) error {
 	memberships, err := s.q.ListMembershipsForUser(ctx, userID)
 	if err != nil {
-		return "", err
+		return err
 	}
-	isMember := false
 	for _, m := range memberships {
 		if m.ListID == listID {
-			isMember = true
-			break
+			return nil
 		}
 	}
-	if !isMember {
-		return "", ErrReorderNotMember
-	}
+	return ErrReorderNotMember
+}
 
+// rewriteSubmittedRanks writes claimed_order = 1..N for each id in order,
+// in that order.
+func (s *Service) rewriteSubmittedRanks(ctx context.Context, order []string) error {
 	for i, id := range order {
 		rank := int64(i + 1)
 		if err := s.q.SetClaimedOrder(ctx, db.SetClaimedOrderParams{
 			ID:           id,
 			ClaimedOrder: &rank,
 		}); err != nil {
-			return "", err
+			return err
 		}
 	}
+	return nil
+}
 
+// appendOmittedClaims is the lenient half of last-write-wins: any
+// currently-claimed chore in listID that the caller didn't include in
+// `seen` gets a rank starting at `startRank`, preserving its existing
+// relative order. Fires after rewriteSubmittedRanks so the starting
+// point is len(order)+1.
+func (s *Service) appendOmittedClaims(
+	ctx context.Context,
+	listID string,
+	seen map[string]struct{},
+	startRank int64,
+) error {
 	claimed, err := s.q.ClaimedChoresForList(ctx, listID)
 	if err != nil {
-		return "", err
+		return err
 	}
-	next := int64(len(order) + 1)
+	next := startRank
 	for _, c := range claimed {
 		if _, ok := seen[c.ID]; ok {
 			continue
@@ -425,11 +480,11 @@ func (s *Service) Reorder(ctx context.Context, userID string, order []string) (s
 			ID:           c.ID,
 			ClaimedOrder: &rank,
 		}); err != nil {
-			return "", err
+			return err
 		}
 		next++
 	}
-	return listID, nil
+	return nil
 }
 
 // Graveyard returns completed chores across the user's lists, newest-completed
