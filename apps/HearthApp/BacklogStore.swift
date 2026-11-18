@@ -212,6 +212,35 @@ final class BacklogStore {
         return f.string(from: eightHours)
     }
 
+    /// Rewrite the claimed section's order globally. Snapshots the current
+    /// chores for rollback, bumps every submitted id's `claimedOrder` to its
+    /// new 1..N position locally (so the UI stays put while the request is
+    /// in flight), then POSTs the new order to the server. On success the
+    /// response replaces local state so any lenient-append from a concurrent
+    /// claim lands. On failure the snapshot is restored.
+    @discardableResult
+    func reorderClaimed(_ order: [String]) async -> Bool {
+        guard let token = session() else {
+            phase = .failed("Not signed in")
+            return false
+        }
+        let snapshot = chores
+        let ranks = Dictionary(uniqueKeysWithValues: order.enumerated().map { ($0.element, $0.offset + 1) })
+        chores = chores.map { chore in
+            guard let newRank = ranks[chore.id] else { return chore }
+            return chore.with(claimedOrder: newRank)
+        }
+        do {
+            let updated = try await api.reorderChores(sessionToken: token, order: order)
+            chores = updated
+            return true
+        } catch {
+            chores = snapshot
+            phase = .failed(error.localizedDescription)
+            return false
+        }
+    }
+
     /// Release the caller's claim on a chore. Server clears claimed_by,
     /// claimed_at, and will_complete_by. Row stays in the list, now unclaimed.
     func release(choreID: String) async {

@@ -42,6 +42,7 @@ func (s *Server) Router() *chi.Mux {
 
 		r.Get("/chores", s.handleListChores)
 		r.Post("/chores", s.handleCreateChore)
+		r.Post("/chores/reorder", s.handleReorderChores)
 		r.Patch("/chores/{id}/claim", s.handleClaimChore)
 		r.Delete("/chores/{id}/claim", s.handleReleaseClaim)
 		r.Post("/chores/{id}/complete", s.handleCompleteChore)

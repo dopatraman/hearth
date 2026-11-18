@@ -26,6 +26,13 @@ var (
 	ErrNotModifiable  = errors.New("chores: cannot modify (not found, not claimed by you, or already completed)")
 	ErrNotReleasable  = errors.New("chores: cannot release (not found, not claimed by you, or already completed)")
 	ErrWillCompleteByRequiresClaim = errors.New("chores: will_complete_by requires claim")
+	ErrReorderEmpty     = errors.New("chores: reorder requires at least one id")
+	ErrReorderDuplicate = errors.New("chores: reorder ids must be unique")
+	ErrReorderUnknown   = errors.New("chores: reorder references an unknown chore")
+	ErrReorderNotOpen   = errors.New("chores: reorder references a completed chore")
+	ErrReorderNotClaimed = errors.New("chores: reorder references an unclaimed chore")
+	ErrReorderMixedLists = errors.New("chores: reorder ids span multiple lists")
+	ErrReorderNotMember  = errors.New("chores: reorder user is not a member of the list")
 )
 
 // Create inserts a new chore + a 'created' event, and optionally claims it
@@ -89,6 +96,10 @@ func (s *Service) Create(
 		ClaimedBy: &actor,
 		ID:        chore.ID,
 	})
+	if err != nil {
+		return db.Chore{}, err
+	}
+	claimed, err = s.q.AssignNextClaimedOrder(ctx, chore.ID)
 	if err != nil {
 		return db.Chore{}, err
 	}
@@ -179,6 +190,10 @@ func (s *Service) Claim(ctx context.Context, choreID, userID string) (db.Chore, 
 		}
 		return db.Chore{}, err
 	}
+	chore, err = s.q.AssignNextClaimedOrder(ctx, choreID)
+	if err != nil {
+		return db.Chore{}, err
+	}
 
 	eventID, err := uuid.NewV7()
 	if err != nil {
@@ -211,6 +226,10 @@ func (s *Service) Complete(ctx context.Context, choreID, userID string) (db.Chor
 		}
 		return db.Chore{}, err
 	}
+	if err := s.q.ClearClaimedOrder(ctx, choreID); err != nil {
+		return db.Chore{}, err
+	}
+	chore.ClaimedOrder = nil
 
 	eventID, err := uuid.NewV7()
 	if err != nil {
@@ -305,6 +324,10 @@ func (s *Service) Release(ctx context.Context, choreID, userID string) (db.Chore
 		}
 		return db.Chore{}, err
 	}
+	if err := s.q.ClearClaimedOrder(ctx, choreID); err != nil {
+		return db.Chore{}, err
+	}
+	chore.ClaimedOrder = nil
 
 	eventID, err := uuid.NewV7()
 	if err != nil {
@@ -320,6 +343,93 @@ func (s *Service) Release(ctx context.Context, choreID, userID string) (db.Chore
 		return db.Chore{}, err
 	}
 	return chore, nil
+}
+
+// Reorder rewrites claimed_order for the chores in `order` as 1..N (in the
+// submitted order), then appends any still-claimed chore in the same list
+// that was omitted from the body at N+1, N+2... preserving its existing
+// relative order. All ids must be currently claimed, in state 'open', and
+// belong to one list that userID is a member of.
+//
+// Returns the list_id affected so the caller can dispatch the silent push.
+func (s *Service) Reorder(ctx context.Context, userID string, order []string) (string, error) {
+	if len(order) == 0 {
+		return "", ErrReorderEmpty
+	}
+	seen := map[string]struct{}{}
+	for _, id := range order {
+		if _, ok := seen[id]; ok {
+			return "", ErrReorderDuplicate
+		}
+		seen[id] = struct{}{}
+	}
+
+	var listID string
+	for _, id := range order {
+		c, err := s.q.GetChoreByID(ctx, id)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return "", ErrReorderUnknown
+			}
+			return "", err
+		}
+		if c.State != "open" {
+			return "", ErrReorderNotOpen
+		}
+		if c.ClaimedAt == nil {
+			return "", ErrReorderNotClaimed
+		}
+		if listID == "" {
+			listID = c.ListID
+		} else if c.ListID != listID {
+			return "", ErrReorderMixedLists
+		}
+	}
+
+	memberships, err := s.q.ListMembershipsForUser(ctx, userID)
+	if err != nil {
+		return "", err
+	}
+	isMember := false
+	for _, m := range memberships {
+		if m.ListID == listID {
+			isMember = true
+			break
+		}
+	}
+	if !isMember {
+		return "", ErrReorderNotMember
+	}
+
+	for i, id := range order {
+		rank := int64(i + 1)
+		if err := s.q.SetClaimedOrder(ctx, db.SetClaimedOrderParams{
+			ID:           id,
+			ClaimedOrder: &rank,
+		}); err != nil {
+			return "", err
+		}
+	}
+
+	claimed, err := s.q.ClaimedChoresForList(ctx, listID)
+	if err != nil {
+		return "", err
+	}
+	next := int64(len(order) + 1)
+	for _, c := range claimed {
+		if _, ok := seen[c.ID]; ok {
+			continue
+		}
+		rank := next
+		if err := s.q.SetClaimedOrder(ctx, db.SetClaimedOrderParams{
+			ID:           c.ID,
+			ClaimedOrder: &rank,
+		}); err != nil {
+			return "", err
+		}
+		next++
+	}
+	return listID, nil
 }
 
 // Graveyard returns completed chores across the user's lists, newest-completed
