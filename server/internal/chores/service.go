@@ -367,10 +367,7 @@ func (s *Service) Reorder(ctx context.Context, userID string, order []string) (s
 		return "", err
 	}
 
-	if err := s.rewriteSubmittedRanks(ctx, order); err != nil {
-		return "", err
-	}
-	if err := s.appendOmittedClaims(ctx, listID, seen, int64(len(order)+1)); err != nil {
+	if err := s.rewriteClaimedOrder(ctx, listID, order, seen); err != nil {
 		return "", err
 	}
 
@@ -378,8 +375,8 @@ func (s *Service) Reorder(ctx context.Context, userID string, order []string) (s
 }
 
 // validateReorderShape checks the request body's shape alone — no DB.
-// Returns the set of submitted ids so appendOmittedClaims can skip them
-// without rebuilding it.
+// Returns the set of submitted ids so rewriteClaimedOrder can skip them
+// when it walks the remaining claimed chores.
 func validateReorderShape(order []string) (map[string]struct{}, error) {
 	if len(order) == 0 {
 		return nil, ErrReorderEmpty
@@ -440,10 +437,20 @@ func (s *Service) requireListMembership(ctx context.Context, userID, listID stri
 	return ErrReorderNotMember
 }
 
-// rewriteSubmittedRanks writes claimed_order = 1..N for each id in order,
-// in that order.
-func (s *Service) rewriteSubmittedRanks(ctx context.Context, order []string) error {
-	for i, id := range order {
+// rewriteClaimedOrder renumbers the entire claimed section for listID so
+// that submitted ids occupy ranks 1..N and everything else claimed in the
+// list fills N+1..K, preserving its existing relative order. The two
+// phases run together because together they maintain the invariant "every
+// open+claimed chore in the list has a distinct rank in 1..K"; running
+// only the first phase could leave non-submitted rows colliding with the
+// newly-written 1..N.
+func (s *Service) rewriteClaimedOrder(
+	ctx context.Context,
+	listID string,
+	submitted []string,
+	seen map[string]struct{},
+) error {
+	for i, id := range submitted {
 		rank := int64(i + 1)
 		if err := s.q.SetClaimedOrder(ctx, db.SetClaimedOrderParams{
 			ID:           id,
@@ -452,25 +459,11 @@ func (s *Service) rewriteSubmittedRanks(ctx context.Context, order []string) err
 			return err
 		}
 	}
-	return nil
-}
-
-// appendOmittedClaims is the lenient half of last-write-wins: any
-// currently-claimed chore in listID that the caller didn't include in
-// `seen` gets a rank starting at `startRank`, preserving its existing
-// relative order. Fires after rewriteSubmittedRanks so the starting
-// point is len(order)+1.
-func (s *Service) appendOmittedClaims(
-	ctx context.Context,
-	listID string,
-	seen map[string]struct{},
-	startRank int64,
-) error {
 	claimed, err := s.q.ClaimedChoresForList(ctx, listID)
 	if err != nil {
 		return err
 	}
-	next := startRank
+	next := int64(len(submitted) + 1)
 	for _, c := range claimed {
 		if _, ok := seen[c.ID]; ok {
 			continue
