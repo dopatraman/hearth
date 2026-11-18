@@ -14,14 +14,8 @@ struct BacklogView: View {
     @State private var toast: ToastModel?
     @State private var completingID: String?
 
-    @State private var liftedID: String?
-    @State private var pressedID: String?
-    @State private var dragOffset: CGFloat = 0
-    @State private var dragFromIndex: Int?
-    @State private var dragToIndex: Int?
+    @State private var isReorderLifted: Bool = false
     @State private var hasUsedReorder: Bool = UserDefaults.standard.bool(forKey: "hasUsedReorder")
-
-    private static let reorderStep: CGFloat = 76
 
     init(initialStore: BacklogStore? = nil, members: MembersStore? = nil) {
         _store = State(initialValue: initialStore ?? BacklogStore(session: { nil }))
@@ -250,7 +244,13 @@ struct BacklogView: View {
             )
             Group {
                 if section.kind == .claimed && section.items.count > 1 {
-                    reorderableClaimed(items: section.items)
+                    ReorderableClaimedSection(
+                        items: section.items,
+                        hasUsedReorder: $hasUsedReorder,
+                        onLiftChange: { lifted in isReorderLifted = lifted },
+                        onReorder: { ids in await commitReorder(ids) },
+                        rowContent: { chore in choreRow(for: chore) }
+                    )
                 } else {
                     VStack(spacing: 10) {
                         ForEach(section.items) { chore in
@@ -263,8 +263,8 @@ struct BacklogView: View {
                                 )
                         }
                     }
-                    .opacity(section.kind == .upForGrabs && liftedID != nil ? 0.45 : 1)
-                    .animation(.easeInOut(duration: 0.2), value: liftedID)
+                    .opacity(section.kind == .upForGrabs && isReorderLifted ? 0.45 : 1)
+                    .animation(.easeInOut(duration: 0.2), value: isReorderLifted)
                 }
             }
         }
@@ -276,136 +276,14 @@ struct BacklogView: View {
         )
     }
 
-    private func reorderableClaimed(items: [HearthChore]) -> some View {
-        VStack(spacing: 10) {
-            ForEach(Array(items.enumerated()), id: \.element.id) { index, chore in
-                reorderableRow(chore: chore, index: index, items: items)
-            }
+    private func commitReorder(_ ids: [String]) async {
+        let ok = await store.reorderClaimed(ids)
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.82)) {
+            toast = ToastModel(
+                text: ok ? "Order updated for everyone" : "Couldn't reorder",
+                undoLabel: nil
+            )
         }
-    }
-
-    private func reorderableRow(chore: HearthChore, index: Int, items: [HearthChore]) -> some View {
-        let isLifted = liftedID == chore.id
-        let isPressing = pressedID == chore.id
-        let yShift: CGFloat = {
-            guard let from = dragFromIndex, let to = dragToIndex else { return 0 }
-            if chore.id == liftedID { return dragOffset }
-            if from < to && index > from && index <= to { return -Self.reorderStep }
-            if from > to && index >= to && index < from { return Self.reorderStep }
-            return 0
-        }()
-
-        let press = LongPressGesture(minimumDuration: 0.38)
-            .onChanged { _ in
-                if liftedID == nil { pressedID = chore.id }
-            }
-            .onEnded { _ in
-                beginLift(choreID: chore.id, index: index)
-            }
-
-        let drag = DragGesture(minimumDistance: 0)
-            .onChanged { value in
-                guard liftedID == chore.id, let from = dragFromIndex else { return }
-                let count = items.count
-                let lo = -CGFloat(from) * Self.reorderStep - 20
-                let hi = CGFloat(count - 1 - from) * Self.reorderStep + 20
-                let clamped = min(max(value.translation.height, lo), hi)
-                let proposed = from + Int((clamped / Self.reorderStep).rounded())
-                dragOffset = clamped
-                dragToIndex = min(max(proposed, 0), count - 1)
-            }
-            .onEnded { _ in
-                finishDrag(items: items)
-            }
-
-        return choreRow(for: chore)
-            .scaleEffect(isLifted ? 1.035 : (isPressing ? 0.98 : 1))
-            .rotationEffect(.degrees(isLifted ? -0.6 : 0))
-            .shadow(color: .black.opacity(isLifted ? 0.18 : 0), radius: isLifted ? 22 : 0, y: isLifted ? 12 : 0)
-            .overlay(alignment: .trailing) {
-                if isLifted {
-                    gripDots
-                        .padding(.trailing, 44)
-                        .transition(.opacity)
-                }
-            }
-            .offset(y: yShift)
-            .zIndex(isLifted ? 10 : 0)
-            .animation(isLifted ? nil : .spring(response: 0.28, dampingFraction: 0.78), value: yShift)
-            .animation(.spring(response: 0.3, dampingFraction: 0.65), value: isLifted)
-            .animation(.spring(response: 0.3, dampingFraction: 0.85), value: isPressing)
-            .simultaneousGesture(press.sequenced(before: drag))
-    }
-
-    private var gripDots: some View {
-        VStack(spacing: 4) {
-            ForEach(0..<3, id: \.self) { _ in
-                HStack(spacing: 4) {
-                    Circle().frame(width: 3, height: 3)
-                    Circle().frame(width: 3, height: 3)
-                }
-            }
-        }
-        .foregroundStyle(Color.hearthTextSecondary)
-    }
-
-    private func beginLift(choreID: String, index: Int) {
-        guard liftedID == nil else { return }
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        pressedID = nil
-        liftedID = choreID
-        dragFromIndex = index
-        dragToIndex = index
-        dragOffset = 0
-    }
-
-    private func finishDrag(items: [HearthChore]) {
-        guard let from = dragFromIndex, let to = dragToIndex, liftedID != nil else {
-            resetDragState()
-            return
-        }
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-        if from == to {
-            withAnimation(.spring(response: 0.32, dampingFraction: 0.58)) {
-                resetDragState()
-            }
-            return
-        }
-
-        var reordered = items
-        let moved = reordered.remove(at: from)
-        reordered.insert(moved, at: to)
-        let newIDs = reordered.map(\.id)
-
-        withAnimation(.spring(response: 0.32, dampingFraction: 0.58)) {
-            resetDragState()
-        }
-
-        if !hasUsedReorder {
-            hasUsedReorder = true
-            UserDefaults.standard.set(true, forKey: "hasUsedReorder")
-        }
-
-        Task {
-            let ok = await store.reorderClaimed(newIDs)
-            if ok {
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.82)) {
-                    toast = ToastModel(text: "Order updated for everyone", undoLabel: nil)
-                }
-            } else {
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.82)) {
-                    toast = ToastModel(text: "Couldn't reorder", undoLabel: nil)
-                }
-            }
-        }
-    }
-
-    private func resetDragState() {
-        liftedID = nil
-        pressedID = nil
-        dragFromIndex = nil
-        dragToIndex = nil
-        dragOffset = 0
     }
 
     private func choreRow(for chore: HearthChore) -> some View {
