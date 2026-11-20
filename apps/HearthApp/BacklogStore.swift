@@ -231,14 +231,14 @@ final class BacklogStore {
         return f.string(from: eightHours)
     }
 
-    /// Rewrite the claimed section's order globally. Snapshots the current
-    /// chores for rollback, bumps every submitted id's `claimedOrder` to its
-    /// new 1..N position locally (so the UI stays put while the request is
-    /// in flight), then POSTs the new order to the server. On success the
-    /// response replaces local state so any lenient-append from a concurrent
-    /// claim lands. On failure the snapshot is restored.
+    /// Rewrite one section's order globally. The server infers which section
+    /// from the ids (all must be in the same one). Snapshots the current
+    /// chores for rollback, bumps every submitted id's `sectionOrder` to its
+    /// new 1..N position locally so the UI stays put while the request is in
+    /// flight, then POSTs. On success the response replaces local state. On
+    /// failure the snapshot is restored.
     @discardableResult
-    func reorderClaimed(_ order: [String]) async -> Bool {
+    func reorderSection(_ order: [String]) async -> Bool {
         guard let token = session() else {
             phase = .failed("Not signed in")
             return false
@@ -247,7 +247,7 @@ final class BacklogStore {
         let ranks = Dictionary(uniqueKeysWithValues: order.enumerated().map { ($0.element, $0.offset + 1) })
         chores = chores.map { chore in
             guard let newRank = ranks[chore.id] else { return chore }
-            return chore.with(claimedOrder: newRank)
+            return chore.with(sectionOrder: newRank)
         }
         do {
             let updated = try await api.reorderChores(sessionToken: token, order: order)

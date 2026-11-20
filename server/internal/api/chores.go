@@ -25,7 +25,7 @@ type choreDTO struct {
 	State          string  `json:"state"`
 	ClaimedBy      *string `json:"claimed_by"`
 	ClaimedAt      *string `json:"claimed_at"`
-	ClaimedOrder   *int64  `json:"claimed_order"`
+	SectionOrder   *int64  `json:"section_order"`
 	WillCompleteBy *string `json:"will_complete_by"`
 	CompletedBy    *string `json:"completed_by"`
 	CompletedAt    *string `json:"completed_at"`
@@ -45,7 +45,7 @@ func toChoreDTO(c db.Chore) choreDTO {
 		State:          c.State,
 		ClaimedBy:      c.ClaimedBy,
 		ClaimedAt:      c.ClaimedAt,
-		ClaimedOrder:   c.ClaimedOrder,
+		SectionOrder:   c.SectionOrder,
 		WillCompleteBy: c.WillCompleteBy,
 		CompletedBy:    c.CompletedBy,
 		CompletedAt:    c.CompletedAt,
@@ -65,7 +65,7 @@ func rowToChoreDTO(r db.BacklogForUserRow) choreDTO {
 		State:          r.State,
 		ClaimedBy:      r.ClaimedBy,
 		ClaimedAt:      r.ClaimedAt,
-		ClaimedOrder:   r.ClaimedOrder,
+		SectionOrder:   r.SectionOrder,
 		WillCompleteBy: r.WillCompleteBy,
 		CompletedBy:    r.CompletedBy,
 		CompletedAt:    r.CompletedAt,
@@ -398,7 +398,7 @@ func (s *Server) handleReorderChores(w http.ResponseWriter, r *http.Request) {
 			errors.Is(err, chores.ErrReorderDuplicate),
 			errors.Is(err, chores.ErrReorderUnknown),
 			errors.Is(err, chores.ErrReorderNotOpen),
-			errors.Is(err, chores.ErrReorderNotClaimed),
+			errors.Is(err, chores.ErrReorderMixedSections),
 			errors.Is(err, chores.ErrReorderMixedLists):
 			writeError(w, http.StatusBadRequest, err.Error())
 			return

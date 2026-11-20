@@ -39,7 +39,7 @@ func groupedSections(
     case .member(let memberID):
         claimedPool = active.filter { $0.claimedBy == memberID }
     }
-    let claimed = claimedPool.sorted(by: claimedOrder)
+    let claimed = claimedPool.sorted(by: claimedSectionSort)
 
     var sections: [BacklogSection] = []
     if !claimed.isEmpty {
@@ -56,7 +56,7 @@ func groupedSections(
     if filter == .all {
         let upForGrabs = active
             .filter { $0.claimedBy == nil }
-            .sorted { $0.createdAt < $1.createdAt }
+            .sorted(by: upForGrabsSort)
         if !upForGrabs.isEmpty {
             sections.append(
                 BacklogSection(
@@ -91,14 +91,12 @@ func groupedSections(
     return sections
 }
 
-/// Sort predicate for the Claimed section:
-/// 1. Ascending `claimedOrder` (nils last) — the user-controlled drag order.
-/// 2. Overdue first — tiebreaker for the window before the server has
-///    assigned orders to legacy rows.
-/// 3. Ascending `willCompleteBy`; nils last.
-/// 4. Ascending `createdAt` as final tie-break.
-private func claimedOrder(_ a: HearthChore, _ b: HearthChore) -> Bool {
-    switch (a.claimedOrder, b.claimedOrder) {
+/// Sort predicate for the Claimed section. Leads with the user-controlled
+/// `sectionOrder` (nils last), then falls back to overdue → willCompleteBy →
+/// createdAt as tiebreakers for the brief window before the server has
+/// assigned orders to legacy rows.
+private func claimedSectionSort(_ a: HearthChore, _ b: HearthChore) -> Bool {
+    switch (a.sectionOrder, b.sectionOrder) {
     case let (lhs?, rhs?) where lhs != rhs:
         return lhs < rhs
     case (nil, _?):
@@ -122,6 +120,22 @@ private func claimedOrder(_ a: HearthChore, _ b: HearthChore) -> Bool {
         break
     }
 
+    return a.createdAt < b.createdAt
+}
+
+/// Sort predicate for the Up-for-grabs section. Leads with `sectionOrder`
+/// (nils last), then falls back to `createdAt` as a tiebreaker.
+private func upForGrabsSort(_ a: HearthChore, _ b: HearthChore) -> Bool {
+    switch (a.sectionOrder, b.sectionOrder) {
+    case let (lhs?, rhs?) where lhs != rhs:
+        return lhs < rhs
+    case (nil, _?):
+        return false
+    case (_?, nil):
+        return true
+    default:
+        break
+    }
     return a.createdAt < b.createdAt
 }
 

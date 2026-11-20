@@ -18,7 +18,8 @@ import (
 type reorderChore struct {
 	ID           string `json:"id"`
 	Title        string `json:"title"`
-	ClaimedOrder *int   `json:"claimed_order"`
+	ClaimedAt    *string `json:"claimed_at"`
+	SectionOrder *int   `json:"section_order"`
 }
 
 func createAndClaim(t *testing.T, srv *api.Server, token, title string) reorderChore {
@@ -31,6 +32,24 @@ func createAndClaim(t *testing.T, srv *api.Server, token, title string) reorderC
 	srv.Router().ServeHTTP(w, req)
 	if w.Code != http.StatusCreated {
 		t.Fatalf("create+claim %q: %d body=%s", title, w.Code, w.Body.String())
+	}
+	var out reorderChore
+	if err := json.NewDecoder(w.Body).Decode(&out); err != nil {
+		t.Fatalf("create decode: %v", err)
+	}
+	return out
+}
+
+func createUnclaimed(t *testing.T, srv *api.Server, token, title string) reorderChore {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodPost, "/chores",
+		strings.NewReader(`{"title":"`+title+`"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+token)
+	w := httptest.NewRecorder()
+	srv.Router().ServeHTTP(w, req)
+	if w.Code != http.StatusCreated {
+		t.Fatalf("create %q: %d body=%s", title, w.Code, w.Body.String())
 	}
 	var out reorderChore
 	if err := json.NewDecoder(w.Body).Decode(&out); err != nil {
@@ -72,7 +91,9 @@ func backlogByID(t *testing.T, srv *api.Server, token string) map[string]reorder
 	return out
 }
 
-func TestClaim_AssignsNextClaimedOrder(t *testing.T) {
+// --- Section-order lifecycle ---
+
+func TestCreateWithClaim_AssignsNextClaimedSectionOrder(t *testing.T) {
 	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
 		srv := buildServer(t, tx, auth.AppleIdentity{Sub: "sub-order-claim"})
 		token, _ := signInHelper(t, srv)
@@ -82,25 +103,52 @@ func TestClaim_AssignsNextClaimedOrder(t *testing.T) {
 		c := createAndClaim(t, srv, token, "c")
 
 		rows := backlogByID(t, srv, token)
-		if rows[a.ID].ClaimedOrder == nil || *rows[a.ID].ClaimedOrder != 1 {
-			t.Errorf("a.claimed_order: got %v want 1", rows[a.ID].ClaimedOrder)
+		if rows[a.ID].SectionOrder == nil || *rows[a.ID].SectionOrder != 1 {
+			t.Errorf("a.section_order: got %v want 1", rows[a.ID].SectionOrder)
 		}
-		if rows[b.ID].ClaimedOrder == nil || *rows[b.ID].ClaimedOrder != 2 {
-			t.Errorf("b.claimed_order: got %v want 2", rows[b.ID].ClaimedOrder)
+		if rows[b.ID].SectionOrder == nil || *rows[b.ID].SectionOrder != 2 {
+			t.Errorf("b.section_order: got %v want 2", rows[b.ID].SectionOrder)
 		}
-		if rows[c.ID].ClaimedOrder == nil || *rows[c.ID].ClaimedOrder != 3 {
-			t.Errorf("c.claimed_order: got %v want 3", rows[c.ID].ClaimedOrder)
+		if rows[c.ID].SectionOrder == nil || *rows[c.ID].SectionOrder != 3 {
+			t.Errorf("c.section_order: got %v want 3", rows[c.ID].SectionOrder)
 		}
 	})
 }
 
-func TestRelease_ClearsClaimedOrder(t *testing.T) {
+func TestCreateWithoutClaim_AssignsNextUpForGrabsSectionOrder(t *testing.T) {
+	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
+		srv := buildServer(t, tx, auth.AppleIdentity{Sub: "sub-order-unclaimed-create"})
+		token, _ := signInHelper(t, srv)
+
+		a := createUnclaimed(t, srv, token, "a")
+		b := createUnclaimed(t, srv, token, "b")
+		c := createUnclaimed(t, srv, token, "c")
+
+		rows := backlogByID(t, srv, token)
+		if got := rows[a.ID].SectionOrder; got == nil || *got != 1 {
+			t.Errorf("a.section_order: got %v want 1", got)
+		}
+		if got := rows[b.ID].SectionOrder; got == nil || *got != 2 {
+			t.Errorf("b.section_order: got %v want 2", got)
+		}
+		if got := rows[c.ID].SectionOrder; got == nil || *got != 3 {
+			t.Errorf("c.section_order: got %v want 3", got)
+		}
+	})
+}
+
+func TestRelease_MovesToUpForGrabsBottom(t *testing.T) {
 	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
 		srv := buildServer(t, tx, auth.AppleIdentity{Sub: "sub-order-release"})
 		token, _ := signInHelper(t, srv)
-		c := createAndClaim(t, srv, token, "a")
 
-		req := httptest.NewRequest(http.MethodDelete, "/chores/"+c.ID+"/claim", nil)
+		// Two existing unclaimed chores occupy positions 1 and 2 in Up-for-grabs.
+		_ = createUnclaimed(t, srv, token, "x")
+		_ = createUnclaimed(t, srv, token, "y")
+		// Then claim and release a third chore; it should land at Up-for-grabs 3.
+		z := createAndClaim(t, srv, token, "z")
+
+		req := httptest.NewRequest(http.MethodDelete, "/chores/"+z.ID+"/claim", nil)
 		req.Header.Set("Authorization", "Bearer "+token)
 		w := httptest.NewRecorder()
 		srv.Router().ServeHTTP(w, req)
@@ -112,13 +160,13 @@ func TestRelease_ClearsClaimedOrder(t *testing.T) {
 		if err := json.NewDecoder(w.Body).Decode(&out); err != nil {
 			t.Fatalf("decode: %v", err)
 		}
-		if out.ClaimedOrder != nil {
-			t.Errorf("claimed_order after release: got %v want nil", *out.ClaimedOrder)
+		if out.SectionOrder == nil || *out.SectionOrder != 3 {
+			t.Errorf("section_order after release: got %v want 3", out.SectionOrder)
 		}
 	})
 }
 
-func TestComplete_ClearsClaimedOrder(t *testing.T) {
+func TestComplete_ClearsSectionOrder(t *testing.T) {
 	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
 		srv := buildServer(t, tx, auth.AppleIdentity{Sub: "sub-order-complete"})
 		token, _ := signInHelper(t, srv)
@@ -136,15 +184,17 @@ func TestComplete_ClearsClaimedOrder(t *testing.T) {
 		if err := json.NewDecoder(w.Body).Decode(&out); err != nil {
 			t.Fatalf("decode: %v", err)
 		}
-		if out.ClaimedOrder != nil {
-			t.Errorf("claimed_order after complete: got %v want nil", *out.ClaimedOrder)
+		if out.SectionOrder != nil {
+			t.Errorf("section_order after complete: got %v want nil", *out.SectionOrder)
 		}
 	})
 }
 
-func TestReorder_RewritesOrderOneToN(t *testing.T) {
+// --- Reorder: Claimed section ---
+
+func TestReorderClaimed_RewritesOrderOneToN(t *testing.T) {
 	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
-		srv := buildServer(t, tx, auth.AppleIdentity{Sub: "sub-reorder-1n"})
+		srv := buildServer(t, tx, auth.AppleIdentity{Sub: "sub-reorder-claimed-1n"})
 		token, _ := signInHelper(t, srv)
 
 		a := createAndClaim(t, srv, token, "a")
@@ -159,52 +209,54 @@ func TestReorder_RewritesOrderOneToN(t *testing.T) {
 		rows := backlogByID(t, srv, token)
 		want := map[string]int{c.ID: 1, a.ID: 2, b.ID: 3}
 		for id, wantOrder := range want {
-			got := rows[id].ClaimedOrder
+			got := rows[id].SectionOrder
 			if got == nil || *got != wantOrder {
-				t.Errorf("%s claimed_order: got %v want %d", id, got, wantOrder)
+				t.Errorf("%s section_order: got %v want %d", id, got, wantOrder)
 			}
 		}
 	})
 }
 
-func TestReorder_LenientAppendForOmittedClaimedChore(t *testing.T) {
+// --- Reorder: Up-for-grabs section ---
+
+func TestReorderUnclaimed_RewritesOrderOneToN(t *testing.T) {
 	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
-		srv := buildServer(t, tx, auth.AppleIdentity{Sub: "sub-reorder-append"})
+		srv := buildServer(t, tx, auth.AppleIdentity{Sub: "sub-reorder-unclaimed-1n"})
 		token, _ := signInHelper(t, srv)
 
-		a := createAndClaim(t, srv, token, "a")
-		b := createAndClaim(t, srv, token, "b")
-		c := createAndClaim(t, srv, token, "c")
+		a := createUnclaimed(t, srv, token, "a")
+		b := createUnclaimed(t, srv, token, "b")
+		c := createUnclaimed(t, srv, token, "c")
 
-		// Caller's body does not include c (simulating a concurrent claim).
-		w := postReorder(t, srv, token, []string{b.ID, a.ID})
+		w := postReorder(t, srv, token, []string{c.ID, a.ID, b.ID})
 		if w.Code != http.StatusOK {
 			t.Fatalf("reorder: %d body=%s", w.Code, w.Body.String())
 		}
 
 		rows := backlogByID(t, srv, token)
-		if got := rows[b.ID].ClaimedOrder; got == nil || *got != 1 {
-			t.Errorf("b: got %v want 1", got)
-		}
-		if got := rows[a.ID].ClaimedOrder; got == nil || *got != 2 {
-			t.Errorf("a: got %v want 2", got)
-		}
-		if got := rows[c.ID].ClaimedOrder; got == nil || *got != 3 {
-			t.Errorf("c (omitted): got %v want 3", got)
+		want := map[string]int{c.ID: 1, a.ID: 2, b.ID: 3}
+		for id, wantOrder := range want {
+			got := rows[id].SectionOrder
+			if got == nil || *got != wantOrder {
+				t.Errorf("%s section_order: got %v want %d", id, got, wantOrder)
+			}
 		}
 	})
 }
 
-func TestReorder_RejectsUnclaimedID(t *testing.T) {
+// --- Reorder: validation ---
+
+func TestReorder_RejectsMixedSections(t *testing.T) {
 	dbtest.WithTx(t, func(ctx context.Context, tx *sql.Tx) {
-		srv := buildServer(t, tx, auth.AppleIdentity{Sub: "sub-reorder-unclaimed"})
+		srv := buildServer(t, tx, auth.AppleIdentity{Sub: "sub-reorder-mixed"})
 		token, _ := signInHelper(t, srv)
 
-		c := createChore(t, srv, token, "unclaimed")
+		claimed := createAndClaim(t, srv, token, "claimed")
+		unclaimed := createUnclaimed(t, srv, token, "unclaimed")
 
-		w := postReorder(t, srv, token, []string{c})
+		w := postReorder(t, srv, token, []string{claimed.ID, unclaimed.ID})
 		if w.Code != http.StatusBadRequest {
-			t.Fatalf("want 400 for unclaimed id, got %d body=%s", w.Code, w.Body.String())
+			t.Fatalf("want 400 for mixed-section body, got %d body=%s", w.Code, w.Body.String())
 		}
 	})
 }

@@ -54,7 +54,7 @@ struct HearthChore: Codable, Equatable, Identifiable {
     let state: String
     let claimedBy: String?
     let claimedAt: String?
-    let claimedOrder: Int?
+    let sectionOrder: Int?
     let willCompleteBy: String?
     let completedBy: String?
     let completedAt: String?
@@ -72,7 +72,7 @@ struct HearthChore: Codable, Equatable, Identifiable {
         state: String,
         claimedBy: String?,
         claimedAt: String?,
-        claimedOrder: Int? = nil,
+        sectionOrder: Int? = nil,
         willCompleteBy: String?,
         completedBy: String?,
         completedAt: String?,
@@ -89,7 +89,7 @@ struct HearthChore: Codable, Equatable, Identifiable {
         self.state = state
         self.claimedBy = claimedBy
         self.claimedAt = claimedAt
-        self.claimedOrder = claimedOrder
+        self.sectionOrder = sectionOrder
         self.willCompleteBy = willCompleteBy
         self.completedBy = completedBy
         self.completedAt = completedAt
@@ -108,7 +108,7 @@ struct HearthChore: Codable, Equatable, Identifiable {
         case state
         case claimedBy = "claimed_by"
         case claimedAt = "claimed_at"
-        case claimedOrder = "claimed_order"
+        case sectionOrder = "section_order"
         case willCompleteBy = "will_complete_by"
         case completedBy = "completed_by"
         case completedAt = "completed_at"
@@ -130,7 +130,7 @@ extension HearthChore {
             state: state,
             claimedBy: claimedBy,
             claimedAt: claimedAt,
-            claimedOrder: claimedOrder,
+            sectionOrder: sectionOrder,
             willCompleteBy: willCompleteBy,
             completedBy: completedBy,
             completedAt: completedAt,
@@ -141,7 +141,7 @@ extension HearthChore {
         )
     }
 
-    func with(claimedOrder: Int?) -> HearthChore {
+    func with(sectionOrder: Int?) -> HearthChore {
         HearthChore(
             id: id,
             listId: listId,
@@ -151,7 +151,7 @@ extension HearthChore {
             state: state,
             claimedBy: claimedBy,
             claimedAt: claimedAt,
-            claimedOrder: claimedOrder,
+            sectionOrder: sectionOrder,
             willCompleteBy: willCompleteBy,
             completedBy: completedBy,
             completedAt: completedAt,

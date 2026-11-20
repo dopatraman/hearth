@@ -14,7 +14,7 @@ struct BacklogView: View {
     @State private var toast: ToastModel?
     @State private var completingID: String?
 
-    @State private var isReorderLifted: Bool = false
+    @State private var liftedSection: BacklogSectionKind?
     @State private var hasUsedReorder: Bool = UserDefaults.standard.bool(forKey: "hasUsedReorder")
 
     init(initialStore: BacklogStore? = nil, members: MembersStore? = nil) {
@@ -233,22 +233,24 @@ struct BacklogView: View {
     }
 
     private func sectionView(_ section: BacklogSection, index: Int) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
+        let isReorderable = (section.kind == .claimed || section.kind == .upForGrabs) && section.items.count > 1
+        let hint = isReorderable && !hasUsedReorder ? "Hold to rearrange" : nil
+        let dimmed = liftedSection != nil && liftedSection != section.kind
+
+        return VStack(alignment: .leading, spacing: 0) {
             SectionHeader(
                 label: section.label,
                 dotColor: section.dotColor,
                 count: section.items.count,
-                hint: section.kind == .claimed && !hasUsedReorder && section.items.count > 1
-                    ? "Hold to rearrange"
-                    : nil
+                hint: hint
             )
             Group {
-                if section.kind == .claimed && section.items.count > 1 {
-                    ReorderableClaimedSection(
+                if isReorderable {
+                    ReorderableSection(
                         items: section.items,
                         hasUsedReorder: $hasUsedReorder,
                         onLiftChange: { lifted in
-                            isReorderLifted = lifted
+                            liftedSection = lifted ? section.kind : nil
                             store.setReorderLifted(lifted)
                         },
                         onReorder: { ids in await commitReorder(ids) },
@@ -266,10 +268,10 @@ struct BacklogView: View {
                                 )
                         }
                     }
-                    .opacity(section.kind == .upForGrabs && isReorderLifted ? 0.45 : 1)
-                    .animation(.easeInOut(duration: 0.2), value: isReorderLifted)
                 }
             }
+            .opacity(dimmed ? 0.45 : 1)
+            .animation(.easeInOut(duration: 0.2), value: dimmed)
         }
         .opacity(didLoad ? 1 : 0)
         .offset(y: didLoad ? 0 : 10)
@@ -280,7 +282,7 @@ struct BacklogView: View {
     }
 
     private func commitReorder(_ ids: [String]) async {
-        let ok = await store.reorderClaimed(ids)
+        let ok = await store.reorderSection(ids)
         withAnimation(.spring(response: 0.4, dampingFraction: 0.82)) {
             toast = ToastModel(
                 text: ok ? "Order updated for everyone" : "Couldn't reorder",
