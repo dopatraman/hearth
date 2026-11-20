@@ -338,8 +338,7 @@ func (s *Service) Release(ctx context.Context, choreID, userID string) (db.Chore
 // preserving its existing relative order (last-write-wins, lenient).
 // Returns the list_id so the caller can send the silent push.
 func (s *Service) Reorder(ctx context.Context, userID string, order []string) (string, error) {
-	orderSet, err := validateReorderShape(order)
-	if err != nil {
+	if err := validateReorderShape(order); err != nil {
 		return "", err
 	}
 
@@ -352,27 +351,26 @@ func (s *Service) Reorder(ctx context.Context, userID string, order []string) (s
 		return "", err
 	}
 
-	if err := s.rewriteClaimedOrder(ctx, listID, order, orderSet); err != nil {
+	if err := s.rewriteClaimedOrder(ctx, listID, order); err != nil {
 		return "", err
 	}
 
 	return listID, nil
 }
 
-// validateReorderShape rejects an empty body and duplicate ids. Returns the
-// same ids in set form so later steps can check membership in O(1).
-func validateReorderShape(order []string) (map[string]struct{}, error) {
+// validateReorderShape rejects an empty body and duplicate ids.
+func validateReorderShape(order []string) error {
 	if len(order) == 0 {
-		return nil, ErrReorderEmpty
+		return ErrReorderEmpty
 	}
-	orderSet := make(map[string]struct{}, len(order))
+	seen := make(map[string]struct{}, len(order))
 	for _, id := range order {
-		if _, ok := orderSet[id]; ok {
-			return nil, ErrReorderDuplicate
+		if _, ok := seen[id]; ok {
+			return ErrReorderDuplicate
 		}
-		orderSet[id] = struct{}{}
+		seen[id] = struct{}{}
 	}
-	return orderSet, nil
+	return nil
 }
 
 // validateReorderTargets checks every submitted chore is open and claimed and
@@ -420,17 +418,19 @@ func (s *Service) requireListMembership(ctx context.Context, userID, listID stri
 	return ErrReorderNotMember
 }
 
-// rewriteClaimedOrder renumbers the list's Claimed section. The ids in
-// `order` get ranks 1..N; every other still-claimed chore in the list gets
-// N+1..K, keeping its existing relative order. Both halves run together so
-// every claimed chore ends up with a distinct rank — renumbering only
-// `order` could leave old ranks colliding with the fresh 1..N.
+// rewriteClaimedOrder renumbers the list's Claimed section. The ids in `order`
+// take ranks 1..N; anything else still claimed in the list fills N+1..K in
+// its existing order, so every claimed chore ends up with a distinct rank.
 func (s *Service) rewriteClaimedOrder(
 	ctx context.Context,
 	listID string,
 	order []string,
-	orderSet map[string]struct{},
 ) error {
+	inOrder := make(map[string]struct{}, len(order))
+	for _, id := range order {
+		inOrder[id] = struct{}{}
+	}
+
 	claimed, err := s.q.ClaimedChoresForList(ctx, listID)
 	if err != nil {
 		return err
@@ -438,7 +438,7 @@ func (s *Service) rewriteClaimedOrder(
 	ids := make([]string, 0, len(claimed))
 	ids = append(ids, order...)
 	for _, c := range claimed {
-		if _, ok := orderSet[c.ID]; !ok {
+		if _, ok := inOrder[c.ID]; !ok {
 			ids = append(ids, c.ID)
 		}
 	}
