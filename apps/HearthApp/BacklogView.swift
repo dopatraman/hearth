@@ -247,7 +247,10 @@ struct BacklogView: View {
                     ReorderableClaimedSection(
                         items: section.items,
                         hasUsedReorder: $hasUsedReorder,
-                        onLiftChange: { lifted in isReorderLifted = lifted },
+                        onLiftChange: { lifted in
+                            isReorderLifted = lifted
+                            store.setReorderLifted(lifted)
+                        },
                         onReorder: { ids in await commitReorder(ids) },
                         rowContent: { chore in choreRow(for: chore) }
                     )

@@ -19,6 +19,8 @@ final class BacklogStore {
 
     private var pendingTasks: [String: Task<Void, Never>] = [:]
     private var completionSnapshots: [String: (chore: HearthChore, index: Int)] = [:]
+    private var reorderLifted: Bool = false
+    private var reloadDeferred: Bool = false
 
     private let api: HearthAPI
     private let session: () -> String?
@@ -113,8 +115,14 @@ final class BacklogStore {
     }
 
     /// Load (or reload) the backlog. Overwrites chores on success, leaves them
-    /// unchanged on failure.
+    /// unchanged on failure. Suspended while a reorder drag is in flight so
+    /// the user's drag state doesn't desync with a mid-drag refresh; any
+    /// deferred reload fires once the drag ends.
     func reload() async {
+        if reorderLifted {
+            reloadDeferred = true
+            return
+        }
         guard let token = session() else {
             phase = .failed("Not signed in")
             return
@@ -125,6 +133,17 @@ final class BacklogStore {
             phase = .loaded
         } catch {
             phase = .failed(error.localizedDescription)
+        }
+    }
+
+    /// Called by the Backlog view when a reorder lift starts/ends. Suspends
+    /// refreshes while the drag is live so the view's local drag indices stay
+    /// aligned with the chore list it rendered against.
+    func setReorderLifted(_ lifted: Bool) {
+        reorderLifted = lifted
+        if !lifted && reloadDeferred {
+            reloadDeferred = false
+            Task { await reload() }
         }
     }
 
