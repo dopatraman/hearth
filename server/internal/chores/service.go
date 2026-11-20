@@ -25,13 +25,13 @@ var (
 	ErrNotModifiable  = errors.New("chores: cannot modify (not found, not claimed by you, or already completed)")
 	ErrNotReleasable  = errors.New("chores: cannot release (not found, not claimed by you, or already completed)")
 	ErrWillCompleteByRequiresClaim = errors.New("chores: will_complete_by requires claim")
-	ErrReorderEmpty     = errors.New("chores: reorder requires at least one id")
-	ErrReorderDuplicate = errors.New("chores: reorder ids must be unique")
-	ErrReorderUnknown   = errors.New("chores: reorder references an unknown chore")
-	ErrReorderNotOpen   = errors.New("chores: reorder references a completed chore")
-	ErrReorderNotClaimed = errors.New("chores: reorder references an unclaimed chore")
-	ErrReorderMixedLists = errors.New("chores: reorder ids span multiple lists")
-	ErrReorderNotMember  = errors.New("chores: reorder user is not a member of the list")
+	ErrReorderEmpty         = errors.New("chores: reorder requires at least one id")
+	ErrReorderDuplicate     = errors.New("chores: reorder ids must be unique")
+	ErrReorderUnknown       = errors.New("chores: reorder references an unknown chore")
+	ErrReorderNotOpen       = errors.New("chores: reorder references a completed chore")
+	ErrReorderMixedLists    = errors.New("chores: reorder ids span multiple lists")
+	ErrReorderMixedSections = errors.New("chores: reorder ids mix claimed and unclaimed chores")
+	ErrReorderNotMember     = errors.New("chores: reorder user is not a member of the list")
 )
 
 // Create inserts a chore and, if claim is true, claims it for the creator and
@@ -81,7 +81,7 @@ func (s *Service) Create(
 	}
 
 	if !claim {
-		return chore, nil
+		return s.q.AssignNextSectionOrder(ctx, chore.ID)
 	}
 
 	actor := creatorID
@@ -92,7 +92,7 @@ func (s *Service) Create(
 	if err != nil {
 		return db.Chore{}, err
 	}
-	claimed, err = s.q.AssignNextClaimedOrder(ctx, chore.ID)
+	claimed, err = s.q.AssignNextSectionOrder(ctx, chore.ID)
 	if err != nil {
 		return db.Chore{}, err
 	}
@@ -163,8 +163,8 @@ func (s *Service) Wake(ctx context.Context, choreID, userID string) error {
 	})
 }
 
-// Claim claims the chore for userID and stamps it with the next claimed_order
-// in its list. Returns ErrNotClaimable if the chore is missing, already
+// Claim claims the chore for userID and moves it to the bottom of the
+// Claimed section. Returns ErrNotClaimable if the chore is missing, already
 // claimed, or completed.
 func (s *Service) Claim(ctx context.Context, choreID, userID string) (db.Chore, error) {
 	user := userID
@@ -178,7 +178,7 @@ func (s *Service) Claim(ctx context.Context, choreID, userID string) (db.Chore, 
 		}
 		return db.Chore{}, err
 	}
-	chore, err = s.q.AssignNextClaimedOrder(ctx, choreID)
+	chore, err = s.q.AssignNextSectionOrder(ctx, choreID)
 	if err != nil {
 		return db.Chore{}, err
 	}
@@ -199,7 +199,7 @@ func (s *Service) Claim(ctx context.Context, choreID, userID string) (db.Chore, 
 	return chore, nil
 }
 
-// Complete marks the chore completed and clears its claimed_order. Returns
+// Complete marks the chore completed and clears its section_order. Returns
 // ErrNotCompletable if the chore isn't claimed by userID or is already
 // completed.
 func (s *Service) Complete(ctx context.Context, choreID, userID string) (db.Chore, error) {
@@ -215,10 +215,10 @@ func (s *Service) Complete(ctx context.Context, choreID, userID string) (db.Chor
 		}
 		return db.Chore{}, err
 	}
-	if err := s.q.ClearClaimedOrder(ctx, choreID); err != nil {
+	if err := s.q.ClearSectionOrder(ctx, choreID); err != nil {
 		return db.Chore{}, err
 	}
-	chore.ClaimedOrder = nil
+	chore.SectionOrder = nil
 
 	eventID, err := uuid.NewV7()
 	if err != nil {
@@ -297,8 +297,9 @@ func (s *Service) Snooze(ctx context.Context, choreID, userID string) error {
 }
 
 // Release clears the user's claim on the chore (claimed_by, claimed_at,
-// will_complete_by, claimed_order). Returns ErrNotReleasable if the chore
-// isn't claimed by userID or is already completed.
+// will_complete_by) and moves it to the bottom of the Up-for-grabs section.
+// Returns ErrNotReleasable if the chore isn't claimed by userID or is
+// already completed.
 func (s *Service) Release(ctx context.Context, choreID, userID string) (db.Chore, error) {
 	user := userID
 	chore, err := s.q.ReleaseClaim(ctx, db.ReleaseClaimParams{
@@ -311,10 +312,10 @@ func (s *Service) Release(ctx context.Context, choreID, userID string) (db.Chore
 		}
 		return db.Chore{}, err
 	}
-	if err := s.q.ClearClaimedOrder(ctx, choreID); err != nil {
+	chore, err = s.q.AssignNextSectionOrder(ctx, choreID)
+	if err != nil {
 		return db.Chore{}, err
 	}
-	chore.ClaimedOrder = nil
 
 	eventID, err := uuid.NewV7()
 	if err != nil {
@@ -332,10 +333,9 @@ func (s *Service) Release(ctx context.Context, choreID, userID string) (db.Chore
 	return chore, nil
 }
 
-// Reorder renumbers the Claimed section of userID's list to match `order`.
-// All submitted ids must be currently claimed in one list userID belongs to.
-// Any other still-claimed chore in that list gets appended at the end,
-// preserving its existing relative order (last-write-wins, lenient).
+// Reorder renumbers one section of userID's list to match `order`. The
+// submitted ids must all belong to one list userID is a member of and must
+// all be in the same section — either all claimed or all unclaimed.
 // Returns the list_id so the caller can send the silent push.
 func (s *Service) Reorder(ctx context.Context, userID string, order []string) (string, error) {
 	if err := validateReorderShape(order); err != nil {
@@ -373,12 +373,13 @@ func validateReorderShape(order []string) error {
 	return nil
 }
 
-// validateReorderTargets checks every submitted chore is open and claimed and
-// returns the single list_id they all belong to. The list_id is only
-// returned once uniqueness is proven.
+// validateReorderTargets checks every submitted chore is open, belongs to
+// one list, and is all in the same section (all claimed or all unclaimed).
+// Returns that list_id.
 func (s *Service) validateReorderTargets(ctx context.Context, order []string) (string, error) {
 	listIDs := map[string]struct{}{}
-	for _, id := range order {
+	var wantClaimed bool
+	for i, id := range order {
 		c, err := s.q.GetChoreByID(ctx, id)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
@@ -389,8 +390,11 @@ func (s *Service) validateReorderTargets(ctx context.Context, order []string) (s
 		if c.State != "open" {
 			return "", ErrReorderNotOpen
 		}
-		if c.ClaimedAt == nil {
-			return "", ErrReorderNotClaimed
+		isClaimed := c.ClaimedAt != nil
+		if i == 0 {
+			wantClaimed = isClaimed
+		} else if isClaimed != wantClaimed {
+			return "", ErrReorderMixedSections
 		}
 		listIDs[c.ListID] = struct{}{}
 		if len(listIDs) > 1 {
@@ -418,15 +422,15 @@ func (s *Service) requireListMembership(ctx context.Context, userID, listID stri
 	return ErrReorderNotMember
 }
 
-// assignRanks writes consecutive claimed_order values to ids, starting at
+// assignRanks writes consecutive section_order values to ids, starting at
 // startRank. ids[0] gets startRank, ids[1] gets startRank+1, and so on.
 func (s *Service) assignRanks(ctx context.Context, ids []string, startRank int64) error {
 	rank := startRank
 	for _, id := range ids {
 		r := rank
-		if err := s.q.SetClaimedOrder(ctx, db.SetClaimedOrderParams{
+		if err := s.q.SetSectionOrder(ctx, db.SetSectionOrderParams{
 			ID:           id,
-			ClaimedOrder: &r,
+			SectionOrder: &r,
 		}); err != nil {
 			return err
 		}

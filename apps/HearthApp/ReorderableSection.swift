@@ -1,10 +1,11 @@
 import SwiftUI
 import UIKit
 
-/// Hand-rolled long-press + drag reorder for the Backlog's Claimed section.
-/// Owns all the drag state locally; the parent only sees lift transitions,
-/// first-use of the gesture, and the async commit when the user drops.
-struct ReorderableClaimedSection<Row: View>: View {
+/// Hand-rolled long-press + drag reorder for a Backlog section (Claimed or
+/// Up-for-grabs — the component is agnostic). Owns all the drag state
+/// locally; the parent only sees lift transitions, first-use of the gesture,
+/// and the async commit when the user drops.
+struct ReorderableSection<Row: View>: View {
     let items: [HearthChore]
     @Binding var hasUsedReorder: Bool
     let onLiftChange: (Bool) -> Void
