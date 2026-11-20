@@ -351,7 +351,7 @@ func (s *Service) Reorder(ctx context.Context, userID string, order []string) (s
 		return "", err
 	}
 
-	if err := s.rewriteClaimedOrder(ctx, listID, order); err != nil {
+	if err := s.assignRanks(ctx, order, 1); err != nil {
 		return "", err
 	}
 
@@ -416,33 +416,6 @@ func (s *Service) requireListMembership(ctx context.Context, userID, listID stri
 		}
 	}
 	return ErrReorderNotMember
-}
-
-// rewriteClaimedOrder renumbers the list's Claimed section. The ids in `order`
-// take ranks 1..N; anything else still claimed in the list fills N+1..K in
-// its existing order, so every claimed chore ends up with a distinct rank.
-func (s *Service) rewriteClaimedOrder(
-	ctx context.Context,
-	listID string,
-	order []string,
-) error {
-	inOrder := make(map[string]struct{}, len(order))
-	for _, id := range order {
-		inOrder[id] = struct{}{}
-	}
-
-	claimed, err := s.q.ClaimedChoresForList(ctx, listID)
-	if err != nil {
-		return err
-	}
-	ids := make([]string, 0, len(claimed))
-	ids = append(ids, order...)
-	for _, c := range claimed {
-		if _, ok := inOrder[c.ID]; !ok {
-			ids = append(ids, c.ID)
-		}
-	}
-	return s.assignRanks(ctx, ids, 1)
 }
 
 // assignRanks writes consecutive claimed_order values to ids, starting at

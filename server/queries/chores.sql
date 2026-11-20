@@ -69,14 +69,6 @@ UPDATE chores
 SET claimed_order = sqlc.arg(claimed_order)
 WHERE id = sqlc.arg(id);
 
--- name: ClaimedChoresForList :many
-SELECT id, claimed_order, created_at
-FROM chores
-WHERE list_id = sqlc.arg(list_id)
-  AND state = 'open'
-  AND claimed_at IS NOT NULL
-ORDER BY claimed_order IS NULL, claimed_order ASC, created_at ASC;
-
 -- name: ReleaseClaim :one
 UPDATE chores
 SET claimed_by       = NULL,

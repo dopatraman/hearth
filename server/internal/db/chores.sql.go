@@ -204,44 +204,6 @@ func (q *Queries) ClaimChore(ctx context.Context, arg ClaimChoreParams) (Chore, 
 	return i, err
 }
 
-const claimedChoresForList = `-- name: ClaimedChoresForList :many
-SELECT id, claimed_order, created_at
-FROM chores
-WHERE list_id = ?1
-  AND state = 'open'
-  AND claimed_at IS NOT NULL
-ORDER BY claimed_order IS NULL, claimed_order ASC, created_at ASC
-`
-
-type ClaimedChoresForListRow struct {
-	ID           string
-	ClaimedOrder *int64
-	CreatedAt    string
-}
-
-func (q *Queries) ClaimedChoresForList(ctx context.Context, listID string) ([]ClaimedChoresForListRow, error) {
-	rows, err := q.db.QueryContext(ctx, claimedChoresForList, listID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []ClaimedChoresForListRow{}
-	for rows.Next() {
-		var i ClaimedChoresForListRow
-		if err := rows.Scan(&i.ID, &i.ClaimedOrder, &i.CreatedAt); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const clearClaimedOrder = `-- name: ClearClaimedOrder :exec
 UPDATE chores
 SET claimed_order = NULL
