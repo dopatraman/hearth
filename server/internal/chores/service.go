@@ -431,32 +431,33 @@ func (s *Service) rewriteClaimedOrder(
 	submitted []string,
 	seen map[string]struct{},
 ) error {
-	for i, id := range submitted {
-		rank := int64(i + 1)
-		if err := s.q.SetClaimedOrder(ctx, db.SetClaimedOrderParams{
-			ID:           id,
-			ClaimedOrder: &rank,
-		}); err != nil {
-			return err
-		}
-	}
 	claimed, err := s.q.ClaimedChoresForList(ctx, listID)
 	if err != nil {
 		return err
 	}
-	next := int64(len(submitted) + 1)
+	ordered := make([]string, 0, len(claimed))
+	ordered = append(ordered, submitted...)
 	for _, c := range claimed {
-		if _, ok := seen[c.ID]; ok {
-			continue
+		if _, ok := seen[c.ID]; !ok {
+			ordered = append(ordered, c.ID)
 		}
-		rank := next
+	}
+	return s.assignRanks(ctx, ordered, 1)
+}
+
+// assignRanks writes consecutive claimed_order values to ids, starting at
+// startRank. ids[0] gets startRank, ids[1] gets startRank+1, and so on.
+func (s *Service) assignRanks(ctx context.Context, ids []string, startRank int64) error {
+	rank := startRank
+	for _, id := range ids {
+		r := rank
 		if err := s.q.SetClaimedOrder(ctx, db.SetClaimedOrderParams{
-			ID:           c.ID,
-			ClaimedOrder: &rank,
+			ID:           id,
+			ClaimedOrder: &r,
 		}); err != nil {
 			return err
 		}
-		next++
+		rank++
 	}
 	return nil
 }
