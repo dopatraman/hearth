@@ -25,6 +25,7 @@ type choreDTO struct {
 	State          string  `json:"state"`
 	ClaimedBy      *string `json:"claimed_by"`
 	ClaimedAt      *string `json:"claimed_at"`
+	ClaimedOrder   *int64  `json:"claimed_order"`
 	WillCompleteBy *string `json:"will_complete_by"`
 	CompletedBy    *string `json:"completed_by"`
 	CompletedAt    *string `json:"completed_at"`
@@ -44,6 +45,7 @@ func toChoreDTO(c db.Chore) choreDTO {
 		State:          c.State,
 		ClaimedBy:      c.ClaimedBy,
 		ClaimedAt:      c.ClaimedAt,
+		ClaimedOrder:   c.ClaimedOrder,
 		WillCompleteBy: c.WillCompleteBy,
 		CompletedBy:    c.CompletedBy,
 		CompletedAt:    c.CompletedAt,
@@ -63,6 +65,7 @@ func rowToChoreDTO(r db.BacklogForUserRow) choreDTO {
 		State:          r.State,
 		ClaimedBy:      r.ClaimedBy,
 		ClaimedAt:      r.ClaimedAt,
+		ClaimedOrder:   r.ClaimedOrder,
 		WillCompleteBy: r.WillCompleteBy,
 		CompletedBy:    r.CompletedBy,
 		CompletedAt:    r.CompletedAt,
@@ -360,6 +363,67 @@ func (s *Server) handleReleaseClaim(w http.ResponseWriter, r *http.Request) {
 	}
 	s.Dispatcher.Dispatch(r.Context(), released.ListID, u.ID, "")
 	writeJSON(w, http.StatusOK, toChoreDTO(released))
+}
+
+// POST /chores/reorder — rewrites the claimed-section order for the caller's
+// shared list. Body: {"order": ["<chore_id>", ...]}. All ids must be currently
+// claimed and belong to one list the caller is a member of. Any still-claimed
+// chore omitted from the body (e.g. a concurrent claim) is appended after the
+// submitted ids in its existing relative order (lenient / last-write-wins).
+// Responds with the full backlog so the client can replace its local state.
+func (s *Server) handleReorderChores(w http.ResponseWriter, r *http.Request) {
+	u, ok := userFromContext(r.Context())
+	if !ok {
+		writeError(w, http.StatusInternalServerError, "no user in context")
+		return
+	}
+
+	var req struct {
+		Order []string `json:"order"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	var listID string
+	err := s.UoW.InTx(r.Context(), func(q *db.Queries) error {
+		var err error
+		listID, err = chores.NewService(q).Reorder(r.Context(), u.ID, req.Order)
+		return err
+	})
+	if err != nil {
+		switch {
+		case errors.Is(err, chores.ErrReorderEmpty),
+			errors.Is(err, chores.ErrReorderDuplicate),
+			errors.Is(err, chores.ErrReorderUnknown),
+			errors.Is(err, chores.ErrReorderNotOpen),
+			errors.Is(err, chores.ErrReorderNotClaimed),
+			errors.Is(err, chores.ErrReorderMixedLists):
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		case errors.Is(err, chores.ErrReorderNotMember):
+			writeError(w, http.StatusForbidden, err.Error())
+			return
+		}
+		slog.ErrorContext(r.Context(), "reorder chores", "err", err)
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	s.Dispatcher.Dispatch(r.Context(), listID, u.ID, "")
+
+	backlog, err := chores.NewService(s.UoW.Queries()).BacklogForUser(r.Context(), u.ID)
+	if err != nil {
+		slog.ErrorContext(r.Context(), "reorder read-back", "err", err)
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	out := backlogResponse{Chores: make([]choreDTO, 0, len(backlog))}
+	for _, row := range backlog {
+		out.Chores = append(out.Chores, rowToChoreDTO(row))
+	}
+	writeJSON(w, http.StatusOK, out)
 }
 
 // GET /chores/graveyard?q=<substring> — completed chores across the user's

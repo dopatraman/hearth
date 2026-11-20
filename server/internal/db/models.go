@@ -18,6 +18,7 @@ type Chore struct {
 	CompletedAt    *string
 	CreatedAt      string
 	UpdatedAt      string
+	ClaimedOrder   *int64
 }
 
 type DeviceToken struct {

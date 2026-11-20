@@ -14,6 +14,9 @@ struct BacklogView: View {
     @State private var toast: ToastModel?
     @State private var completingID: String?
 
+    @State private var isReorderLifted: Bool = false
+    @State private var hasUsedReorder: Bool = UserDefaults.standard.bool(forKey: "hasUsedReorder")
+
     init(initialStore: BacklogStore? = nil, members: MembersStore? = nil) {
         _store = State(initialValue: initialStore ?? BacklogStore(session: { nil }))
         self.members = members ?? MembersStore(session: { nil })
@@ -234,17 +237,37 @@ struct BacklogView: View {
             SectionHeader(
                 label: section.label,
                 dotColor: section.dotColor,
-                count: section.items.count
+                count: section.items.count,
+                hint: section.kind == .claimed && !hasUsedReorder && section.items.count > 1
+                    ? "Hold to rearrange"
+                    : nil
             )
-            VStack(spacing: 10) {
-                ForEach(section.items) { chore in
-                    choreRow(for: chore)
-                        .transition(
-                            .asymmetric(
-                                insertion: .scale(scale: 0.94).combined(with: .opacity),
-                                removal: .opacity.combined(with: .offset(x: 28))
-                            )
-                        )
+            Group {
+                if section.kind == .claimed && section.items.count > 1 {
+                    ReorderableClaimedSection(
+                        items: section.items,
+                        hasUsedReorder: $hasUsedReorder,
+                        onLiftChange: { lifted in
+                            isReorderLifted = lifted
+                            store.setReorderLifted(lifted)
+                        },
+                        onReorder: { ids in await commitReorder(ids) },
+                        rowContent: { chore in choreRow(for: chore) }
+                    )
+                } else {
+                    VStack(spacing: 10) {
+                        ForEach(section.items) { chore in
+                            choreRow(for: chore)
+                                .transition(
+                                    .asymmetric(
+                                        insertion: .scale(scale: 0.94).combined(with: .opacity),
+                                        removal: .opacity.combined(with: .offset(x: 28))
+                                    )
+                                )
+                        }
+                    }
+                    .opacity(section.kind == .upForGrabs && isReorderLifted ? 0.45 : 1)
+                    .animation(.easeInOut(duration: 0.2), value: isReorderLifted)
                 }
             }
         }
@@ -254,6 +277,16 @@ struct BacklogView: View {
             .easeOut(duration: 0.55).delay(Double(index) * 0.06),
             value: didLoad
         )
+    }
+
+    private func commitReorder(_ ids: [String]) async {
+        let ok = await store.reorderClaimed(ids)
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.82)) {
+            toast = ToastModel(
+                text: ok ? "Order updated for everyone" : "Couldn't reorder",
+                undoLabel: nil
+            )
+        }
     }
 
     private func choreRow(for chore: HearthChore) -> some View {

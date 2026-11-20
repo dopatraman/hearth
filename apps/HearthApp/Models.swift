@@ -54,6 +54,7 @@ struct HearthChore: Codable, Equatable, Identifiable {
     let state: String
     let claimedBy: String?
     let claimedAt: String?
+    let claimedOrder: Int?
     let willCompleteBy: String?
     let completedBy: String?
     let completedAt: String?
@@ -71,6 +72,7 @@ struct HearthChore: Codable, Equatable, Identifiable {
         state: String,
         claimedBy: String?,
         claimedAt: String?,
+        claimedOrder: Int? = nil,
         willCompleteBy: String?,
         completedBy: String?,
         completedAt: String?,
@@ -87,6 +89,7 @@ struct HearthChore: Codable, Equatable, Identifiable {
         self.state = state
         self.claimedBy = claimedBy
         self.claimedAt = claimedAt
+        self.claimedOrder = claimedOrder
         self.willCompleteBy = willCompleteBy
         self.completedBy = completedBy
         self.completedAt = completedAt
@@ -105,6 +108,7 @@ struct HearthChore: Codable, Equatable, Identifiable {
         case state
         case claimedBy = "claimed_by"
         case claimedAt = "claimed_at"
+        case claimedOrder = "claimed_order"
         case willCompleteBy = "will_complete_by"
         case completedBy = "completed_by"
         case completedAt = "completed_at"
@@ -126,6 +130,28 @@ extension HearthChore {
             state: state,
             claimedBy: claimedBy,
             claimedAt: claimedAt,
+            claimedOrder: claimedOrder,
+            willCompleteBy: willCompleteBy,
+            completedBy: completedBy,
+            completedAt: completedAt,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            overdue: overdue,
+            snoozedUntil: snoozedUntil
+        )
+    }
+
+    func with(claimedOrder: Int?) -> HearthChore {
+        HearthChore(
+            id: id,
+            listId: listId,
+            creatorId: creatorId,
+            title: title,
+            notes: notes,
+            state: state,
+            claimedBy: claimedBy,
+            claimedAt: claimedAt,
+            claimedOrder: claimedOrder,
             willCompleteBy: willCompleteBy,
             completedBy: completedBy,
             completedAt: completedAt,

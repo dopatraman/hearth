@@ -6,6 +6,14 @@ struct SectionHeader: View {
     let label: String
     let dotColor: Color
     let count: Int
+    let hint: String?
+
+    init(label: String, dotColor: Color, count: Int, hint: String? = nil) {
+        self.label = label
+        self.dotColor = dotColor
+        self.count = count
+        self.hint = hint
+    }
 
     var body: some View {
         HStack(spacing: 8) {
@@ -18,6 +26,12 @@ struct SectionHeader: View {
             Text("\(count)")
                 .font(.hearthBody(size: 14, weight: .medium))
                 .foregroundStyle(Color.hearthTextSecondary)
+            if let hint {
+                Spacer(minLength: 8)
+                Text(hint)
+                    .font(.hearthBody(size: 12, weight: .medium))
+                    .foregroundStyle(Color.hearthTextSecondary)
+            }
         }
         .padding(.horizontal, 6)
         .padding(.bottom, 10)

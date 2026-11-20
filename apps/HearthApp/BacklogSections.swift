@@ -92,10 +92,23 @@ func groupedSections(
 }
 
 /// Sort predicate for the Claimed section:
-/// 1. `overdue == true` first.
-/// 2. Ascending `willCompleteBy`; nils last.
-/// 3. Ascending `createdAt` as tie-break (older first).
+/// 1. Ascending `claimedOrder` (nils last) — the user-controlled drag order.
+/// 2. Overdue first — tiebreaker for the window before the server has
+///    assigned orders to legacy rows.
+/// 3. Ascending `willCompleteBy`; nils last.
+/// 4. Ascending `createdAt` as final tie-break.
 private func claimedOrder(_ a: HearthChore, _ b: HearthChore) -> Bool {
+    switch (a.claimedOrder, b.claimedOrder) {
+    case let (lhs?, rhs?) where lhs != rhs:
+        return lhs < rhs
+    case (nil, _?):
+        return false
+    case (_?, nil):
+        return true
+    default:
+        break
+    }
+
     if a.overdue != b.overdue { return a.overdue && !b.overdue }
 
     switch (a.willCompleteBy, b.willCompleteBy) {

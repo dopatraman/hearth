@@ -96,6 +96,16 @@ struct HearthAPI {
         try await delete("/chores/\(choreID)/claim", bearerToken: sessionToken)
     }
 
+    func reorderChores(sessionToken: String, order: [String]) async throws -> [HearthChore] {
+        struct Body: Encodable { let order: [String] }
+        let resp: BacklogResponse = try await post(
+            "/chores/reorder",
+            body: Body(order: order),
+            bearerToken: sessionToken
+        )
+        return resp.chores
+    }
+
     func snoozeChore(sessionToken: String, choreID: String) async throws {
         try await postNoContent("/chores/\(choreID)/snooze", bearerToken: sessionToken)
     }

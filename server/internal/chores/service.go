@@ -1,5 +1,4 @@
-// Package chores holds business logic for household chores: create, backlog
-// read, and (later) claim/complete/snooze.
+// Package chores is the business logic for household chores.
 package chores
 
 import (
@@ -26,17 +25,18 @@ var (
 	ErrNotModifiable  = errors.New("chores: cannot modify (not found, not claimed by you, or already completed)")
 	ErrNotReleasable  = errors.New("chores: cannot release (not found, not claimed by you, or already completed)")
 	ErrWillCompleteByRequiresClaim = errors.New("chores: will_complete_by requires claim")
+	ErrReorderEmpty     = errors.New("chores: reorder requires at least one id")
+	ErrReorderDuplicate = errors.New("chores: reorder ids must be unique")
+	ErrReorderUnknown   = errors.New("chores: reorder references an unknown chore")
+	ErrReorderNotOpen   = errors.New("chores: reorder references a completed chore")
+	ErrReorderNotClaimed = errors.New("chores: reorder references an unclaimed chore")
+	ErrReorderMixedLists = errors.New("chores: reorder ids span multiple lists")
+	ErrReorderNotMember  = errors.New("chores: reorder user is not a member of the list")
 )
 
-// Create inserts a new chore + a 'created' event, and optionally claims it
-// for the creator and sets a will_complete_by date, all in the caller's
-// transaction. Pass tx-bound Queries (UoW.InTx) so every step either lands
-// together or not at all — a household member reading between steps should
-// never see a half-formed row.
-//
-// `willCompleteBy` is only honored when `claim` is true; passing a date
-// without claiming returns ErrWillCompleteByRequiresClaim (nothing is
-// written).
+// Create inserts a chore and, if claim is true, claims it for the creator and
+// optionally stamps a will_complete_by date — all in one transaction. A
+// willCompleteBy without claim returns ErrWillCompleteByRequiresClaim.
 func (s *Service) Create(
 	ctx context.Context,
 	listID, creatorID, title string,
@@ -92,6 +92,10 @@ func (s *Service) Create(
 	if err != nil {
 		return db.Chore{}, err
 	}
+	claimed, err = s.q.AssignNextClaimedOrder(ctx, chore.ID)
+	if err != nil {
+		return db.Chore{}, err
+	}
 
 	claimEventID, err := uuid.NewV7()
 	if err != nil {
@@ -137,25 +141,21 @@ func (s *Service) Create(
 	return scheduled, nil
 }
 
-// Backlog returns open chores in the given list, newest first.
+// Backlog returns the list's open chores, newest first.
 func (s *Service) Backlog(ctx context.Context, listID string) ([]db.Chore, error) {
 	return s.q.BacklogForList(ctx, listID)
 }
 
-// BacklogForUser returns the union of open chores across every list the user
-// is a member of, newest first. Snoozed chores are included and carry a
-// non-nil SnoozedUntil for the caller — the UI uses that to render them in a
-// dedicated Snoozed section instead of hiding them outright.
+// BacklogForUser returns every open chore across the user's lists, newest
+// first. Snoozed chores are included with snoozed_until set so the client can
+// render them in a Snoozed section.
 func (s *Service) BacklogForUser(ctx context.Context, userID string) ([]db.BacklogForUserRow, error) {
 	return s.q.BacklogForUser(ctx, userID)
 }
 
-// Wake removes the caller's snooze on a chore so it returns to its normal
-// backlog section on the next read. Idempotent: a DELETE on a non-existent
-// snooze row does not error. No event is emitted — the events.type CHECK
-// does not include an "unsnoozed" value and extending it needs a SQLite
-// table rewrite we're deferring; the original "snoozed" event remains the
-// audit record of the user's intent at that moment.
+// Wake removes the user's snooze on the chore. Idempotent. No event is
+// written because the events.type CHECK doesn't have an "unsnoozed" value;
+// the original "snoozed" event remains the audit trail.
 func (s *Service) Wake(ctx context.Context, choreID, userID string) error {
 	return s.q.DeleteSnooze(ctx, db.DeleteSnoozeParams{
 		UserID:  userID,
@@ -163,10 +163,9 @@ func (s *Service) Wake(ctx context.Context, choreID, userID string) error {
 	})
 }
 
-// Claim atomically sets claimed_by to userID iff the chore is open and
-// unclaimed. On success, writes a 'claimed' event. ErrNotClaimable if the
-// chore doesn't exist, is already claimed, or is completed — the caller can
-// surface a generic "can't claim right now" to the user.
+// Claim claims the chore for userID and stamps it with the next claimed_order
+// in its list. Returns ErrNotClaimable if the chore is missing, already
+// claimed, or completed.
 func (s *Service) Claim(ctx context.Context, choreID, userID string) (db.Chore, error) {
 	user := userID
 	chore, err := s.q.ClaimChore(ctx, db.ClaimChoreParams{
@@ -177,6 +176,10 @@ func (s *Service) Claim(ctx context.Context, choreID, userID string) (db.Chore, 
 		if errors.Is(err, sql.ErrNoRows) {
 			return db.Chore{}, ErrNotClaimable
 		}
+		return db.Chore{}, err
+	}
+	chore, err = s.q.AssignNextClaimedOrder(ctx, choreID)
+	if err != nil {
 		return db.Chore{}, err
 	}
 
@@ -196,8 +199,9 @@ func (s *Service) Claim(ctx context.Context, choreID, userID string) (db.Chore, 
 	return chore, nil
 }
 
-// Complete atomically marks the chore completed iff it's open AND claimed by
-// userID. On success, writes a 'completed' event. ErrNotCompletable otherwise.
+// Complete marks the chore completed and clears its claimed_order. Returns
+// ErrNotCompletable if the chore isn't claimed by userID or is already
+// completed.
 func (s *Service) Complete(ctx context.Context, choreID, userID string) (db.Chore, error) {
 	user := userID
 	chore, err := s.q.CompleteChore(ctx, db.CompleteChoreParams{
@@ -211,6 +215,10 @@ func (s *Service) Complete(ctx context.Context, choreID, userID string) (db.Chor
 		}
 		return db.Chore{}, err
 	}
+	if err := s.q.ClearClaimedOrder(ctx, choreID); err != nil {
+		return db.Chore{}, err
+	}
+	chore.ClaimedOrder = nil
 
 	eventID, err := uuid.NewV7()
 	if err != nil {
@@ -228,10 +236,9 @@ func (s *Service) Complete(ctx context.Context, choreID, userID string) (db.Chor
 	return chore, nil
 }
 
-// SetWillCompleteBy sets (or clears, if when == nil) the claimant's committed
-// completion date. Only the current claimant can set it; unclaimed or
-// someone-else's-claim returns ErrNotModifiable. Writes a
-// 'will_complete_by_set' event on success.
+// SetWillCompleteBy sets or clears (when==nil) the claimant's committed
+// completion date. Returns ErrNotModifiable unless the chore is claimed by
+// userID and still open.
 func (s *Service) SetWillCompleteBy(ctx context.Context, choreID, userID string, when *string) (db.Chore, error) {
 	user := userID
 	chore, err := s.q.SetWillCompleteBy(ctx, db.SetWillCompleteByParams{
@@ -262,10 +269,9 @@ func (s *Service) SetWillCompleteBy(ctx context.Context, choreID, userID string,
 	return chore, nil
 }
 
-// Snooze inserts (or refreshes) a per-user snooze for 8 hours. Writes a
-// 'snoozed' event. Snoozes are per-(user, chore) — Alice snoozing doesn't
-// affect Bob. Does not check claim/membership — anyone who can see a chore
-// can snooze it from their own view.
+// Snooze snoozes the chore for userID for 8 hours. Per-user, so another
+// household member's view is unaffected. No claim or membership check —
+// anyone who can see the chore can snooze it from their own view.
 func (s *Service) Snooze(ctx context.Context, choreID, userID string) error {
 	chore, err := s.q.GetChoreByID(ctx, choreID)
 	if err != nil {
@@ -290,9 +296,9 @@ func (s *Service) Snooze(ctx context.Context, choreID, userID string) error {
 	})
 }
 
-// Release atomically clears claimed_by, claimed_at, and will_complete_by iff
-// the chore is open AND claimed by userID. On success, writes a 'released'
-// event. ErrNotReleasable otherwise.
+// Release clears the user's claim on the chore (claimed_by, claimed_at,
+// will_complete_by, claimed_order). Returns ErrNotReleasable if the chore
+// isn't claimed by userID or is already completed.
 func (s *Service) Release(ctx context.Context, choreID, userID string) (db.Chore, error) {
 	user := userID
 	chore, err := s.q.ReleaseClaim(ctx, db.ReleaseClaimParams{
@@ -305,6 +311,10 @@ func (s *Service) Release(ctx context.Context, choreID, userID string) (db.Chore
 		}
 		return db.Chore{}, err
 	}
+	if err := s.q.ClearClaimedOrder(ctx, choreID); err != nil {
+		return db.Chore{}, err
+	}
+	chore.ClaimedOrder = nil
 
 	eventID, err := uuid.NewV7()
 	if err != nil {
@@ -322,14 +332,116 @@ func (s *Service) Release(ctx context.Context, choreID, userID string) (db.Chore
 	return chore, nil
 }
 
-// Graveyard returns completed chores across the user's lists, newest-completed
-// first.
+// Reorder renumbers the Claimed section of userID's list to match `order`.
+// All submitted ids must be currently claimed in one list userID belongs to.
+// Any other still-claimed chore in that list gets appended at the end,
+// preserving its existing relative order (last-write-wins, lenient).
+// Returns the list_id so the caller can send the silent push.
+func (s *Service) Reorder(ctx context.Context, userID string, order []string) (string, error) {
+	if err := validateReorderShape(order); err != nil {
+		return "", err
+	}
+
+	listID, err := s.validateReorderTargets(ctx, order)
+	if err != nil {
+		return "", err
+	}
+
+	if err := s.requireListMembership(ctx, userID, listID); err != nil {
+		return "", err
+	}
+
+	if err := s.assignRanks(ctx, order, 1); err != nil {
+		return "", err
+	}
+
+	return listID, nil
+}
+
+// validateReorderShape rejects an empty body and duplicate ids.
+func validateReorderShape(order []string) error {
+	if len(order) == 0 {
+		return ErrReorderEmpty
+	}
+	seen := make(map[string]struct{}, len(order))
+	for _, id := range order {
+		if _, ok := seen[id]; ok {
+			return ErrReorderDuplicate
+		}
+		seen[id] = struct{}{}
+	}
+	return nil
+}
+
+// validateReorderTargets checks every submitted chore is open and claimed and
+// returns the single list_id they all belong to. The list_id is only
+// returned once uniqueness is proven.
+func (s *Service) validateReorderTargets(ctx context.Context, order []string) (string, error) {
+	listIDs := map[string]struct{}{}
+	for _, id := range order {
+		c, err := s.q.GetChoreByID(ctx, id)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return "", ErrReorderUnknown
+			}
+			return "", err
+		}
+		if c.State != "open" {
+			return "", ErrReorderNotOpen
+		}
+		if c.ClaimedAt == nil {
+			return "", ErrReorderNotClaimed
+		}
+		listIDs[c.ListID] = struct{}{}
+		if len(listIDs) > 1 {
+			return "", ErrReorderMixedLists
+		}
+	}
+	for id := range listIDs {
+		return id, nil
+	}
+	return "", ErrReorderEmpty
+}
+
+// requireListMembership returns ErrReorderNotMember if userID isn't in
+// list_memberships for listID.
+func (s *Service) requireListMembership(ctx context.Context, userID, listID string) error {
+	memberships, err := s.q.ListMembershipsForUser(ctx, userID)
+	if err != nil {
+		return err
+	}
+	for _, m := range memberships {
+		if m.ListID == listID {
+			return nil
+		}
+	}
+	return ErrReorderNotMember
+}
+
+// assignRanks writes consecutive claimed_order values to ids, starting at
+// startRank. ids[0] gets startRank, ids[1] gets startRank+1, and so on.
+func (s *Service) assignRanks(ctx context.Context, ids []string, startRank int64) error {
+	rank := startRank
+	for _, id := range ids {
+		r := rank
+		if err := s.q.SetClaimedOrder(ctx, db.SetClaimedOrderParams{
+			ID:           id,
+			ClaimedOrder: &r,
+		}); err != nil {
+			return err
+		}
+		rank++
+	}
+	return nil
+}
+
+// Graveyard returns completed chores across the user's lists, newest first.
 func (s *Service) Graveyard(ctx context.Context, userID string) ([]db.Chore, error) {
 	return s.q.GraveyardForUser(ctx, userID)
 }
 
-// SearchGraveyard returns completed chores whose title contains q (case-
-// insensitive), newest-completed first. Empty q returns everything.
+// SearchGraveyard returns completed chores whose title contains q
+// (case-insensitive), newest first. Empty q returns everything.
 func (s *Service) SearchGraveyard(ctx context.Context, userID, q string) ([]db.Chore, error) {
 	if q == "" {
 		return s.Graveyard(ctx, userID)
