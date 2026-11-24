@@ -39,6 +39,29 @@ struct ReorderableSection<Row: View>: View {
             return 0
         }()
 
+        let press = LongPressGesture(minimumDuration: 0.38)
+            .onChanged { _ in
+                if liftedID == nil { pressedID = chore.id }
+            }
+            .onEnded { _ in
+                beginLift(choreID: chore.id, index: index)
+            }
+
+        let drag = DragGesture(minimumDistance: 0)
+            .onChanged { value in
+                guard let from = dragFromIndex else { return }
+                let count = items.count
+                let lo = -CGFloat(from) * Self.step - 20
+                let hi = CGFloat(count - 1 - from) * Self.step + 20
+                let clamped = min(max(value.translation.height, lo), hi)
+                let proposed = from + Int((clamped / Self.step).rounded())
+                dragOffset = clamped
+                dragToIndex = min(max(proposed, 0), count - 1)
+            }
+            .onEnded { _ in
+                finishDrag()
+            }
+
         return rowContent(chore)
             .scaleEffect(isLifted ? 1.035 : (isPressing ? 0.98 : 1))
             .rotationEffect(.degrees(isLifted ? -0.6 : 0))
@@ -48,30 +71,7 @@ struct ReorderableSection<Row: View>: View {
             .animation(isLifted ? nil : .spring(response: 0.28, dampingFraction: 0.78), value: yShift)
             .animation(.spring(response: 0.3, dampingFraction: 0.65), value: isLifted)
             .animation(.spring(response: 0.3, dampingFraction: 0.85), value: isPressing)
-            .onLongPressGesture(minimumDuration: 0.38) {
-                beginLift(choreID: chore.id, index: index)
-            } onPressingChanged: { pressing in
-                if liftedID == nil {
-                    pressedID = pressing ? chore.id : nil
-                }
-            }
-            .gesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { value in
-                        guard let from = dragFromIndex else { return }
-                        let count = items.count
-                        let lo = -CGFloat(from) * Self.step - 20
-                        let hi = CGFloat(count - 1 - from) * Self.step + 20
-                        let clamped = min(max(value.translation.height, lo), hi)
-                        let proposed = from + Int((clamped / Self.step).rounded())
-                        dragOffset = clamped
-                        dragToIndex = min(max(proposed, 0), count - 1)
-                    }
-                    .onEnded { _ in
-                        finishDrag()
-                    },
-                including: isLifted ? .gesture : .subviews
-            )
+            .gesture(press.sequenced(before: drag))
     }
 
     private func beginLift(choreID: String, index: Int) {
