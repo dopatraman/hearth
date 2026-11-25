@@ -72,9 +72,18 @@ struct HearthAPI {
         title: String,
         notes: String?,
         claim: Bool = false,
-        willCompleteBy: String? = nil
+        willCompleteBy: String? = nil,
+        isRecurring: Bool = false,
+        icon: String? = nil
     ) async throws -> HearthChore {
-        let body = CreateChoreRequest(title: title, notes: notes, claim: claim, willCompleteBy: willCompleteBy)
+        let body = CreateChoreRequest(
+            title: title,
+            notes: notes,
+            claim: claim,
+            willCompleteBy: willCompleteBy,
+            isRecurring: isRecurring,
+            icon: icon
+        )
         return try await post("/chores", body: body, bearerToken: sessionToken)
     }
 

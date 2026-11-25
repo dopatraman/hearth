@@ -104,10 +104,15 @@ struct BacklogView: View {
             }
             .animation(.easeInOut(duration: 0.4), value: isComposing)
             .overlay(alignment: .bottom) {
-                NewChoreCard(isOpen: $isComposing) { title, notes, claim, bucket in
-                    let iso = bucket?.resolve(now: Date()).map { WhenishBucket.iso8601(from: $0) }
-                    await store.create(title: title, notes: notes, claim: claim, willCompleteBy: iso)
-                    showCreationToast(claimed: claim, bucket: bucket)
+                NewChoreCard(isOpen: $isComposing) { title, notes, claim, bucket, recurring in
+                    if recurring {
+                        await store.create(title: title, notes: notes, isRecurring: true)
+                        showRecurringCreationToast()
+                    } else {
+                        let iso = bucket?.resolve(now: Date()).map { WhenishBucket.iso8601(from: $0) }
+                        await store.create(title: title, notes: notes, claim: claim, willCompleteBy: iso)
+                        showCreationToast(claimed: claim, bucket: bucket)
+                    }
                 }
             }
             .overlay(alignment: .bottom) {
@@ -183,6 +188,13 @@ struct BacklogView: View {
         }
     }
 
+    private func showRecurringCreationToast() {
+        if case .failed = store.phase { return }
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.78)) {
+            toast = ToastModel(text: "Added to Recurring", kind: .creation)
+        }
+    }
+
     @ViewBuilder
     private var content: some View {
         switch store.phase {
@@ -236,16 +248,27 @@ struct BacklogView: View {
         let isReorderable = (section.kind == .claimed || section.kind == .upForGrabs) && section.items.count > 1
         let hint = isReorderable && !hasUsedReorder ? "Hold to rearrange" : nil
         let dimmed = liftedSection != nil && liftedSection != section.kind
+        let isRail = section.kind == .recurring
 
+        let railCountText = isRail ? "\(section.items.count) to go" : nil
         return VStack(alignment: .leading, spacing: 0) {
             SectionHeader(
                 label: section.label,
                 dotColor: section.dotColor,
                 count: section.items.count,
-                hint: hint
+                hint: hint,
+                symbolName: isRail ? "arrow.triangle.2.circlepath" : nil,
+                countText: railCountText
             )
             Group {
-                if isReorderable {
+                if isRail {
+                    RecurringRailView(
+                        items: section.items,
+                        recentlyReplenished: store.recentlyReplenished
+                    ) { chore in
+                        Task { await store.claim(choreID: chore.id) }
+                    }
+                } else if isReorderable {
                     ReorderableSection(
                         items: section.items,
                         hasUsedReorder: $hasUsedReorder,

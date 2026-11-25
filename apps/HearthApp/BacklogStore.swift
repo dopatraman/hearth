@@ -16,38 +16,48 @@ final class BacklogStore {
     private(set) var phase: Phase = .idle
     private(set) var isCreating: Bool = false
     private(set) var pendingCompletions: Set<String> = []
+    /// Ids of recurring chores the server just replenished — the rail watches
+    /// this set to play the "back" animation on the returning tile. Cleared
+    /// shortly after the row is reinserted, or on any reload.
+    private(set) var recentlyReplenished: Set<String> = []
 
     private var pendingTasks: [String: Task<Void, Never>] = [:]
     private var completionSnapshots: [String: (chore: HearthChore, index: Int)] = [:]
+    private var replenishClearTasks: [String: Task<Void, Never>] = [:]
     private var reorderLifted: Bool = false
     private var reloadDeferred: Bool = false
 
     private let api: HearthAPI
     private let session: () -> String?
     let completionDelay: Duration
+    private let replenishFlashDuration: Duration
     private let completionCommit: @Sendable (_ token: String, _ choreID: String) async throws -> HearthChore
-    private var createCommit: @Sendable (_ token: String, _ title: String, _ notes: String?, _ claim: Bool, _ willCompleteBy: String?) async throws -> HearthChore
+    private var createCommit: @Sendable (_ token: String, _ title: String, _ notes: String?, _ claim: Bool, _ willCompleteBy: String?, _ isRecurring: Bool, _ icon: String?) async throws -> HearthChore
 
     init(
         api: HearthAPI = HearthAPI(),
         session: @escaping () -> String?,
         completionDelay: Duration = .seconds(3),
+        replenishFlashDuration: Duration = .milliseconds(1200),
         completionCommit: (@Sendable (_ token: String, _ choreID: String) async throws -> HearthChore)? = nil,
-        createCommit: (@Sendable (_ token: String, _ title: String, _ notes: String?, _ claim: Bool, _ willCompleteBy: String?) async throws -> HearthChore)? = nil
+        createCommit: (@Sendable (_ token: String, _ title: String, _ notes: String?, _ claim: Bool, _ willCompleteBy: String?, _ isRecurring: Bool, _ icon: String?) async throws -> HearthChore)? = nil
     ) {
         self.api = api
         self.session = session
         self.completionDelay = completionDelay
+        self.replenishFlashDuration = replenishFlashDuration
         self.completionCommit = completionCommit ?? { token, id in
             try await api.completeChore(sessionToken: token, choreID: id)
         }
-        self.createCommit = createCommit ?? { token, title, notes, claim, willCompleteBy in
+        self.createCommit = createCommit ?? { token, title, notes, claim, willCompleteBy, isRecurring, icon in
             try await api.createChore(
                 sessionToken: token,
                 title: title,
                 notes: notes,
                 claim: claim,
-                willCompleteBy: willCompleteBy
+                willCompleteBy: willCompleteBy,
+                isRecurring: isRecurring,
+                icon: icon
             )
         }
     }
@@ -76,8 +86,8 @@ final class BacklogStore {
             do {
                 try await Task.sleep(for: delay)
                 try Task.checkCancellation()
-                _ = try await commit(token, choreID)
-                await self?.finishCompletion(choreID: choreID)
+                let finalized = try await commit(token, choreID)
+                await self?.finishCompletion(choreID: choreID, finalized: finalized)
             } catch is CancellationError {
                 // Cancellation path is handled by cancelCompletion.
             } catch {
@@ -95,10 +105,37 @@ final class BacklogStore {
         restoreSnapshot(choreID: choreID)
     }
 
-    private func finishCompletion(choreID: String) {
+    private func finishCompletion(choreID: String, finalized: HearthChore) {
         pendingTasks[choreID] = nil
         pendingCompletions.remove(choreID)
-        completionSnapshots[choreID] = nil
+        let snapshot = completionSnapshots.removeValue(forKey: choreID)
+        // Recurring chores come back from the server as the same row with the
+        // claim cleared (state still 'open'). Reinsert so the Backlog's
+        // Recurring rail sees the tile return.
+        if finalized.state == "open" && finalized.isRecurring {
+            if !chores.contains(where: { $0.id == finalized.id }) {
+                let insertion = snapshot?.index ?? 0
+                let safeIndex = min(insertion, chores.count)
+                chores.insert(finalized, at: safeIndex)
+            }
+            flagReplenished(id: finalized.id)
+        }
+    }
+
+    private func flagReplenished(id: String) {
+        recentlyReplenished.insert(id)
+        replenishClearTasks[id]?.cancel()
+        let duration = replenishFlashDuration
+        let task = Task { [weak self] in
+            try? await Task.sleep(for: duration)
+            await self?.clearReplenished(id: id)
+        }
+        replenishClearTasks[id] = task
+    }
+
+    private func clearReplenished(id: String) {
+        replenishClearTasks[id] = nil
+        recentlyReplenished.remove(id)
     }
 
     private func failCompletion(choreID: String, error: Error) {
@@ -150,12 +187,16 @@ final class BacklogStore {
     /// Create a new chore and optimistically prepend it on success. Pass
     /// `claim: true` to atomically self-claim it in the same request; pass
     /// `willCompleteBy` (ISO-8601) alongside to stamp a commit date. The
-    /// server rejects `willCompleteBy` without `claim`.
+    /// server rejects `willCompleteBy` without `claim`. Pass `isRecurring:
+    /// true` for a chore that lives in the rail — the server rejects a
+    /// recurring request that also tries to claim.
     func create(
         title: String,
         notes: String?,
         claim: Bool = false,
-        willCompleteBy: String? = nil
+        willCompleteBy: String? = nil,
+        isRecurring: Bool = false,
+        icon: String? = nil
     ) async {
         guard let token = session() else {
             phase = .failed("Not signed in")
@@ -169,7 +210,9 @@ final class BacklogStore {
                 title.trimmingCharacters(in: .whitespacesAndNewlines),
                 notes?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
                 claim,
-                willCompleteBy
+                willCompleteBy,
+                isRecurring,
+                icon
             )
             chores.insert(chore, at: 0)
             phase = .loaded
@@ -326,7 +369,7 @@ extension BacklogStore {
     /// Test-only: swap the create commit closure after init so a single
     /// store can exercise both success and failure branches in one run.
     func replaceCreateCommitForTesting(
-        _ commit: @escaping @Sendable (_ token: String, _ title: String, _ notes: String?, _ claim: Bool, _ willCompleteBy: String?) async throws -> HearthChore
+        _ commit: @escaping @Sendable (_ token: String, _ title: String, _ notes: String?, _ claim: Bool, _ willCompleteBy: String?, _ isRecurring: Bool, _ icon: String?) async throws -> HearthChore
     ) {
         self.createCommit = commit
     }

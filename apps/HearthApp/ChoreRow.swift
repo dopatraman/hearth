@@ -60,11 +60,27 @@ struct ChoreRow: View {
     }
 
     private var chip: Chip? {
+        // Recurring chores have no will_complete_by, so suppress the overdue
+        // chip entirely for them.
+        if chore.isRecurring { return nil }
         let dueDate: Date? = chore.willCompleteBy.flatMap { s in
             ISO8601DateFormatter.hearthISO().date(from: s)
                 ?? ISO8601DateFormatter().date(from: s)
         }
         return chipFor(overdue: chore.overdue, willCompleteBy: dueDate, now: Date())
+    }
+
+    @ViewBuilder
+    private var rowBackground: some View {
+        if chore.isRecurring {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(Color.hearthRecurringRowFill)
+        } else {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(Color.hearthSurface)
+                .shadow(color: .black.opacity(0.04), radius: 2, y: 1)
+                .shadow(color: .black.opacity(0.04), radius: 18, y: 6)
+        }
     }
 
     var body: some View {
@@ -75,12 +91,7 @@ struct ChoreRow: View {
                     .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
-        .background(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(Color.hearthSurface)
-                .shadow(color: .black.opacity(0.04), radius: 2, y: 1)
-                .shadow(color: .black.opacity(0.04), radius: 18, y: 6)
-        )
+        .background(rowBackground)
         .opacity(isSnoozed && !isOpen ? 0.55 : 1)
         .animation(.spring(response: 0.4, dampingFraction: 0.82), value: isOpen)
     }
@@ -99,7 +110,15 @@ struct ChoreRow: View {
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
 
-                    if let chip {
+                    if chore.isRecurring {
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.triangle.2.circlepath")
+                                .font(.system(size: 11, weight: .semibold))
+                            Text("Recurring")
+                                .font(.hearthBody(size: 12, weight: .semibold))
+                        }
+                        .foregroundStyle(Color.hearthRecurringAccent)
+                    } else if let chip {
                         ChipView(chip: chip)
                     }
                 }

@@ -22,7 +22,8 @@ SET section_order = (
 WHERE chores.id = ?
 RETURNING chores.id, chores.list_id, chores.creator_id, chores.title, chores.notes, chores.state,
           chores.claimed_by, chores.claimed_at, chores.will_complete_by,
-          chores.completed_by, chores.completed_at, chores.created_at, chores.updated_at, chores.section_order
+          chores.completed_by, chores.completed_at, chores.created_at, chores.updated_at, chores.section_order,
+          chores.is_recurring, chores.icon
 `
 
 // AssignNextSectionOrder places the chore at the bottom of its CURRENT
@@ -47,6 +48,8 @@ func (q *Queries) AssignNextSectionOrder(ctx context.Context, id string) (Chore,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.SectionOrder,
+		&i.IsRecurring,
+		&i.Icon,
 	)
 	return i, err
 }
@@ -54,7 +57,8 @@ func (q *Queries) AssignNextSectionOrder(ctx context.Context, id string) (Chore,
 const backlogForList = `-- name: BacklogForList :many
 SELECT id, list_id, creator_id, title, notes, state,
        claimed_by, claimed_at, will_complete_by,
-       completed_by, completed_at, created_at, updated_at, section_order
+       completed_by, completed_at, created_at, updated_at, section_order,
+       is_recurring, icon
 FROM chores
 WHERE list_id = ? AND state = 'open'
 ORDER BY created_at DESC
@@ -84,6 +88,8 @@ func (q *Queries) BacklogForList(ctx context.Context, listID string) ([]Chore, e
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.SectionOrder,
+			&i.IsRecurring,
+			&i.Icon,
 		); err != nil {
 			return nil, err
 		}
@@ -102,6 +108,7 @@ const backlogForUser = `-- name: BacklogForUser :many
 SELECT c.id, c.list_id, c.creator_id, c.title, c.notes, c.state,
        c.claimed_by, c.claimed_at, c.will_complete_by,
        c.completed_by, c.completed_at, c.created_at, c.updated_at, c.section_order,
+       c.is_recurring, c.icon,
        s.snoozed_until
 FROM chores c
 JOIN list_memberships m ON m.list_id = c.list_id
@@ -129,6 +136,8 @@ type BacklogForUserRow struct {
 	CreatedAt      string
 	UpdatedAt      string
 	SectionOrder   *int64
+	IsRecurring    int64
+	Icon           *string
 	SnoozedUntil   *string
 }
 
@@ -156,6 +165,8 @@ func (q *Queries) BacklogForUser(ctx context.Context, userID string) ([]BacklogF
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.SectionOrder,
+			&i.IsRecurring,
+			&i.Icon,
 			&i.SnoozedUntil,
 		); err != nil {
 			return nil, err
@@ -180,7 +191,8 @@ WHERE id = ?
   AND claimed_by IS NULL
 RETURNING id, list_id, creator_id, title, notes, state,
           claimed_by, claimed_at, will_complete_by,
-          completed_by, completed_at, created_at, updated_at, section_order
+          completed_by, completed_at, created_at, updated_at, section_order,
+          is_recurring, icon
 `
 
 type ClaimChoreParams struct {
@@ -206,6 +218,8 @@ func (q *Queries) ClaimChore(ctx context.Context, arg ClaimChoreParams) (Chore, 
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.SectionOrder,
+		&i.IsRecurring,
+		&i.Icon,
 	)
 	return i, err
 }
@@ -231,7 +245,8 @@ WHERE id = ?
   AND claimed_by = ?
 RETURNING id, list_id, creator_id, title, notes, state,
           claimed_by, claimed_at, will_complete_by,
-          completed_by, completed_at, created_at, updated_at, section_order
+          completed_by, completed_at, created_at, updated_at, section_order,
+          is_recurring, icon
 `
 
 type CompleteChoreParams struct {
@@ -258,6 +273,8 @@ func (q *Queries) CompleteChore(ctx context.Context, arg CompleteChoreParams) (C
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.SectionOrder,
+		&i.IsRecurring,
+		&i.Icon,
 	)
 	return i, err
 }
@@ -267,7 +284,8 @@ INSERT INTO chores (id, list_id, creator_id, title, notes)
 VALUES (?, ?, ?, ?, ?)
 RETURNING id, list_id, creator_id, title, notes, state,
           claimed_by, claimed_at, will_complete_by,
-          completed_by, completed_at, created_at, updated_at, section_order
+          completed_by, completed_at, created_at, updated_at, section_order,
+          is_recurring, icon
 `
 
 type CreateChoreParams struct {
@@ -302,6 +320,57 @@ func (q *Queries) CreateChore(ctx context.Context, arg CreateChoreParams) (Chore
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.SectionOrder,
+		&i.IsRecurring,
+		&i.Icon,
+	)
+	return i, err
+}
+
+const createRecurringChore = `-- name: CreateRecurringChore :one
+INSERT INTO chores (id, list_id, creator_id, title, notes, is_recurring, icon)
+VALUES (?, ?, ?, ?, ?, 1, ?6)
+RETURNING id, list_id, creator_id, title, notes, state,
+          claimed_by, claimed_at, will_complete_by,
+          completed_by, completed_at, created_at, updated_at, section_order,
+          is_recurring, icon
+`
+
+type CreateRecurringChoreParams struct {
+	ID        string
+	ListID    string
+	CreatorID string
+	Title     string
+	Notes     *string
+	Icon      *string
+}
+
+func (q *Queries) CreateRecurringChore(ctx context.Context, arg CreateRecurringChoreParams) (Chore, error) {
+	row := q.db.QueryRowContext(ctx, createRecurringChore,
+		arg.ID,
+		arg.ListID,
+		arg.CreatorID,
+		arg.Title,
+		arg.Notes,
+		arg.Icon,
+	)
+	var i Chore
+	err := row.Scan(
+		&i.ID,
+		&i.ListID,
+		&i.CreatorID,
+		&i.Title,
+		&i.Notes,
+		&i.State,
+		&i.ClaimedBy,
+		&i.ClaimedAt,
+		&i.WillCompleteBy,
+		&i.CompletedBy,
+		&i.CompletedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.SectionOrder,
+		&i.IsRecurring,
+		&i.Icon,
 	)
 	return i, err
 }
@@ -309,7 +378,8 @@ func (q *Queries) CreateChore(ctx context.Context, arg CreateChoreParams) (Chore
 const getChoreByID = `-- name: GetChoreByID :one
 SELECT id, list_id, creator_id, title, notes, state,
        claimed_by, claimed_at, will_complete_by,
-       completed_by, completed_at, created_at, updated_at, section_order
+       completed_by, completed_at, created_at, updated_at, section_order,
+       is_recurring, icon
 FROM chores
 WHERE id = ?
 `
@@ -332,6 +402,8 @@ func (q *Queries) GetChoreByID(ctx context.Context, id string) (Chore, error) {
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.SectionOrder,
+		&i.IsRecurring,
+		&i.Icon,
 	)
 	return i, err
 }
@@ -339,7 +411,8 @@ func (q *Queries) GetChoreByID(ctx context.Context, id string) (Chore, error) {
 const graveyardForUser = `-- name: GraveyardForUser :many
 SELECT c.id, c.list_id, c.creator_id, c.title, c.notes, c.state,
        c.claimed_by, c.claimed_at, c.will_complete_by,
-       c.completed_by, c.completed_at, c.created_at, c.updated_at, c.section_order
+       c.completed_by, c.completed_at, c.created_at, c.updated_at, c.section_order,
+       c.is_recurring, c.icon
 FROM chores c
 JOIN list_memberships m ON m.list_id = c.list_id
 WHERE m.user_id = ? AND c.state = 'completed'
@@ -370,6 +443,8 @@ func (q *Queries) GraveyardForUser(ctx context.Context, userID string) ([]Chore,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.SectionOrder,
+			&i.IsRecurring,
+			&i.Icon,
 		); err != nil {
 			return nil, err
 		}
@@ -394,7 +469,8 @@ WHERE id = ?1
   AND claimed_by = ?2
 RETURNING id, list_id, creator_id, title, notes, state,
           claimed_by, claimed_at, will_complete_by,
-          completed_by, completed_at, created_at, updated_at, section_order
+          completed_by, completed_at, created_at, updated_at, section_order,
+          is_recurring, icon
 `
 
 type ReleaseClaimParams struct {
@@ -420,6 +496,56 @@ func (q *Queries) ReleaseClaim(ctx context.Context, arg ReleaseClaimParams) (Cho
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.SectionOrder,
+		&i.IsRecurring,
+		&i.Icon,
+	)
+	return i, err
+}
+
+const replenishRecurring = `-- name: ReplenishRecurring :one
+UPDATE chores
+SET claimed_by       = NULL,
+    claimed_at       = NULL,
+    will_complete_by = NULL,
+    section_order    = NULL
+WHERE id = ?
+  AND state = 'open'
+  AND is_recurring = 1
+  AND claimed_by = ?
+RETURNING id, list_id, creator_id, title, notes, state,
+          claimed_by, claimed_at, will_complete_by,
+          completed_by, completed_at, created_at, updated_at, section_order,
+          is_recurring, icon
+`
+
+type ReplenishRecurringParams struct {
+	ID        string
+	ClaimedBy *string
+}
+
+// ReplenishRecurring returns a recurring chore to the rail after completion:
+// clears claim state and section_order, leaves state='open'. Guarded so it
+// only fires for open recurring rows currently claimed by the caller.
+func (q *Queries) ReplenishRecurring(ctx context.Context, arg ReplenishRecurringParams) (Chore, error) {
+	row := q.db.QueryRowContext(ctx, replenishRecurring, arg.ID, arg.ClaimedBy)
+	var i Chore
+	err := row.Scan(
+		&i.ID,
+		&i.ListID,
+		&i.CreatorID,
+		&i.Title,
+		&i.Notes,
+		&i.State,
+		&i.ClaimedBy,
+		&i.ClaimedAt,
+		&i.WillCompleteBy,
+		&i.CompletedBy,
+		&i.CompletedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.SectionOrder,
+		&i.IsRecurring,
+		&i.Icon,
 	)
 	return i, err
 }
@@ -427,7 +553,8 @@ func (q *Queries) ReleaseClaim(ctx context.Context, arg ReleaseClaimParams) (Cho
 const searchGraveyard = `-- name: SearchGraveyard :many
 SELECT c.id, c.list_id, c.creator_id, c.title, c.notes, c.state,
        c.claimed_by, c.claimed_at, c.will_complete_by,
-       c.completed_by, c.completed_at, c.created_at, c.updated_at, c.section_order
+       c.completed_by, c.completed_at, c.created_at, c.updated_at, c.section_order,
+       c.is_recurring, c.icon
 FROM chores c
 JOIN list_memberships m ON m.list_id = c.list_id
 WHERE m.user_id = ?1
@@ -465,6 +592,8 @@ func (q *Queries) SearchGraveyard(ctx context.Context, arg SearchGraveyardParams
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.SectionOrder,
+			&i.IsRecurring,
+			&i.Icon,
 		); err != nil {
 			return nil, err
 		}
@@ -503,7 +632,8 @@ WHERE id = ?2
   AND claimed_by = ?3
 RETURNING id, list_id, creator_id, title, notes, state,
           claimed_by, claimed_at, will_complete_by,
-          completed_by, completed_at, created_at, updated_at, section_order
+          completed_by, completed_at, created_at, updated_at, section_order,
+          is_recurring, icon
 `
 
 type SetWillCompleteByParams struct {
@@ -530,6 +660,8 @@ func (q *Queries) SetWillCompleteBy(ctx context.Context, arg SetWillCompleteByPa
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.SectionOrder,
+		&i.IsRecurring,
+		&i.Icon,
 	)
 	return i, err
 }

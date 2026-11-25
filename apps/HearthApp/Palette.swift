@@ -111,6 +111,20 @@ extension Color {
         light: Color(red: 0xDC / 255, green: 0xD9 / 255, blue: 0xE5 / 255),
         dark: Color(red: 0x4A / 255, green: 0x47 / 255, blue: 0x54 / 255)
     )
+
+    /// Tile bubble fill for the Recurring rail — soft mint that reads as
+    /// "this is a fixture" against the Backlog's lavender-gray ground.
+    static let hearthRecurringTileBubble = Color(
+        light: Color(red: 0xCD / 255, green: 0xEE / 255, blue: 0xE7 / 255),
+        dark: Color(red: 0x2E / 255, green: 0x55 / 255, blue: 0x4E / 255)
+    )
+
+    /// Row background used by a *claimed* recurring chore in the Claimed
+    /// section — paler than the tile bubble so the row doesn't shout.
+    static let hearthRecurringRowFill = Color(
+        light: Color(red: 0xEE / 255, green: 0xF8 / 255, blue: 0xF6 / 255),
+        dark: Color(red: 0x27 / 255, green: 0x3B / 255, blue: 0x37 / 255)
+    )
 }
 
 private extension Color {

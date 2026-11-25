@@ -19,6 +19,8 @@ type Chore struct {
 	CreatedAt      string
 	UpdatedAt      string
 	SectionOrder   *int64
+	IsRecurring    int64
+	Icon           *string
 }
 
 type DeviceToken struct {
