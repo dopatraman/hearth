@@ -399,7 +399,9 @@ private func previewChore(
     claimedBy: String? = nil,
     willCompleteBy: String? = nil,
     overdue: Bool = false,
-    createdAt: String = "2026-10-20T10:00:00.000Z"
+    createdAt: String = "2026-10-20T10:00:00.000Z",
+    isRecurring: Bool = false,
+    icon: String? = nil
 ) -> HearthChore {
     HearthChore(
         id: id,
@@ -415,7 +417,9 @@ private func previewChore(
         completedAt: nil,
         createdAt: createdAt,
         updatedAt: createdAt,
-        overdue: overdue
+        overdue: overdue,
+        isRecurring: isRecurring,
+        icon: icon
     )
 }
 
@@ -426,6 +430,17 @@ private func previewChore(
         HearthMember(id: "u_maya", displayName: "Maya"),
     ]
     let chores: [HearthChore] = [
+        previewChore(id: "r1", title: "Make the bed",
+                     isRecurring: true, icon: "bed.double"),
+        previewChore(id: "r2", title: "Unload the dishwasher",
+                     isRecurring: true, icon: "sparkles"),
+        previewChore(id: "r3", title: "Water the plants (daily)",
+                     isRecurring: true, icon: "leaf"),
+        previewChore(id: "r4", title: "Wipe the counters",
+                     isRecurring: true, icon: "sparkle"),
+        previewChore(id: "r5", title: "Feed the cat",
+                     claimedBy: "u_maya",
+                     isRecurring: true, icon: "pawprint"),
         previewChore(id: "c1", title: "Clean out the fridge",
                      notes: "Toss anything past its date. Wipe the shelves.",
                      claimedBy: "u_self",
