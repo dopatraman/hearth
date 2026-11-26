@@ -111,6 +111,10 @@ extension Color {
         light: Color(red: 0xDC / 255, green: 0xD9 / 255, blue: 0xE5 / 255),
         dark: Color(red: 0x4A / 255, green: 0x47 / 255, blue: 0x54 / 255)
     )
+
+    /// Tile bubble fill for the Recurring rail — pale lavender, same family
+    /// as the self avatar so the rail blends with the rest of the app.
+    static let hearthRecurringTileBubble = hearthLavender
 }
 
 private extension Color {

@@ -8,6 +8,7 @@ final class NewChoreCardModel {
     var note: String = ""
     var claimForSelf: Bool = false
     var selectedBucket: WhenishBucket?
+    var isRecurring: Bool = false
 
     var trimmedTitle: String {
         title.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -27,12 +28,13 @@ final class NewChoreCardModel {
         note = ""
         claimForSelf = false
         selectedBucket = nil
+        isRecurring = false
     }
 }
 
 struct NewChoreCard: View {
     @Binding var isOpen: Bool
-    let onSubmit: (String, String?, Bool, WhenishBucket?) async -> Void
+    let onSubmit: (String, String?, Bool, WhenishBucket?, Bool) async -> Void
 
     @State private var model = NewChoreCardModel()
     @FocusState private var titleFocused: Bool
@@ -41,9 +43,11 @@ struct NewChoreCard: View {
     private let openWidth: CGFloat = 358
     private let openHeightCollapsed: CGFloat = 326
     private let openHeightExpanded: CGFloat = 460
+    private let openHeightRecurring: CGFloat = 310
 
     private var openHeight: CGFloat {
-        model.claimForSelf ? openHeightExpanded : openHeightCollapsed
+        if model.isRecurring { return openHeightRecurring }
+        return model.claimForSelf ? openHeightExpanded : openHeightCollapsed
     }
 
     var body: some View {
@@ -126,15 +130,24 @@ struct NewChoreCard: View {
             }
 
             VStack(alignment: .leading, spacing: 14) {
-                claimToggleRow
-                if model.claimForSelf {
-                    whenishRow
+                recurringToggleRow
+                if !model.isRecurring {
+                    claimToggleRow
                         .transition(
                             .asymmetric(
                                 insertion: .opacity.combined(with: .move(edge: .top)),
                                 removal: .opacity.combined(with: .move(edge: .top))
                             )
                         )
+                    if model.claimForSelf {
+                        whenishRow
+                            .transition(
+                                .asymmetric(
+                                    insertion: .opacity.combined(with: .move(edge: .top)),
+                                    removal: .opacity.combined(with: .move(edge: .top))
+                                )
+                            )
+                    }
                 }
             }
 
@@ -151,6 +164,41 @@ struct NewChoreCard: View {
             .disabled(!model.canSubmit)
         }
         .padding(22)
+    }
+
+    private var recurringToggleRow: some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            withAnimation(.timingCurve(0.2, 0.8, 0.2, 1, duration: 0.4)) {
+                model.isRecurring.toggle()
+                if model.isRecurring {
+                    model.claimForSelf = false
+                    model.selectedBucket = nil
+                }
+            }
+        } label: {
+            HStack {
+                Text("Recurring?")
+                    .font(.hearthBody(size: 15, weight: .medium))
+                    .foregroundStyle(Color.hearthTextPrimary)
+                Spacer()
+                ZStack(alignment: model.isRecurring ? .trailing : .leading) {
+                    Capsule()
+                        .fill(model.isRecurring ? Color.hearthRingMineStroke : Color.hearthSwitchTrackOff)
+                        .frame(width: 48, height: 28)
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: 22, height: 22)
+                        .shadow(color: Color.black.opacity(0.2), radius: 1, y: 1)
+                        .padding(.horizontal, 3)
+                }
+            }
+            .frame(height: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Recurring")
+        .accessibilityValue(model.isRecurring ? "On" : "Off")
     }
 
     private var claimToggleRow: some View {
@@ -233,13 +281,14 @@ struct NewChoreCard: View {
         guard model.canSubmit else { return }
         let title = model.trimmedTitle
         let notes = model.trimmedNote
-        let claim = model.claimForSelf
+        let recurring = model.isRecurring
+        let claim = recurring ? false : model.claimForSelf
         let bucket = claim ? model.selectedBucket : nil
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         isOpen = false
         titleFocused = false
         model.reset()
-        Task { await onSubmit(title, notes, claim, bucket) }
+        Task { await onSubmit(title, notes, claim, bucket, recurring) }
     }
 
     private func close() {
@@ -254,7 +303,7 @@ struct NewChoreCard: View {
     @Previewable @State var open = false
     return ZStack {
         Color.hearthBackground.ignoresSafeArea()
-        NewChoreCard(isOpen: $open, onSubmit: { _, _, _, _ in })
+        NewChoreCard(isOpen: $open, onSubmit: { _, _, _, _, _ in })
             .padding(.trailing, 16)
             .padding(.bottom, 24)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)

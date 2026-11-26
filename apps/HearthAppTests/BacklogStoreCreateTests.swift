@@ -13,8 +13,15 @@ struct BacklogStoreCreateTests {
         let returned = result ?? Self.chore(id: "new", title: "x")
         return BacklogStore(
             session: { "token" },
-            createCommit: { _, title, notes, claim, willCompleteBy in
-                try await recorder.record(title: title, notes: notes, claim: claim, willCompleteBy: willCompleteBy)
+            createCommit: { _, title, notes, claim, willCompleteBy, isRecurring, icon in
+                try await recorder.record(
+                    title: title,
+                    notes: notes,
+                    claim: claim,
+                    willCompleteBy: willCompleteBy,
+                    isRecurring: isRecurring,
+                    icon: icon
+                )
                 return HearthChore(
                     id: returned.id,
                     listId: returned.listId,
@@ -29,7 +36,9 @@ struct BacklogStoreCreateTests {
                     completedAt: returned.completedAt,
                     createdAt: returned.createdAt,
                     updatedAt: returned.updatedAt,
-                    overdue: returned.overdue
+                    overdue: returned.overdue,
+                    isRecurring: isRecurring,
+                    icon: icon
                 )
             }
         )
@@ -172,8 +181,15 @@ struct BacklogStoreCreateTests {
 
         let recorder2 = CreateRecorder()
         let returned = Self.chore(id: "ok", title: "y")
-        store.replaceCreateCommitForTesting { _, title, notes, claim, willCompleteBy in
-            try await recorder2.record(title: title, notes: notes, claim: claim, willCompleteBy: willCompleteBy)
+        store.replaceCreateCommitForTesting { _, title, notes, claim, willCompleteBy, isRecurring, icon in
+            try await recorder2.record(
+                title: title,
+                notes: notes,
+                claim: claim,
+                willCompleteBy: willCompleteBy,
+                isRecurring: isRecurring,
+                icon: icon
+            )
             return HearthChore(
                 id: returned.id,
                 listId: returned.listId,
@@ -188,7 +204,9 @@ struct BacklogStoreCreateTests {
                 completedAt: returned.completedAt,
                 createdAt: returned.createdAt,
                 updatedAt: returned.updatedAt,
-                overdue: returned.overdue
+                overdue: returned.overdue,
+                isRecurring: isRecurring,
+                icon: icon
             )
         }
 
@@ -206,6 +224,8 @@ actor CreateRecorder {
         let notes: String?
         let claim: Bool
         let willCompleteBy: String?
+        let isRecurring: Bool
+        let icon: String?
     }
 
     private(set) var calls: [Call] = []
@@ -215,8 +235,22 @@ actor CreateRecorder {
         self.errorToThrow = error
     }
 
-    func record(title: String, notes: String?, claim: Bool, willCompleteBy: String?) throws {
+    func record(
+        title: String,
+        notes: String?,
+        claim: Bool,
+        willCompleteBy: String?,
+        isRecurring: Bool = false,
+        icon: String? = nil
+    ) throws {
         if let errorToThrow { throw errorToThrow }
-        calls.append(Call(title: title, notes: notes, claim: claim, willCompleteBy: willCompleteBy))
+        calls.append(Call(
+            title: title,
+            notes: notes,
+            claim: claim,
+            willCompleteBy: willCompleteBy,
+            isRecurring: isRecurring,
+            icon: icon
+        ))
     }
 }

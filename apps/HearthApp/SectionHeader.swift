@@ -7,23 +7,41 @@ struct SectionHeader: View {
     let dotColor: Color
     let count: Int
     let hint: String?
+    let symbolName: String?
+    let countText: String?
 
-    init(label: String, dotColor: Color, count: Int, hint: String? = nil) {
+    init(
+        label: String,
+        dotColor: Color,
+        count: Int,
+        hint: String? = nil,
+        symbolName: String? = nil,
+        countText: String? = nil
+    ) {
         self.label = label
         self.dotColor = dotColor
         self.count = count
         self.hint = hint
+        self.symbolName = symbolName
+        self.countText = countText
     }
 
     var body: some View {
         HStack(spacing: 8) {
-            Circle()
-                .fill(dotColor)
-                .frame(width: 8, height: 8)
+            if let symbolName {
+                Image(systemName: symbolName)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(dotColor)
+                    .frame(width: 14, height: 14)
+            } else {
+                Circle()
+                    .fill(dotColor)
+                    .frame(width: 8, height: 8)
+            }
             Text(label)
                 .font(.hearthBody(size: 14, weight: .semibold))
                 .foregroundStyle(Color.hearthTextPrimary)
-            Text("\(count)")
+            Text(countText ?? "\(count)")
                 .font(.hearthBody(size: 14, weight: .medium))
                 .foregroundStyle(Color.hearthTextSecondary)
             if let hint {

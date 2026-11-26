@@ -25,6 +25,7 @@ var (
 	ErrNotModifiable  = errors.New("chores: cannot modify (not found, not claimed by you, or already completed)")
 	ErrNotReleasable  = errors.New("chores: cannot release (not found, not claimed by you, or already completed)")
 	ErrWillCompleteByRequiresClaim = errors.New("chores: will_complete_by requires claim")
+	ErrRecurringCannotBeClaimedAtCreation = errors.New("chores: a recurring chore cannot be claimed at creation")
 	ErrReorderEmpty         = errors.New("chores: reorder requires at least one id")
 	ErrReorderDuplicate     = errors.New("chores: reorder ids must be unique")
 	ErrReorderUnknown       = errors.New("chores: reorder references an unknown chore")
@@ -141,6 +142,52 @@ func (s *Service) Create(
 	return scheduled, nil
 }
 
+// CreateRecurring inserts a recurring chore that lands directly in the rail
+// (unclaimed, no section_order). A recurring chore is a fixture of the list
+// — it cannot be pre-claimed at creation and does not take a will_complete_by.
+// The caller rejects those shapes with ErrRecurringCannotBeClaimedAtCreation
+// before calling in.
+func (s *Service) CreateRecurring(
+	ctx context.Context,
+	listID, creatorID, title string,
+	notes *string,
+	icon *string,
+) (db.Chore, error) {
+	if title == "" {
+		return db.Chore{}, ErrEmptyTitle
+	}
+	choreID, err := uuid.NewV7()
+	if err != nil {
+		return db.Chore{}, err
+	}
+	chore, err := s.q.CreateRecurringChore(ctx, db.CreateRecurringChoreParams{
+		ID:        choreID.String(),
+		ListID:    listID,
+		CreatorID: creatorID,
+		Title:     title,
+		Notes:     notes,
+		Icon:      icon,
+	})
+	if err != nil {
+		return db.Chore{}, err
+	}
+
+	eventID, err := uuid.NewV7()
+	if err != nil {
+		return db.Chore{}, err
+	}
+	if err := s.q.InsertEvent(ctx, db.InsertEventParams{
+		ID:      eventID.String(),
+		ListID:  listID,
+		ChoreID: chore.ID,
+		ActorID: creatorID,
+		Type:    "created",
+	}); err != nil {
+		return db.Chore{}, err
+	}
+	return chore, nil
+}
+
 // Backlog returns the list's open chores, newest first.
 func (s *Service) Backlog(ctx context.Context, listID string) ([]db.Chore, error) {
 	return s.q.BacklogForList(ctx, listID)
@@ -199,10 +246,23 @@ func (s *Service) Claim(ctx context.Context, choreID, userID string) (db.Chore, 
 	return chore, nil
 }
 
-// Complete marks the chore completed and clears its section_order. Returns
+// Complete marks a one-off chore completed, or — for a recurring chore —
+// replenishes it (clears the claim, keeps state='open', returns it to the
+// rail). Emits 'completed' or 'replenished' accordingly. Returns
 // ErrNotCompletable if the chore isn't claimed by userID or is already
 // completed.
 func (s *Service) Complete(ctx context.Context, choreID, userID string) (db.Chore, error) {
+	existing, err := s.q.GetChoreByID(ctx, choreID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return db.Chore{}, ErrNotCompletable
+		}
+		return db.Chore{}, err
+	}
+	if existing.IsRecurring == 1 {
+		return s.replenish(ctx, choreID, userID)
+	}
+
 	user := userID
 	chore, err := s.q.CompleteChore(ctx, db.CompleteChoreParams{
 		CompletedBy: &user,
@@ -230,6 +290,37 @@ func (s *Service) Complete(ctx context.Context, choreID, userID string) (db.Chor
 		ChoreID: chore.ID,
 		ActorID: userID,
 		Type:    "completed",
+	}); err != nil {
+		return db.Chore{}, err
+	}
+	return chore, nil
+}
+
+// replenish sends a recurring chore back to the rail. The chore stays
+// state='open'; claim fields and section_order are cleared. Emits a
+// 'replenished' event. Returns ErrNotCompletable if the caller isn't the
+// claimant (same guard shape as CompleteChore).
+func (s *Service) replenish(ctx context.Context, choreID, userID string) (db.Chore, error) {
+	chore, err := s.q.ReplenishRecurring(ctx, db.ReplenishRecurringParams{
+		ID:        choreID,
+		ClaimedBy: &userID,
+	})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return db.Chore{}, ErrNotCompletable
+		}
+		return db.Chore{}, err
+	}
+	eventID, err := uuid.NewV7()
+	if err != nil {
+		return db.Chore{}, err
+	}
+	if err := s.q.InsertEvent(ctx, db.InsertEventParams{
+		ID:      eventID.String(),
+		ListID:  chore.ListID,
+		ChoreID: chore.ID,
+		ActorID: userID,
+		Type:    "replenished",
 	}); err != nil {
 		return db.Chore{}, err
 	}

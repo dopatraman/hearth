@@ -61,6 +61,8 @@ struct HearthChore: Codable, Equatable, Identifiable {
     let createdAt: String
     let updatedAt: String
     let overdue: Bool
+    let isRecurring: Bool
+    let icon: String?
     let snoozedUntil: String?
 
     init(
@@ -79,6 +81,8 @@ struct HearthChore: Codable, Equatable, Identifiable {
         createdAt: String,
         updatedAt: String,
         overdue: Bool,
+        isRecurring: Bool = false,
+        icon: String? = nil,
         snoozedUntil: String? = nil
     ) {
         self.id = id
@@ -96,6 +100,8 @@ struct HearthChore: Codable, Equatable, Identifiable {
         self.createdAt = createdAt
         self.updatedAt = updatedAt
         self.overdue = overdue
+        self.isRecurring = isRecurring
+        self.icon = icon
         self.snoozedUntil = snoozedUntil
     }
 
@@ -115,7 +121,33 @@ struct HearthChore: Codable, Equatable, Identifiable {
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case overdue
+        case isRecurring = "is_recurring"
+        case icon
         case snoozedUntil = "snoozed_until"
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try c.decode(String.self, forKey: .id)
+        self.listId = try c.decode(String.self, forKey: .listId)
+        self.creatorId = try c.decode(String.self, forKey: .creatorId)
+        self.title = try c.decode(String.self, forKey: .title)
+        self.notes = try c.decodeIfPresent(String.self, forKey: .notes)
+        self.state = try c.decode(String.self, forKey: .state)
+        self.claimedBy = try c.decodeIfPresent(String.self, forKey: .claimedBy)
+        self.claimedAt = try c.decodeIfPresent(String.self, forKey: .claimedAt)
+        self.sectionOrder = try c.decodeIfPresent(Int.self, forKey: .sectionOrder)
+        self.willCompleteBy = try c.decodeIfPresent(String.self, forKey: .willCompleteBy)
+        self.completedBy = try c.decodeIfPresent(String.self, forKey: .completedBy)
+        self.completedAt = try c.decodeIfPresent(String.self, forKey: .completedAt)
+        self.createdAt = try c.decode(String.self, forKey: .createdAt)
+        self.updatedAt = try c.decode(String.self, forKey: .updatedAt)
+        self.overdue = try c.decode(Bool.self, forKey: .overdue)
+        // is_recurring + icon are decoded defensively so a chore returned by
+        // a pre-00008 server still parses.
+        self.isRecurring = try c.decodeIfPresent(Bool.self, forKey: .isRecurring) ?? false
+        self.icon = try c.decodeIfPresent(String.self, forKey: .icon)
+        self.snoozedUntil = try c.decodeIfPresent(String.self, forKey: .snoozedUntil)
     }
 }
 
@@ -137,6 +169,8 @@ extension HearthChore {
             createdAt: createdAt,
             updatedAt: updatedAt,
             overdue: overdue,
+            isRecurring: isRecurring,
+            icon: icon,
             snoozedUntil: snoozedUntil
         )
     }
@@ -158,6 +192,8 @@ extension HearthChore {
             createdAt: createdAt,
             updatedAt: updatedAt,
             overdue: overdue,
+            isRecurring: isRecurring,
+            icon: icon,
             snoozedUntil: snoozedUntil
         )
     }
@@ -168,12 +204,32 @@ struct CreateChoreRequest: Codable {
     let notes: String?
     let claim: Bool
     let willCompleteBy: String?
+    let isRecurring: Bool
+    let icon: String?
+
+    init(
+        title: String,
+        notes: String? = nil,
+        claim: Bool = false,
+        willCompleteBy: String? = nil,
+        isRecurring: Bool = false,
+        icon: String? = nil
+    ) {
+        self.title = title
+        self.notes = notes
+        self.claim = claim
+        self.willCompleteBy = willCompleteBy
+        self.isRecurring = isRecurring
+        self.icon = icon
+    }
 
     enum CodingKeys: String, CodingKey {
         case title
         case notes
         case claim
         case willCompleteBy = "will_complete_by"
+        case isRecurring = "is_recurring"
+        case icon
     }
 }
 

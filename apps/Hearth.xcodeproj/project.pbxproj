@@ -15,8 +15,10 @@
 		1E7EF10B15C78240238829E2 /* Font+Hearth.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA0F6F1D91121A5F78B4495B /* Font+Hearth.swift */; };
 		23D7B4A634774C439D0EA517 /* Geist-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 9AD17F5C357092D1D9E96659 /* Geist-Medium.ttf */; };
 		246B03DCFE5192417F1D3E2B /* BacklogStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E329EBE61038AFD92A0AB182 /* BacklogStore.swift */; };
+		2C1B0DCF36FA477FB97E503B /* RecurringRailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19E04F8D5CB23FEBC0042F48 /* RecurringRailView.swift */; };
 		32C1B9BC791E2C5164EA3D51 /* WrappingHStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = E490F3DE1139919CA594E312 /* WrappingHStack.swift */; };
 		36E4C325F94EA0728F4450FD /* HearthWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F48EECA08814B123CED6020A /* HearthWatchApp.swift */; };
+		3F8DD8049094C05578A5AA9D /* RecurringTile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 263638A355AA98330A850EE5 /* RecurringTile.swift */; };
 		4A57B01CE37238FBB8470F9B /* WhenishBucketTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9987289BEB21D4A1F2416DF8 /* WhenishBucketTests.swift */; };
 		4BA48CC5182128B05284B219 /* GraveyardRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF57DDC6D708A5FD93792419 /* GraveyardRow.swift */; };
 		4E7527809BAC469BC03DFB9F /* GraveyardStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 933F92F6D50007BE186E3E3D /* GraveyardStore.swift */; };
@@ -90,10 +92,12 @@
 		0E621B372AD8611F3C91F429 /* GraveyardSectionsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraveyardSectionsTests.swift; sourceTree = "<group>"; };
 		11C180916D2AF79C4264A84B /* FABButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FABButton.swift; sourceTree = "<group>"; };
 		1945B64FC16BDFE702F27691 /* HearthAppTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HearthAppTests.swift; sourceTree = "<group>"; };
+		19E04F8D5CB23FEBC0042F48 /* RecurringRailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecurringRailView.swift; sourceTree = "<group>"; };
 		1C70EAE477AF5DC62C8A6501 /* ChoreRowModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChoreRowModel.swift; sourceTree = "<group>"; };
 		1D9F39230AA010A947C3BF99 /* Geist-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Geist-SemiBold.ttf"; sourceTree = "<group>"; };
 		2158D209613581A52909B32C /* BacklogSummaryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BacklogSummaryTests.swift; sourceTree = "<group>"; };
 		2395D1A08ACF4931A7823EDA /* HearthApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HearthApp.swift; sourceTree = "<group>"; };
+		263638A355AA98330A850EE5 /* RecurringTile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecurringTile.swift; sourceTree = "<group>"; };
 		2B7959510890E695482F6D5C /* BacklogStoreCreateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BacklogStoreCreateTests.swift; sourceTree = "<group>"; };
 		315F86EFBFBD085E5F1717D9 /* HearthApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = HearthApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		342BA74BF16171DB9236407C /* MembersStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MembersStoreTests.swift; sourceTree = "<group>"; };
@@ -215,6 +219,8 @@
 				82F21D34D121AB07B80E2901 /* NewChoreCard.swift */,
 				EBE592C777C4D1BBE58F29EE /* Palette.swift */,
 				467FDEB39220E792FEE2620D /* PushRegistration.swift */,
+				19E04F8D5CB23FEBC0042F48 /* RecurringRailView.swift */,
+				263638A355AA98330A850EE5 /* RecurringTile.swift */,
 				AD156C873313C9C5DA7CD9E4 /* ReorderableSection.swift */,
 				831581FFF70B679E7BF2F353 /* RingSlot.swift */,
 				5AA7FC09F71178A52047BDFF /* RootTabView.swift */,
@@ -418,6 +424,8 @@
 				DED0697B5F6939E50F0B1308 /* NewChoreCard.swift in Sources */,
 				E56DE053E87C233B6196CBC9 /* Palette.swift in Sources */,
 				C9AF6D2D54DAE16A6CC9047F /* PushRegistration.swift in Sources */,
+				2C1B0DCF36FA477FB97E503B /* RecurringRailView.swift in Sources */,
+				3F8DD8049094C05578A5AA9D /* RecurringTile.swift in Sources */,
 				A3A3B9B2C80CBFC11D02320C /* ReorderableSection.swift in Sources */,
 				E9D198FE22A17A41E31A34DD /* RingSlot.swift in Sources */,
 				7B9B1C1FA7DD9B3C7F7403BE /* RootTabView.swift in Sources */,

@@ -3,12 +3,22 @@ INSERT INTO chores (id, list_id, creator_id, title, notes)
 VALUES (?, ?, ?, ?, ?)
 RETURNING id, list_id, creator_id, title, notes, state,
           claimed_by, claimed_at, will_complete_by,
-          completed_by, completed_at, created_at, updated_at, section_order;
+          completed_by, completed_at, created_at, updated_at, section_order,
+          is_recurring, icon;
+
+-- name: CreateRecurringChore :one
+INSERT INTO chores (id, list_id, creator_id, title, notes, is_recurring, icon)
+VALUES (?, ?, ?, ?, ?, 1, sqlc.narg(icon))
+RETURNING id, list_id, creator_id, title, notes, state,
+          claimed_by, claimed_at, will_complete_by,
+          completed_by, completed_at, created_at, updated_at, section_order,
+          is_recurring, icon;
 
 -- name: BacklogForList :many
 SELECT id, list_id, creator_id, title, notes, state,
        claimed_by, claimed_at, will_complete_by,
-       completed_by, completed_at, created_at, updated_at, section_order
+       completed_by, completed_at, created_at, updated_at, section_order,
+       is_recurring, icon
 FROM chores
 WHERE list_id = ? AND state = 'open'
 ORDER BY created_at DESC;
@@ -17,6 +27,7 @@ ORDER BY created_at DESC;
 SELECT c.id, c.list_id, c.creator_id, c.title, c.notes, c.state,
        c.claimed_by, c.claimed_at, c.will_complete_by,
        c.completed_by, c.completed_at, c.created_at, c.updated_at, c.section_order,
+       c.is_recurring, c.icon,
        s.snoozed_until
 FROM chores c
 JOIN list_memberships m ON m.list_id = c.list_id
@@ -31,7 +42,8 @@ ORDER BY c.created_at DESC;
 -- name: GetChoreByID :one
 SELECT id, list_id, creator_id, title, notes, state,
        claimed_by, claimed_at, will_complete_by,
-       completed_by, completed_at, created_at, updated_at, section_order
+       completed_by, completed_at, created_at, updated_at, section_order,
+       is_recurring, icon
 FROM chores
 WHERE id = ?;
 
@@ -44,7 +56,8 @@ WHERE id = ?
   AND claimed_by IS NULL
 RETURNING id, list_id, creator_id, title, notes, state,
           claimed_by, claimed_at, will_complete_by,
-          completed_by, completed_at, created_at, updated_at, section_order;
+          completed_by, completed_at, created_at, updated_at, section_order,
+          is_recurring, icon;
 
 -- AssignNextSectionOrder places the chore at the bottom of its CURRENT
 -- section. MAX is scoped by both list_id and the section the target row is
@@ -63,7 +76,8 @@ SET section_order = (
 WHERE chores.id = ?
 RETURNING chores.id, chores.list_id, chores.creator_id, chores.title, chores.notes, chores.state,
           chores.claimed_by, chores.claimed_at, chores.will_complete_by,
-          chores.completed_by, chores.completed_at, chores.created_at, chores.updated_at, chores.section_order;
+          chores.completed_by, chores.completed_at, chores.created_at, chores.updated_at, chores.section_order,
+          chores.is_recurring, chores.icon;
 
 -- name: ClearSectionOrder :exec
 UPDATE chores
@@ -85,7 +99,8 @@ WHERE id = sqlc.arg(id)
   AND claimed_by = sqlc.arg(claimed_by)
 RETURNING id, list_id, creator_id, title, notes, state,
           claimed_by, claimed_at, will_complete_by,
-          completed_by, completed_at, created_at, updated_at, section_order;
+          completed_by, completed_at, created_at, updated_at, section_order,
+          is_recurring, icon;
 
 -- name: SetWillCompleteBy :one
 UPDATE chores
@@ -95,7 +110,8 @@ WHERE id = sqlc.arg(id)
   AND claimed_by = sqlc.arg(claimed_by)
 RETURNING id, list_id, creator_id, title, notes, state,
           claimed_by, claimed_at, will_complete_by,
-          completed_by, completed_at, created_at, updated_at, section_order;
+          completed_by, completed_at, created_at, updated_at, section_order,
+          is_recurring, icon;
 
 -- name: CompleteChore :one
 UPDATE chores
@@ -107,12 +123,32 @@ WHERE id = ?
   AND claimed_by = ?
 RETURNING id, list_id, creator_id, title, notes, state,
           claimed_by, claimed_at, will_complete_by,
-          completed_by, completed_at, created_at, updated_at, section_order;
+          completed_by, completed_at, created_at, updated_at, section_order,
+          is_recurring, icon;
+
+-- ReplenishRecurring returns a recurring chore to the rail after completion:
+-- clears claim state and section_order, leaves state='open'. Guarded so it
+-- only fires for open recurring rows currently claimed by the caller.
+-- name: ReplenishRecurring :one
+UPDATE chores
+SET claimed_by       = NULL,
+    claimed_at       = NULL,
+    will_complete_by = NULL,
+    section_order    = NULL
+WHERE id = ?
+  AND state = 'open'
+  AND is_recurring = 1
+  AND claimed_by = ?
+RETURNING id, list_id, creator_id, title, notes, state,
+          claimed_by, claimed_at, will_complete_by,
+          completed_by, completed_at, created_at, updated_at, section_order,
+          is_recurring, icon;
 
 -- name: GraveyardForUser :many
 SELECT c.id, c.list_id, c.creator_id, c.title, c.notes, c.state,
        c.claimed_by, c.claimed_at, c.will_complete_by,
-       c.completed_by, c.completed_at, c.created_at, c.updated_at, c.section_order
+       c.completed_by, c.completed_at, c.created_at, c.updated_at, c.section_order,
+       c.is_recurring, c.icon
 FROM chores c
 JOIN list_memberships m ON m.list_id = c.list_id
 WHERE m.user_id = ? AND c.state = 'completed'
@@ -121,7 +157,8 @@ ORDER BY c.completed_at DESC;
 -- name: SearchGraveyard :many
 SELECT c.id, c.list_id, c.creator_id, c.title, c.notes, c.state,
        c.claimed_by, c.claimed_at, c.will_complete_by,
-       c.completed_by, c.completed_at, c.created_at, c.updated_at, c.section_order
+       c.completed_by, c.completed_at, c.created_at, c.updated_at, c.section_order,
+       c.is_recurring, c.icon
 FROM chores c
 JOIN list_memberships m ON m.list_id = c.list_id
 WHERE m.user_id = sqlc.arg(user_id)

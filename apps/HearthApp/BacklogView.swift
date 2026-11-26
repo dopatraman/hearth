@@ -104,10 +104,15 @@ struct BacklogView: View {
             }
             .animation(.easeInOut(duration: 0.4), value: isComposing)
             .overlay(alignment: .bottom) {
-                NewChoreCard(isOpen: $isComposing) { title, notes, claim, bucket in
-                    let iso = bucket?.resolve(now: Date()).map { WhenishBucket.iso8601(from: $0) }
-                    await store.create(title: title, notes: notes, claim: claim, willCompleteBy: iso)
-                    showCreationToast(claimed: claim, bucket: bucket)
+                NewChoreCard(isOpen: $isComposing) { title, notes, claim, bucket, recurring in
+                    if recurring {
+                        await store.create(title: title, notes: notes, isRecurring: true)
+                        showRecurringCreationToast()
+                    } else {
+                        let iso = bucket?.resolve(now: Date()).map { WhenishBucket.iso8601(from: $0) }
+                        await store.create(title: title, notes: notes, claim: claim, willCompleteBy: iso)
+                        showCreationToast(claimed: claim, bucket: bucket)
+                    }
                 }
             }
             .overlay(alignment: .bottom) {
@@ -183,6 +188,13 @@ struct BacklogView: View {
         }
     }
 
+    private func showRecurringCreationToast() {
+        if case .failed = store.phase { return }
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.78)) {
+            toast = ToastModel(text: "Added to Recurring", kind: .creation)
+        }
+    }
+
     @ViewBuilder
     private var content: some View {
         switch store.phase {
@@ -236,16 +248,27 @@ struct BacklogView: View {
         let isReorderable = (section.kind == .claimed || section.kind == .upForGrabs) && section.items.count > 1
         let hint = isReorderable && !hasUsedReorder ? "Hold to rearrange" : nil
         let dimmed = liftedSection != nil && liftedSection != section.kind
+        let isRail = section.kind == .recurring
 
+        let railCountText = isRail ? "\(section.items.count) to go" : nil
         return VStack(alignment: .leading, spacing: 0) {
             SectionHeader(
                 label: section.label,
                 dotColor: section.dotColor,
                 count: section.items.count,
-                hint: hint
+                hint: hint,
+                symbolName: isRail ? "arrow.triangle.2.circlepath" : nil,
+                countText: railCountText
             )
             Group {
-                if isReorderable {
+                if isRail {
+                    RecurringRailView(
+                        items: section.items,
+                        recentlyReplenished: store.recentlyReplenished
+                    ) { chore in
+                        Task { await store.claim(choreID: chore.id) }
+                    }
+                } else if isReorderable {
                     ReorderableSection(
                         items: section.items,
                         hasUsedReorder: $hasUsedReorder,
@@ -376,7 +399,9 @@ private func previewChore(
     claimedBy: String? = nil,
     willCompleteBy: String? = nil,
     overdue: Bool = false,
-    createdAt: String = "2026-10-20T10:00:00.000Z"
+    createdAt: String = "2026-10-20T10:00:00.000Z",
+    isRecurring: Bool = false,
+    icon: String? = nil
 ) -> HearthChore {
     HearthChore(
         id: id,
@@ -392,7 +417,9 @@ private func previewChore(
         completedAt: nil,
         createdAt: createdAt,
         updatedAt: createdAt,
-        overdue: overdue
+        overdue: overdue,
+        isRecurring: isRecurring,
+        icon: icon
     )
 }
 
@@ -403,6 +430,17 @@ private func previewChore(
         HearthMember(id: "u_maya", displayName: "Maya"),
     ]
     let chores: [HearthChore] = [
+        previewChore(id: "r1", title: "Make the bed",
+                     isRecurring: true, icon: "bed.double"),
+        previewChore(id: "r2", title: "Unload the dishwasher",
+                     isRecurring: true, icon: "sparkles"),
+        previewChore(id: "r3", title: "Water the plants (daily)",
+                     isRecurring: true, icon: "leaf"),
+        previewChore(id: "r4", title: "Wipe the counters",
+                     isRecurring: true, icon: "sparkle"),
+        previewChore(id: "r5", title: "Feed the cat",
+                     claimedBy: "u_maya",
+                     isRecurring: true, icon: "pawprint"),
         previewChore(id: "c1", title: "Clean out the fridge",
                      notes: "Toss anything past its date. Wipe the shelves.",
                      claimedBy: "u_self",

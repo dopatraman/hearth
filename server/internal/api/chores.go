@@ -32,6 +32,8 @@ type choreDTO struct {
 	CreatedAt      string  `json:"created_at"`
 	UpdatedAt      string  `json:"updated_at"`
 	Overdue        bool    `json:"overdue"`
+	IsRecurring    bool    `json:"is_recurring"`
+	Icon           *string `json:"icon"`
 	SnoozedUntil   *string `json:"snoozed_until"`
 }
 
@@ -52,6 +54,8 @@ func toChoreDTO(c db.Chore) choreDTO {
 		CreatedAt:      c.CreatedAt,
 		UpdatedAt:      c.UpdatedAt,
 		Overdue:        isOverdue(c),
+		IsRecurring:    c.IsRecurring == 1,
+		Icon:           c.Icon,
 	}
 }
 
@@ -71,6 +75,8 @@ func rowToChoreDTO(r db.BacklogForUserRow) choreDTO {
 		CompletedAt:    r.CompletedAt,
 		CreatedAt:      r.CreatedAt,
 		UpdatedAt:      r.UpdatedAt,
+		IsRecurring:    r.IsRecurring,
+		Icon:           r.Icon,
 	}
 	dto := toChoreDTO(c)
 	dto.SnoozedUntil = r.SnoozedUntil
@@ -99,6 +105,8 @@ type createChoreRequest struct {
 	Notes          *string `json:"notes,omitempty"`
 	Claim          bool    `json:"claim,omitempty"`
 	WillCompleteBy *string `json:"will_complete_by,omitempty"`
+	IsRecurring    bool    `json:"is_recurring,omitempty"`
+	Icon           *string `json:"icon,omitempty"`
 }
 
 type backlogResponse struct {
@@ -121,13 +129,23 @@ func (s *Server) handleCreateChore(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if req.IsRecurring && (req.Claim || req.WillCompleteBy != nil) {
+		writeError(w, http.StatusBadRequest, "a recurring chore cannot be claimed at creation")
+		return
+	}
+
 	var created db.Chore
 	err := s.UoW.InTx(r.Context(), func(q *db.Queries) error {
 		listID, err := lists.NewService(q).EnsurePersonalMembership(r.Context(), u.ID)
 		if err != nil {
 			return err
 		}
-		created, err = chores.NewService(q).Create(r.Context(), listID, u.ID, req.Title, req.Notes, req.Claim, req.WillCompleteBy)
+		svc := chores.NewService(q)
+		if req.IsRecurring {
+			created, err = svc.CreateRecurring(r.Context(), listID, u.ID, req.Title, req.Notes, req.Icon)
+			return err
+		}
+		created, err = svc.Create(r.Context(), listID, u.ID, req.Title, req.Notes, req.Claim, req.WillCompleteBy)
 		return err
 	})
 	if err != nil {

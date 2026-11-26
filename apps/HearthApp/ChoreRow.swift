@@ -60,6 +60,9 @@ struct ChoreRow: View {
     }
 
     private var chip: Chip? {
+        // Recurring chores have no will_complete_by, so suppress the overdue
+        // chip entirely for them.
+        if chore.isRecurring { return nil }
         let dueDate: Date? = chore.willCompleteBy.flatMap { s in
             ISO8601DateFormatter.hearthISO().date(from: s)
                 ?? ISO8601DateFormatter().date(from: s)
@@ -99,7 +102,15 @@ struct ChoreRow: View {
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
 
-                    if let chip {
+                    if chore.isRecurring {
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.triangle.2.circlepath")
+                                .font(.system(size: 11, weight: .semibold))
+                            Text("Recurring")
+                                .font(.hearthBody(size: 12, weight: .semibold))
+                        }
+                        .foregroundStyle(Color.hearthRecurringAccent)
+                    } else if let chip {
                         ChipView(chip: chip)
                     }
                 }

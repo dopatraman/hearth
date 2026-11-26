@@ -1,6 +1,7 @@
 import SwiftUI
 
 enum BacklogSectionKind: Hashable {
+    case recurring
     case claimed
     case upForGrabs
     case snoozed
@@ -32,6 +33,20 @@ func groupedSections(
     let active = chores.filter { $0.snoozedUntil == nil }
     let snoozedPool = chores.filter { $0.snoozedUntil != nil }
 
+    // Unclaimed recurring rows feed the rail; claimed recurring rows fall
+    // through to the Claimed section (rendered with a "Recurring" label).
+    // Only shown under .all — filtering by a member hides the rail since the
+    // rail has no concept of "claimed by".
+    let recurringRail: [HearthChore]
+    switch filter {
+    case .all:
+        recurringRail = active
+            .filter { $0.isRecurring && $0.claimedBy == nil }
+            .sorted { $0.createdAt < $1.createdAt }
+    case .member:
+        recurringRail = []
+    }
+
     let claimedPool: [HearthChore]
     switch filter {
     case .all:
@@ -42,6 +57,16 @@ func groupedSections(
     let claimed = claimedPool.sorted(by: claimedSectionSort)
 
     var sections: [BacklogSection] = []
+    if !recurringRail.isEmpty {
+        sections.append(
+            BacklogSection(
+                kind: .recurring,
+                label: "Recurring",
+                dotColor: .hearthRecurringAccent,
+                items: recurringRail
+            )
+        )
+    }
     if !claimed.isEmpty {
         sections.append(
             BacklogSection(
@@ -55,7 +80,7 @@ func groupedSections(
 
     if filter == .all {
         let upForGrabs = active
-            .filter { $0.claimedBy == nil }
+            .filter { $0.claimedBy == nil && !$0.isRecurring }
             .sorted(by: upForGrabsSort)
         if !upForGrabs.isEmpty {
             sections.append(
@@ -145,6 +170,10 @@ extension Color {
         light: Color(red: 0xC9 / 255, green: 0xC6 / 255, blue: 0xD4 / 255),
         dark: Color(red: 0x6E / 255, green: 0x6A / 255, blue: 0x80 / 255)
     )
+
+    /// Lavender ink used for the Recurring section's icon, label, tile
+    /// glyph, and in-row "Recurring" label — same family as `hearthLavenderInk`.
+    static let hearthRecurringAccent = hearthLavenderInk
 }
 
 private extension Color {
