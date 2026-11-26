@@ -171,11 +171,9 @@ extension Color {
         dark: Color(red: 0x6E / 255, green: 0x6A / 255, blue: 0x80 / 255)
     )
 
-    /// Teal accent used for the Recurring section's icon + label.
-    static let hearthRecurringAccent = Color(
-        light: Color(red: 0x1A / 255, green: 0x5E / 255, blue: 0x54 / 255),
-        dark: Color(red: 0x7F / 255, green: 0xC8 / 255, blue: 0xBB / 255)
-    )
+    /// Lavender ink used for the Recurring section's icon, label, tile
+    /// glyph, and in-row "Recurring" label — same family as `hearthLavenderInk`.
+    static let hearthRecurringAccent = hearthLavenderInk
 }
 
 private extension Color {

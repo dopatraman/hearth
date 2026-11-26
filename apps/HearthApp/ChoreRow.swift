@@ -70,19 +70,6 @@ struct ChoreRow: View {
         return chipFor(overdue: chore.overdue, willCompleteBy: dueDate, now: Date())
     }
 
-    @ViewBuilder
-    private var rowBackground: some View {
-        if chore.isRecurring {
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(Color.hearthRecurringRowFill)
-        } else {
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(Color.hearthSurface)
-                .shadow(color: .black.opacity(0.04), radius: 2, y: 1)
-                .shadow(color: .black.opacity(0.04), radius: 18, y: 6)
-        }
-    }
-
     var body: some View {
         VStack(spacing: 0) {
             closedRow
@@ -91,7 +78,12 @@ struct ChoreRow: View {
                     .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
-        .background(rowBackground)
+        .background(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(Color.hearthSurface)
+                .shadow(color: .black.opacity(0.04), radius: 2, y: 1)
+                .shadow(color: .black.opacity(0.04), radius: 18, y: 6)
+        )
         .opacity(isSnoozed && !isOpen ? 0.55 : 1)
         .animation(.spring(response: 0.4, dampingFraction: 0.82), value: isOpen)
     }
